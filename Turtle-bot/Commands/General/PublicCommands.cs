@@ -36,140 +36,162 @@
             await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":beer:")).ConfigureAwait(false);
         }
 
-        [Command("poll")]
-        [Description("Fitz will run a poll in a specific channel")]
-        public async Task SayAsync(CommandContext ctx, string pollType, [RemainingText]string message)
-        {
-            string[] titleMessage = message.Split('|');
-            string[] splitMessage = titleMessage[1].Split(',');
 
-            string embedMessage = string.Empty;
-            switch (pollType)
-            {
-                case "open":
-                    for (int i = 0; i < splitMessage.Length; i++)
-                    {
-                        switch (i)
-                        {
-                            case 0:
-                                embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":one:")} **{splitMessage[i]}**\n";
-                                break;
 
-                            case 1:
-                                embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":two:")} **{splitMessage[i]}**\n";
-                                break;
+        //[Command("poll")]
+        //[Description("Fitz will run a poll in a specific channel")]
+        //public async Task SayAsync(CommandContext ctx, string pollType, [RemainingText]string message)
+        //{
+        //    string[] titleMessage = message.Split('|');
+        //    string[] splitMessage = titleMessage[1].Split(',');
 
-                            case 2:
-                                embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":three:")} **{splitMessage[i]}**\n";
-                                break;
+        //    string embedMessage = string.Empty;
+        //    switch (pollType)
+        //    {
+        //        case "open":
+        //            for (int i = 0; i < splitMessage.Length; i++)
+        //            {
+        //                switch (i)
+        //                {
+        //                    case 0:
+        //                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":one:")} **{splitMessage[i]}**\n";
+        //                        break;
 
-                            case 3:
-                                embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":four:")} **{splitMessage[i]}**\n";
-                                break;
+        //                    case 1:
+        //                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":two:")} **{splitMessage[i]}**\n";
+        //                        break;
 
-                            case 4:
-                                embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":five:")} **{splitMessage[i]}**\n";
-                                break;
+        //                    case 2:
+        //                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":three:")} **{splitMessage[i]}**\n";
+        //                        break;
 
-                            case 5:
-                                embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":six:")} **{splitMessage[i]}**\n";
-                                break;
+        //                    case 3:
+        //                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":four:")} **{splitMessage[i]}**\n";
+        //                        break;
 
-                            case 6:
-                                embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":seven:")} **{splitMessage[i]}**\n";
-                                break;
+        //                    case 4:
+        //                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":five:")} **{splitMessage[i]}**\n";
+        //                        break;
 
-                            case 7:
-                                embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":eight:")} **{splitMessage[i]}**\n";
-                                break;
+        //                    case 5:
+        //                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":six:")} **{splitMessage[i]}**\n";
+        //                        break;
 
-                            case 8:
-                                embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":nine:")} **{splitMessage[i]}**\n";
-                                break;
-                        }
-                    }
-                break;
+        //                    case 6:
+        //                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":seven:")} **{splitMessage[i]}**\n";
+        //                        break;
 
-                case "closed":
+        //                    case 7:
+        //                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":eight:")} **{splitMessage[i]}**\n";
+        //                        break;
 
-                    if(splitMessage.Length > 2)
-                    {
-                        await ctx.Channel.SendMessageAsync("You have more than two options for a closed ended question you damn idiot.");
-                        return;
-                    }
-                    else
-                    {
-                        embedMessage += $"{DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.Yes)} **{splitMessage[0]}**\n";
-                        embedMessage += $"{DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.No)} **{splitMessage[1]}**\n";
-                    }
-                    break;
-            }
+        //                    case 8:
+        //                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":nine:")} **{splitMessage[i]}**\n";
+        //                        break;
+        //                }
+        //            }
+        //        break;
 
-            DiscordEmbed pollEmbed = new DiscordEmbedBuilder
-            {
-                Footer = new DiscordEmbedBuilder.EmbedFooter
-                {
-                    IconUrl = DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.InfoIcon).Url,
-                    Text = "Vote using reactions",
-                },
-                Color = new DiscordColor(250, 250, 250),
-                Timestamp = DateTime.UtcNow,
-                Title = $"**{titleMessage[0]}**",
-                Description = embedMessage,
-            };
+        //        case "closed":
 
-            DiscordMessage reactionMessage = await ctx.Channel.SendMessageAsync(embed: pollEmbed);
+        //            if(splitMessage.Length > 2)
+        //            {
+        //                await ctx.Channel.SendMessageAsync("You have more than two options for a closed ended question you damn idiot.");
+        //                return;
+        //            }
+        //            else
+        //            {
+        //                embedMessage += $"{DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.Yes)} **{splitMessage[0]}**\n";
+        //                embedMessage += $"{DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.No)} **{splitMessage[1]}**\n";
+        //            }
+        //            break;
 
-            switch (pollType)
-            {
-                case "closed":
-                    await reactionMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.Yes));
-                    await reactionMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.No));
-                    break;
-                case "open":
-                    for (int i = 0; i < splitMessage.Length; i++)
-                    {
-                        switch (i)
-                        {
-                            case 0:
-                                await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":one:"));
-                                break;
+        //        case "closed-3":
 
-                            case 1:
-                                await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":two:"));
-                                break;
+        //            if (splitMessage.Length > 2)
+        //            {
+        //                await ctx.Channel.SendMessageAsync("You have more than two options for a closed ended question you damn idiot.");
+        //                return;
+        //            }
+        //            else
+        //            {
+        //                embedMessage += $"{DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.Yes)} **{splitMessage[0]}**\n";
+        //                embedMessage += $"{DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.No)} **{splitMessage[1]}**\n";
+        //                embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":regional_indicator_m:")} **Maybe**\n";
+        //            }
+        //            break;
+        //    }
 
-                            case 2:
-                                await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":three:"));
-                                break;
+        //    DiscordEmbed pollEmbed = new DiscordEmbedBuilder
+        //    {
+        //        Footer = new DiscordEmbedBuilder.EmbedFooter
+        //        {
+        //            IconUrl = DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.InfoIcon).Url,
+        //            Text = "Vote using reactions",
+        //        },
+        //        Color = new DiscordColor(250, 250, 250),
+        //        Timestamp = DateTime.UtcNow,
+        //        Title = $"**{titleMessage[0]}**",
+        //        Description = embedMessage,
+        //    };
 
-                            case 3:
-                                await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":four:"));
-                                break;
+        //    DiscordMessage reactionMessage = await ctx.Channel.SendMessageAsync(embed: pollEmbed);
 
-                            case 4:
-                                await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":five:"));
-                                break;
+        //    switch (pollType)
+        //    {
+        //        case "closed-3":
+        //            await reactionMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.Yes));
+        //            await reactionMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.No));
+        //            await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":regional_indicator_m:"));
+        //            break;
+        //        case "closed":
+        //            await reactionMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.Yes));
+        //            await reactionMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.No));
+        //            break;
+        //        case "open":
+        //            for (int i = 0; i < splitMessage.Length; i++)
+        //            {
+        //                switch (i)
+        //                {
+        //                    case 0:
+        //                        await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":one:"));
+        //                        break;
 
-                            case 5:
-                                await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":six:"));
-                                break;
+        //                    case 1:
+        //                        await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":two:"));
+        //                        break;
 
-                            case 6:
-                                await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":seven:"));
-                                break;
+        //                    case 2:
+        //                        await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":three:"));
+        //                        break;
 
-                            case 7:
-                                await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":eight:"));
-                                break;
+        //                    case 3:
+        //                        await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":four:"));
+        //                        break;
 
-                            case 8:
-                                await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":nine:"));
-                                break;
-                        }
-                    }
-                    break;
-            }
-        }
+        //                    case 4:
+        //                        await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":five:"));
+        //                        break;
+
+        //                    case 5:
+        //                        await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":six:"));
+        //                        break;
+
+        //                    case 6:
+        //                        await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":seven:"));
+        //                        break;
+
+        //                    case 7:
+        //                        await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":eight:"));
+        //                        break;
+
+        //                    case 8:
+        //                        await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":nine:"));
+        //                        break;
+        //                }
+        //            }
+        //            break;
+        //    }
+        //}
     }
 }
