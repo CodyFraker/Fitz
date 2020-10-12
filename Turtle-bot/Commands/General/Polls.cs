@@ -139,6 +139,99 @@
             }
         }
 
+        [Command("-open2")]
+        [Aliases("-o2")]
+        [Description("Run Open Pools")]
+        public async Task OpenPollCircles(CommandContext ctx, [RemainingText]string message)
+        {
+
+            // The title of what the embed will be asking/saying
+            string[] embedTitle = message.Split('|');
+
+
+            // The options, sepperated by a comma
+            string[] pollOptions = embedTitle[1].Split(',');
+
+            // The message of the embed
+            string embedMessage = string.Empty;
+
+
+            for (int i = 0; i < pollOptions.Length; i++)
+            {
+                switch (i)
+                {
+                    case 0:
+                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":blue_circle:")} **{pollOptions[i]}**\n";
+                        break;
+
+                    case 1:
+                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":green_circle:")} **{pollOptions[i]}**\n";
+                        break;
+
+                    case 2:
+                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":orange_circle:")} **{pollOptions[i]}**\n";
+                        break;
+
+                    case 3:
+                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":purple_circle:")} **{pollOptions[i]}**\n";
+                        break;
+
+                    case 4:
+                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":red_circle:")} **{pollOptions[i]}**\n";
+                        break;
+
+                    case 5:
+                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":yellow_circle:")} **{pollOptions[i]}**\n";
+                        break;
+                }
+            }
+
+            DiscordEmbed pollEmbed = new DiscordEmbedBuilder
+            {
+                Footer = new DiscordEmbedBuilder.EmbedFooter
+                {
+                    IconUrl = DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.InfoIcon).Url,
+                    Text = "Vote using reactions",
+                },
+                Color = new DiscordColor(250, 250, 250),
+                Timestamp = DateTime.UtcNow,
+                Title = $"**{embedTitle[0]}**",
+                Description = embedMessage,
+            };
+
+            DiscordMessage reactionMessage = await ctx.Channel.SendMessageAsync(embed: pollEmbed);
+
+            for (int i = 0; i < pollOptions.Length; i++)
+            {
+                switch (i)
+                {
+                    case 0:
+                        await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":blue_circle:"));
+                        break;
+
+                    case 1:
+                        await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":green_circle:"));
+                        break;
+
+                    case 2:
+                        await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":orange_circle:"));
+                        break;
+
+                    case 3:
+                        await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":purple_circle:"));
+                        break;
+
+                    case 4:
+                        await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":red_circle:"));
+                        break;
+
+                    case 5:
+                        await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":yellow_circle:"));
+                        break;
+                }
+            }
+        }
+
         [Command("-closed")]
         [Aliases("-c")]
         public async Task ClosedPoll(CommandContext ctx, [RemainingText]string message)
