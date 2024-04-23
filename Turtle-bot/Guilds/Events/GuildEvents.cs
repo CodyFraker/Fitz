@@ -20,7 +20,7 @@
             this.dClient.GuildAvailable += this.OnGuildAvailableAsync;
         }
 
-        private async Task OnGuildAvailableAsync(GuildCreateEventArgs args)
+        private async Task OnGuildAvailableAsync(DiscordClient client, GuildCreateEventArgs args)
         {
             await args.Guild.RequestMembersAsync().ConfigureAwait(false);
         }

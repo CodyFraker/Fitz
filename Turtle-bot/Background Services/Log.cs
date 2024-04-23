@@ -3,6 +3,7 @@
     using System;
     using DSharpPlus;
     using DSharpPlus.Entities;
+    using Fitz.Variables.Channels;
     using Fitz.Variables;
 
     public enum LogConsole
@@ -54,16 +55,19 @@
             switch (consoleChannel)
             {
                 case LogConsole.Commands:
-                    channel = await this.dClient.GetChannelAsync(Channels.Commands).ConfigureAwait(false);
+                    channel = await this.dClient.GetChannelAsync(Channels.loggingChannel).ConfigureAwait(false);
                     break;
+
                 case LogConsole.RoleEdits:
-                    channel = await this.dClient.GetChannelAsync(Channels.RoleEdits).ConfigureAwait(false);
+                    channel = await this.dClient.GetChannelAsync(Channels.loggingChannel).ConfigureAwait(false);
                     break;
+
                 case LogConsole.UserInfo:
-                    channel = await this.dClient.GetChannelAsync(Channels.Console).ConfigureAwait(false);
+                    channel = await this.dClient.GetChannelAsync(Channels.loggingChannel).ConfigureAwait(false);
                     break;
+
                 default:
-                    channel = await this.dClient.GetChannelAsync(Channels.ExceptionReporting).ConfigureAwait(false);
+                    channel = await this.dClient.GetChannelAsync(Channels.loggingChannel).ConfigureAwait(false);
                     break;
             }
 
@@ -72,7 +76,7 @@
 
         public async void Error(string message)
         {
-            DiscordChannel logChannel = await this.dClient.GetChannelAsync(Channels.ExceptionReporting).ConfigureAwait(false);
+            DiscordChannel logChannel = await this.dClient.GetChannelAsync(Channels.loggingChannel).ConfigureAwait(false);
             await logChannel.SendMessageAsync(message).ConfigureAwait(false);
         }
     }

@@ -1,36 +1,49 @@
 ﻿namespace Fitz
 {
-    using System;
-    using System.Net.WebSockets;
-    using System.Threading.Tasks;
-    using Fitz.BackgroundServices;
-    using Fitz.Models;
     using dotenv.net;
-    using DSharpPlus;
-    using DSharpPlus.EventArgs;
-    using Microsoft.EntityFrameworkCore;
     using Microsoft.Extensions.DependencyInjection;
+    using Microsoft.Extensions.Hosting;
     using Serilog;
     using Serilog.Events;
+    using Serilog.Sinks.SystemConsole.Themes;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Reflection;
+    using Fitz.Core.Services;
+    using Fitz.Core;
 
     /// <summary>
     /// This is the main class which bloon requires in order to go live. Its the brains of the entire setup.
     /// </summary>
 #pragma warning disable CA1001 // Types that own disposable fields should be disposable
+
     internal class Program
-#pragma warning restore CA1001 // Types that own disposable fields should be disposable
     {
-        private DiscordClient dClient;
-        private IServiceProvider serviceProvider;
+        private static readonly SystemConsoleTheme BloonConsoleTheme = new SystemConsoleTheme(
+            new Dictionary<ConsoleThemeStyle, SystemConsoleThemeStyle>
+            {
+                [ConsoleThemeStyle.Text] = new SystemConsoleThemeStyle { Foreground = ConsoleColor.Gray },
+                [ConsoleThemeStyle.SecondaryText] = new SystemConsoleThemeStyle { Foreground = ConsoleColor.DarkGray },
+                [ConsoleThemeStyle.TertiaryText] = new SystemConsoleThemeStyle { Foreground = ConsoleColor.DarkGray },
+                [ConsoleThemeStyle.Invalid] = new SystemConsoleThemeStyle { Foreground = ConsoleColor.Yellow },
+                [ConsoleThemeStyle.Null] = new SystemConsoleThemeStyle { Foreground = ConsoleColor.Blue },
+                [ConsoleThemeStyle.Name] = new SystemConsoleThemeStyle { Foreground = ConsoleColor.Gray },
+                [ConsoleThemeStyle.String] = new SystemConsoleThemeStyle { Foreground = ConsoleColor.Cyan },
+                [ConsoleThemeStyle.Number] = new SystemConsoleThemeStyle { Foreground = ConsoleColor.Magenta },
+                [ConsoleThemeStyle.Boolean] = new SystemConsoleThemeStyle { Foreground = ConsoleColor.Blue },
+                [ConsoleThemeStyle.Scalar] = new SystemConsoleThemeStyle { Foreground = ConsoleColor.Green },
+                [ConsoleThemeStyle.LevelVerbose] = new SystemConsoleThemeStyle { Foreground = ConsoleColor.DarkGray },
+                [ConsoleThemeStyle.LevelDebug] = new SystemConsoleThemeStyle { Foreground = ConsoleColor.Gray },
+                [ConsoleThemeStyle.LevelInformation] = new SystemConsoleThemeStyle { Foreground = ConsoleColor.White },
+                [ConsoleThemeStyle.LevelWarning] = new SystemConsoleThemeStyle { Foreground = ConsoleColor.Yellow },
+                [ConsoleThemeStyle.LevelError] = new SystemConsoleThemeStyle { Foreground = ConsoleColor.White, Background = ConsoleColor.Red },
+                [ConsoleThemeStyle.LevelFatal] = new SystemConsoleThemeStyle { Foreground = ConsoleColor.White, Background = ConsoleColor.Red },
+            });
 
-        public static WebSocketState SocketState { get; private set; }
-
-        private static void Main() =>
-            new Program().RunAsync().GetAwaiter().GetResult();
-
-        private async Task RunAsync()
+        public static int Main()
         {
-            DotEnv.Config();
+            DotEnv.Load();
 
             // Configure logging
             // Log everything to console
@@ -41,9 +54,10 @@
 #else
                 .MinimumLevel.Information()
 #endif
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
                 .Enrich.FromLogContext()
 #if DEBUG
-                .WriteTo.FitzConsoleSink(outputTemplate: "[{Timestamp:HH:mm:ss}][{Level:u3}]{Message:lj}{NewLine}{Exception}", restrictedToMinimumLevel: LogEventLevel.Debug)
+                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}", restrictedToMinimumLevel: LogEventLevel.Debug, theme: BloonConsoleTheme)
 #endif
                 .WriteTo.File(
                     "Logs/.log",
@@ -52,104 +66,46 @@
                     rollingInterval: RollingInterval.Day)
                 .CreateLogger();
 
-            AppDomain.CurrentDomain.ProcessExit += this.OnShutdown;
-            AppDomain.CurrentDomain.UnhandledException += this.UnhandledException;
-
-            this.serviceProvider = this.ConfigureServices();
-
-            EventManager.RegisterEventHandlers(this.serviceProvider);
-
-            new CommandHandler(this.serviceProvider).Initialize();
-
-            this.serviceProvider.GetService<JobManager>().Start();
-
-            this.dClient.SocketOpened += this.OnSocketOpened;
-            this.dClient.SocketClosed += this.OnSocketClosed;
-            this.dClient.SocketErrored += this.OnSocketErrored;
-            this.dClient.Ready += this.OnReady;
-            await this.dClient.InitializeAsync().ConfigureAwait(false);
-            await this.dClient.ConnectAsync().ConfigureAwait(false);
-
-            await Task.Delay(-1).ConfigureAwait(false);
-        }
-
-        private Task OnReady(ReadyEventArgs e) => this.serviceProvider.GetService<ActivityManager>().ResetActivityAsync();
-
-        private Task OnSocketClosed(SocketCloseEventArgs e)
-        {
-            SocketState = WebSocketState.Closed;
-            return Task.CompletedTask;
-        }
-
-        private Task OnSocketErrored(SocketErrorEventArgs e)
-        {
-            SocketState = WebSocketState.Closed;
-            Log.Error(e.Exception, "Socket errored");
-            return Task.CompletedTask;
-        }
-
-        private Task OnSocketOpened()
-        {
-            SocketState = WebSocketState.Open;
-            return Task.CompletedTask;
-        }
-
-        private IServiceProvider ConfigureServices()
-        {
-            this.dClient = new DiscordClient(new DiscordConfiguration
+            try
             {
-#if DEBUG
-                LogLevel = LogLevel.Debug,
-#endif
-                MessageCacheSize = 0,
-                Token = Environment.GetEnvironmentVariable("BOT_TOKEN"),
-                TokenType = TokenType.Bot,
-            });
+                CreateHostBuilder().Build().Run();
+                return 0;
+            }
+#pragma warning disable CA1031 // Catch all exceptions
+            catch (Exception ex)
+#pragma warning restore CA1031
+            {
+                Log.Fatal(ex, "Bot terminated unexpectedly");
+                return 1;
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
+        }
 
-            this.dClient.DebugLogger.LogMessageReceived += this.ConvertToSerilog;
+        private static IHostBuilder CreateHostBuilder()
+        {
+            return new HostBuilder()
+                .ConfigureServices(ConfigureServices)
+                .UseSerilog();
+        }
 
-            IServiceCollection services = new ServiceCollection();
-
-            // DB
-            services.AddDbContextPool<FitzContext>(options => options.UseMySql(new FitzContextFactory().ConnectionString));
-            services.AddSingleton<FitzContextFactory>();
-
-            // General
-            services.AddSingleton(this.dClient)
-                .AddSingleton<FitzLog>()
-                .AddSingleton<ActivityManager>();
-
-            // Jobs
-            services.AddSingleton<JobManager>();
-            JobManager.AddJobs(ref services);
+        private static void ConfigureServices(HostBuilderContext ctx, IServiceCollection services)
+        {
+            // Register feature services
+            foreach (Type type in Assembly.GetEntryAssembly()
+                .GetTypes()
+                .Where(t => typeof(IServiceRegistrant).IsAssignableFrom(t)
+                    && !t.IsInterface
+                    && !t.IsAbstract))
+            {
+                IServiceRegistrant registrant = Activator.CreateInstance(type) as IServiceRegistrant;
+                registrant.ConfigureServices(services);
+            }
+            services.AddHostedService<Service>();
 
             Log.Information("Services configured");
-
-            return services.BuildServiceProvider();
-        }
-
-        private void ConvertToSerilog(object sender, DebugLogMessageEventArgs args)
-        {
-            LogEventLevel level = args.Level switch
-            {
-                LogLevel.Critical => LogEventLevel.Fatal,
-                LogLevel.Error => LogEventLevel.Error,
-                LogLevel.Info => LogEventLevel.Information,
-                LogLevel.Warning => LogEventLevel.Warning,
-                _ => LogEventLevel.Debug,
-            };
-
-            Log.Write(level, args.Exception, $"[{args.Application}] {args.Message}");
-        }
-
-        private void OnShutdown(object sender, EventArgs args)
-        {
-            this.serviceProvider.GetService<DiscordClient>().Dispose();
-        }
-
-        private void UnhandledException(object sender, UnhandledExceptionEventArgs args)
-        {
-            Log.Error("{ExceptionObject}", args.ExceptionObject);
         }
     }
 }

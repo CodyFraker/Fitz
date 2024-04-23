@@ -1,6 +1,7 @@
 ﻿namespace Fitz.Models
 {
     using Fitz.BackgroundServices.Models;
+    using Fitz.Core.Services.Jobs;
     using Fitz.DB.Models;
     using Microsoft.EntityFrameworkCore;
     using Newtonsoft.Json;
@@ -11,6 +12,7 @@
             : base(options)
         {
         }
+
         public DbSet<Job> Jobs { get; set; }
         public DbSet<Beers> Beer { get; set; }
 

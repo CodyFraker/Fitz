@@ -36,8 +36,6 @@
             await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":beer:")).ConfigureAwait(false);
         }
 
-
-
         //[Command("poll")]
         //[Description("Fitz will run a poll in a specific channel")]
         //public async Task SayAsync(CommandContext ctx, string pollType, [RemainingText]string message)

@@ -291,5 +291,36 @@
             await reactionMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.No));
             await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":regional_indicator_m:"));
         }
+
+        [Command("-closed2")]
+        [Aliases("-c2")]
+        public async Task ClosedPollSometimes(CommandContext ctx, [RemainingText] string message)
+        {
+
+
+            string[] embedTitle = message.Split('|');
+            string embedMessage = string.Empty;
+
+            embedMessage += $"{DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.Yes)} **Yes**\n";
+            embedMessage += $"{DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.No)} **No**\n";
+            embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":regional_indicator_s:")} **Sometimes**\n";
+
+            DiscordEmbed pollEmbed = new DiscordEmbedBuilder
+            {
+                Footer = new DiscordEmbedBuilder.EmbedFooter
+                {
+                    IconUrl = DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.InfoIcon).Url,
+                    Text = "Vote using reactions",
+                },
+                Color = new DiscordColor(250, 250, 250),
+                Timestamp = DateTime.UtcNow,
+                Title = $"**{embedTitle[0]}**",
+                Description = embedMessage,
+            };
+            DiscordMessage reactionMessage = await ctx.Channel.SendMessageAsync(embed: pollEmbed);
+            await reactionMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.Yes));
+            await reactionMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, Variables.Emojis.Polls.No));
+            await reactionMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":regional_indicator_s:"));
+        }
     }
 }

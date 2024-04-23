@@ -28,10 +28,9 @@
             //this.dClient.PresenceUpdated += this.ManageNowStreamingUsers;
         }
 
-        private async Task OnGuildMemberAddedAsync(GuildMemberAddEventArgs args)
+        private async Task OnGuildMemberAddedAsync(DiscordClient client, GuildMemberAddEventArgs args)
         {
             // Do stuff here
-
         }
     }
 }

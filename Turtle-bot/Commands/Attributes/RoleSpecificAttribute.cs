@@ -10,8 +10,9 @@
      * Precondition for SBG-Exclusives.
      * </summary>
      */
+
     public class SBGExclusiveAttribute : CheckBaseAttribute
     {
-        public override Task<bool> ExecuteCheckAsync(CommandContext ctx, bool help) => Task.FromResult(ctx.Guild?.Id == Roles.All);
+        public override Task<bool> ExecuteCheckAsync(CommandContext ctx, bool help) => Task.FromResult(ctx.Guild?.Id == Roles.exampleRole);
     }
 }

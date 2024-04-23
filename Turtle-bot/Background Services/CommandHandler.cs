@@ -36,7 +36,7 @@
             commands.RegisterCommands(Assembly.GetEntryAssembly());
         }
 
-        private async Task OnCommandErroredAsync(CommandErrorEventArgs args)
+        private async Task OnCommandErroredAsync(CommandsNextExtension cne, CommandErrorEventArgs args)
         {
             if (args.Exception is ChecksFailedException)
             {
@@ -56,7 +56,7 @@
             Log.Error(args.Exception, $"Command '{args.Context.Message.Content}' errored");
         }
 
-        private Task OnCommandExecuted(CommandExecutionEventArgs args)
+        private Task OnCommandExecuted(CommandsNextExtension cne, CommandExecutionEventArgs args)
         {
             string logMessage = $"`{args.Context.User.Username}` ran `{args.Context.Message.Content}` in **[{args.Context.Guild?.Name ?? "DM"} - {args.Context.Channel.Name}]**";
             Log.Debug(logMessage);

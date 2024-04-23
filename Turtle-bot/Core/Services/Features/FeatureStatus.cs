@@ -1,10 +1,9 @@
-﻿namespace Fitz.BackgroundServices.Models
+﻿namespace Fitz.Core.Services.Features
 {
-    using System;
     using System.ComponentModel.DataAnnotations.Schema;
 
-    [Table("job")]
-    public class Job
+    [Table("feature_status")]
+    public class FeatureStatus
     {
         [Column("id")]
         public int Id { get; set; }
@@ -12,7 +11,7 @@
         [Column("name")]
         public string Name { get; set; }
 
-        [Column("last_execution")]
-        public DateTime LastExecution { get; set; }
+        [Column("enabled")]
+        public bool Enabled { get; set; }
     }
 }

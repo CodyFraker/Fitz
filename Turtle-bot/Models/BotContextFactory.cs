@@ -21,7 +21,7 @@
         public FitzContext Create()
         {
             DbContextOptionsBuilder<FitzContext> optionsBuilder = new DbContextOptionsBuilder<FitzContext>();
-            optionsBuilder.UseMySql(this.ConnectionString);
+            optionsBuilder.UseMySql(this.ConnectionString, ServerVersion.AutoDetect(this.ConnectionString));
             return new FitzContext(optionsBuilder.Options);
         }
     }

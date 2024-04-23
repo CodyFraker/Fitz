@@ -48,7 +48,7 @@
         /// <param name="activityType">Activity type.</param>
         /// <param name="autoReset">Automatically switch back to <see cref="DefaultActivity"/> after <see cref="AutoResetMs"/>.</param>
         /// <returns>Awaitable task.</returns>
-        public async Task TrySetActivityAsync(string activity, ActivityType activityType = ActivityType.Watching, bool autoReset = false)
+        public async Task TrySetActivityAsync(string activity, DiscordActivityType activityType = DiscordActivityType.Watching, bool autoReset = false)
         {
             await this.dClient.UpdateStatusAsync(new DiscordActivity
             {

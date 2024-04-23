@@ -14,7 +14,6 @@
 
     public class MessageEvents : IEventHandler
     {
-
         private readonly DiscordClient dClient;
         private readonly FitzContextFactory dbFactory;
 
@@ -29,7 +28,7 @@
             this.dClient.MessageCreated += this.OnMessageCreatedAsync;
         }
 
-        private async Task OnMessageCreatedAsync(MessageCreateEventArgs args)
+        private async Task OnMessageCreatedAsync(DiscordClient client, MessageCreateEventArgs args)
         {
             // Ignore the message if the author is a Fitz account.
             if (args.Author.IsBot == true)

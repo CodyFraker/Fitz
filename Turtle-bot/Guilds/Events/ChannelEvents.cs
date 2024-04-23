@@ -21,7 +21,7 @@
             this.dClient.GuildAvailable += DClient_GuildAvailable;
         }
 
-        private Task DClient_GuildAvailable(GuildCreateEventArgs e)
+        private Task DClient_GuildAvailable(DiscordClient client, GuildCreateEventArgs e)
         {
             return Task.CompletedTask;
         }
