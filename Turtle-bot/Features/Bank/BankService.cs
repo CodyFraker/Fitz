@@ -5,6 +5,8 @@ using Fitz.Features.Bank.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Transactions;
 using Transaction = Fitz.Features.Bank.Models.Transaction;
@@ -43,7 +45,7 @@ namespace Fitz.Features.Bank
             account.LifetimeBeer = account.LifetimeBeer + 12;
             db.Update(account);
             await db.SaveChangesAsync();
-            await LogTransaction(account, account, 12, Reason.AccountCreationBonus);
+            await LogTransactionAsync(account, account, 12, Reason.AccountCreationBonus);
         }
 
         /// <summary>
@@ -66,7 +68,18 @@ namespace Fitz.Features.Bank
 
             account.Beer = account.Beer + amount;
             account.LifetimeBeer = account.LifetimeBeer + amount;
-            await LogTransaction(account, account, amount, Reason.Bonus);
+            db.Update(account);
+            await db.SaveChangesAsync();
+            await LogTransactionAsync(account, account, amount, Reason.Bonus);
+        }
+
+        public List<Transaction> GetTransactions(int take)
+        {
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+            List<Transaction> transactions = db.Transactions.OrderByDescending(t => t.Timestamp).Take(take).ToList();
+            return transactions;
         }
 
         public async Task PurchaseLotteryTicket(ulong userId, int amount)
@@ -83,7 +96,7 @@ namespace Fitz.Features.Bank
 
             account.Beer = account.Beer - amount;
             db.Update(account);
-            await LogTransaction(account, account, amount, Reason.Lotto);
+            await LogTransactionAsync(account, account, amount, Reason.Lotto);
             await db.SaveChangesAsync();
         }
 
@@ -94,8 +107,21 @@ namespace Fitz.Features.Bank
 
             user.Beer = user.Beer - amount;
             db.Update(user);
-            await LogTransaction(user, user, amount, Reason.Lotto);
+            await LogTransactionAsync(user, user, amount, Reason.Lotto);
             await db.SaveChangesAsync();
+        }
+
+        public async Task DepositLotteryWinningsAsync(Account account, int amount)
+        {
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+            account.Beer += amount;
+            account.LifetimeBeer += amount;
+
+            db.Update(account);
+            await db.SaveChangesAsync();
+            await LogTransactionAsync(account, account, amount, Reason.LottoWin);
         }
 
         public async Task TransferBeer(ulong sender, ulong recipient, int amount)
@@ -132,10 +158,10 @@ namespace Fitz.Features.Bank
             db.Update(recipientAccount);
             await db.SaveChangesAsync();
 
-            await LogTransaction(senderAccount, recipientAccount, amount, Reason.Donated);
+            await LogTransactionAsync(senderAccount, recipientAccount, amount, Reason.Donated);
         }
 
-        public async Task<int> GetBalance(ulong userId)
+        public int GetBalance(ulong userId)
         {
             Account account = accountService.FindAccount(userId);
             if (account == null)
@@ -147,21 +173,52 @@ namespace Fitz.Features.Bank
             return account.Beer;
         }
 
-        private async Task LogTransaction(Account sender, Account recipient, int amount, Reason reason)
+        public int GetLifetimeBalance(ulong userId)
+        {
+            Account account = accountService.FindAccount(userId);
+            if (account == null)
+            {
+                Log.Error($"Account not found. {userId}");
+                return 0;
+            }
+
+            return account.LifetimeBeer;
+        }
+
+        public List<Transaction> GetTransactions(ulong userId)
+        {
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+            List<Transaction> transactions = db.Transactions.Where(t => t.Sender == userId || t.Recipient == userId).ToList();
+            return transactions;
+        }
+
+        public List<Account> GetTopBeerBalances(int limit = 10)
+        {
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+            List<Account> accounts = db.Accounts.OrderByDescending(a => a.Beer).Take(limit).ToList();
+            return accounts;
+        }
+
+        private async Task LogTransactionAsync(Account sender, Account recipient, int amount, Reason reason)
         {
             try
             {
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
                 Transaction transaction = new Transaction()
                 {
-                    Sender = sender.DiscordId,
-                    Recipient = recipient.DiscordId,
+                    Sender = sender.Id,
+                    Recipient = recipient.Id,
                     Amount = amount,
                     Reason = reason,
                     Timestamp = DateTime.Now
                 };
-                db.Transactions.Add(transaction);
+                db.Add(transaction);
                 await db.SaveChangesAsync();
             }
             catch (Exception ex)

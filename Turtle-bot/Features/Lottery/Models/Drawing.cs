@@ -35,12 +35,6 @@ namespace Fitz.Features.Lottery.Models
         [Column("pool")]
         public int? Pool { get; set; }
 
-        /// <summary>
-        /// The amount won if the user wins the lottery.
-        /// </summary>
-        [Column("winning_user")]
-        public ulong? WinningUserId { get; set; }
-
         [Column("current")]
         public bool CurrentLottery { get; set; }
     }

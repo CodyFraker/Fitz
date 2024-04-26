@@ -21,8 +21,8 @@ namespace Fitz.Features.Lottery.Models
         [Column("number")]
         public int Number { get; set; }
 
-        [Column("user")]
-        public ulong User { get; set; }
+        [Column("account_id")]
+        public ulong AccountId { get; set; }
 
         [Column("timestamp")]
         public DateTime Timestamp { get; set; }

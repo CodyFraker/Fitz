@@ -7,9 +7,9 @@ using DSharpPlus.ModalCommands;
 using DSharpPlus.ModalCommands.Extensions;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Commands;
-using Fitz.Core.Commands.Account;
-using Fitz.Core.Commands.Polls;
 using Fitz.Core.Services.Features;
+using Fitz.Features.Accounts;
+using Fitz.Features.Polls.Polls;
 using Fitz.Variables;
 using Fitz.Variables.Channels;
 using Microsoft.Extensions.DependencyInjection;
@@ -91,13 +91,13 @@ namespace Fitz.Core.Discord
             this.modals.ModalCommandExecuted += this.ModalCommandExecuted;
             this.modals.ModalCommandErrored += this.ModalCommandErrored;
 
-            this.cNext.RegisterCommands<PrivateCommands>();
+            //this.cNext.RegisterCommands<PrivateCommands>();
             this.slash.RegisterCommands<GeneralSlashCommands>();
-            this.slash.RegisterCommands<PollSlashCommands>();
-            this.slash.RegisterCommands<AccountSlashCommands>();
+            //this.slash.RegisterCommands<PollSlashCommands>();
 
-            this.cNext.RegisterCommands<PublicCommands>();
-            this.modals.RegisterModals<PollCommands>();
+            //this.cNext.RegisterCommands<PublicCommands>();
+            this.slash.RegisterCommands<PollSlashCommands>();
+            this.modals.RegisterModals<PollModalCommands>();
 
             await this.dClient.InitializeAsync();
             VariableManager.ApplyVariableScopes(this.dClient);

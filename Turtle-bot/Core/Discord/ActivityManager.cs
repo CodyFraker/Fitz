@@ -73,7 +73,7 @@ namespace Fitz.Core.Discord
                 return;
             }
 
-            DiscordChannel sbgGeneral = await this.dClient.GetChannelAsync(Channels.loggingChannel);
+            DiscordChannel sbgGeneral = await this.dClient.GetChannelAsync(Waterbear.loggingChannel);
             DiscordEmbed streamEmbed = new DiscordEmbedBuilder
             {
                 Footer = new DiscordEmbedBuilder.EmbedFooter

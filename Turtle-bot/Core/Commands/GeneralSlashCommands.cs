@@ -18,12 +18,16 @@ namespace Fitz.Core.Commands
     internal class GeneralSlashCommands : ApplicationCommandModule
     {
         private readonly BotContext db;
-        private readonly AccountService accountService;
 
-        public GeneralSlashCommands(BotContext db, AccountService accountService)
+        public GeneralSlashCommands(BotContext db)
         {
             this.db = db;
-            this.accountService = accountService;
+        }
+
+        [SlashCommand("beer", "Give a beer to Fitz")]
+        public async Task GiveBeer(InteractionContext ctx)
+        {
+            await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("Thanks for the beer!"));
         }
     }
 }

@@ -4,6 +4,8 @@ using DSharpPlus.SlashCommands;
 using Fitz.Core.Discord;
 using Fitz.Core.Services.Features;
 using Fitz.Core.Services.Jobs;
+using Fitz.Features.Bank;
+using Fitz.Features.Lottery.Commands;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Lottery
@@ -15,10 +17,10 @@ namespace Fitz.Features.Lottery
         private readonly SlashCommandsExtension slash;
         private readonly CommandsNextExtension cNext;
 
-        public LotteryFeature(JobManager jobManager, LotteryJob lotteryJob, DiscordClient dClient, LotteryService lotteryService)
+        public LotteryFeature(JobManager jobManager, LotteryJob lotteryJob, DiscordClient dClient, LotteryService lotteryService, BankService bankService, BotLog botLog)
         {
             this.jobManager = jobManager;
-            this.lottoJob = new LotteryJob(dClient, lotteryService);
+            this.lottoJob = new LotteryJob(dClient, lotteryService, bankService, botLog);
             this.slash = dClient.GetSlashCommands();
             this.cNext = dClient.GetCommandsNext();
         }

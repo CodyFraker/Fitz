@@ -7,13 +7,13 @@ namespace Fitz.Variables
     {
         public static void ApplyVariableScopes(DiscordClient dClient)
         {
-            bool isDev = dClient.CurrentUser.Id == Users.Ruby;
+            bool isDev = dClient.CurrentUser.Id == Users.Dodecuplet;
 
             if (isDev)
             {
                 Log.Warning("Development account detected, overriding variables.");
                 Channels.DodeDuke.Settings = Channels.DodeDuke.Settings;
-                Fitz.Variables.Guilds.Guilds.MockFakeStub();
+                Guilds.MockFakeStub();
                 Fitz.Variables.Users.MockFakeStub();
             }
         }

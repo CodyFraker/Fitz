@@ -5,6 +5,7 @@
     using Fitz.Core.Services.Jobs;
     using Fitz.Features.Accounts.Models;
     using Fitz.Features.Bank.Models;
+    using Fitz.Features.Polls.Models;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
     using Newtonsoft.Json;
@@ -33,9 +34,6 @@
 
         public DbSet<FeatureStatus> FeatureStatuses { get; set; }
 
-        public DbSet<Account> Accounts { get; set; }
-        public DbSet<Transaction> Transactions { get; set; }
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             JsonSerializerSettings settings = new JsonSerializerSettings()
@@ -50,6 +48,10 @@
             modelBuilder.Entity<Transaction>()
                 .Property(s => s.Reason)
                 .HasConversion(new EnumToStringConverter<Reason>());
+
+            modelBuilder.Entity<Poll>()
+                .Property(s => s.Type)
+                .HasConversion(new EnumToStringConverter<PollType>());
 
             base.OnModelCreating(modelBuilder);
         }

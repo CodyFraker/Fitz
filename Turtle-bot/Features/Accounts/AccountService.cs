@@ -1,6 +1,7 @@
 ﻿using DSharpPlus.Entities;
 using Fitz.Core.Contexts;
 using Fitz.Features.Accounts.Models;
+using Fitz.Features.Bank;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -11,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Fitz.Features.Accounts
 {
-    public class AccountService
+    public sealed class AccountService
     {
         private readonly IServiceScopeFactory scopeFactory;
 
@@ -20,12 +21,23 @@ namespace Fitz.Features.Accounts
             this.scopeFactory = scopeFactory;
         }
 
+        public async Task<Account> CreateAccount(Account account)
+        {
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+            db.Accounts.Add(account);
+            await db.SaveChangesAsync();
+
+            return account;
+        }
+
         public async Task AddAsync(DiscordUser user, DateTime accountCreated)
         {
             // Before adding the user into the database, we want to give that user some base properties.
             Account account = new Account()
             {
-                DiscordId = user.Id,
+                Id = user.Id,
                 Username = user.Username,
                 CreatedDate = DateTime.Now,
                 LifetimeBeer = 0,
@@ -83,7 +95,7 @@ namespace Fitz.Features.Accounts
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-            return db.Accounts.Where(x => x.DiscordId == id).FirstOrDefault();
+            return db.Accounts.Where(x => x.Id == id).FirstOrDefault();
         }
     }
 }

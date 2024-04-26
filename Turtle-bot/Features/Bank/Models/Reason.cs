@@ -27,5 +27,10 @@ namespace Fitz.Features.Bank.Models
         /// Whenever someone buys a ticket for the lottery
         /// </summary>
         Lotto = 4,
+
+        /// <summary>
+        /// Whenever someone wins the lottery.
+        /// </summary>
+        LottoWin = 5,
     }
 }

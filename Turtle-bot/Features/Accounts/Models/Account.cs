@@ -9,10 +9,7 @@ namespace Fitz.Features.Accounts.Models
     {
         [Key]
         [Column("id")]
-        public int Id { get; set; }
-
-        [Column("discord_id")]
-        public ulong DiscordId { get; set; }
+        public ulong Id { get; set; }
 
         [Column("username")]
         public string Username { get; set; }

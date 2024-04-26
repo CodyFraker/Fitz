@@ -20,13 +20,13 @@ namespace Fitz.Features.Rename
             this.scopeFactory = scopeFactory;
         }
 
-        public async Task<Account> RenameUserAsync(DiscordUser user)
-        {
-            // Don't allow users to rename the bot.
-            if (user.Username == "Fitz")
-            {
-                return null;
-            }
-        }
+        //public async Task<Account> RenameUserAsync(DiscordUser user)
+        //{
+        //    // Don't allow users to rename the bot.
+        //    if (user.Username == "Fitz")
+        //    {
+        //        return null;
+        //    }
+        //}
     }
 }

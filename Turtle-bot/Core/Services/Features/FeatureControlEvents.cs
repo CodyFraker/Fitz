@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Fitz.Variables.Guilds;
 using Fitz.Variables;
 using Fitz.Variables.Channels;
 
@@ -55,13 +54,13 @@ namespace Fitz.Core.Services.Features
 
         private async Task OnMessageReactionAdded(DiscordClient dClient, MessageReactionAddEventArgs args)
         {
-            if (args.Guild.Id != Fitz.Variables.Guilds.Guilds.DodeDuke || args.Channel.Id != Channels.Settings || args.User.Id == dClient.CurrentUser.Id)
+            if (args.Guild.Id != Guilds.DodeDuke || args.Channel.Id != Waterbear.Settings || args.User.Id == dClient.CurrentUser.Id)
             {
                 return;
             }
 
-            DiscordChannel settingsChannel = await this.dClient.GetChannelAsync(Channels.Settings);
-            DiscordChannel botMods = await this.dClient.GetChannelAsync(Channels.BotMods);
+            DiscordChannel settingsChannel = await this.dClient.GetChannelAsync(Waterbear.Settings);
+            DiscordChannel botMods = await this.dClient.GetChannelAsync(Waterbear.BotMods);
             DiscordMessage featureMessage = await settingsChannel.GetMessageAsync(args.Message.Id);
             Feature feature = this.featureManager.Features.Where(f => f.Name == featureMessage.Embeds[0]?.Title).FirstOrDefault();
 
@@ -90,14 +89,14 @@ namespace Fitz.Core.Services.Features
 
         private async Task OnGuildAvailable(DiscordClient dClient, GuildCreateEventArgs args)
         {
-            if (args.Guild.Id != Fitz.Variables.Guilds.Guilds.DodeDuke)
+            if (args.Guild.Id != Guilds.DodeDuke)
             {
                 return;
             }
 
-            await this.dClient.Guilds[Fitz.Variables.Guilds.Guilds.DodeDuke].GetEmojisAsync();
+            await this.dClient.Guilds[Guilds.DodeDuke].GetEmojisAsync();
 
-            DiscordChannel settingsChannel = await this.dClient.GetChannelAsync(Channels.Settings);
+            DiscordChannel settingsChannel = await this.dClient.GetChannelAsync(Waterbear.Settings);
 
             IAsyncEnumerable<DiscordMessage> messages = settingsChannel.GetMessagesAsync(this.featureManager.Features.Count);
 

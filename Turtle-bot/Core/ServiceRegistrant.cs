@@ -38,7 +38,6 @@ namespace Fitz.Core
                 }))
 #pragma warning restore CA2000 // Dispose objects before losing scope
                 .AddSingleton<FeatureManager>()
-                .AddSingleton<AccountService>()
                 .AddSingleton<BankService>()
                 .AddSingleton<JobManager>();
         }
