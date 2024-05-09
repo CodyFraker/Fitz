@@ -11,5 +11,7 @@ namespace Fitz.Features.Polls.Models
         Open = 1,
         Closed = 2,
         Color = 3,
+        ThisOrThat = 4,
+        HotTake = 5,
     }
 }

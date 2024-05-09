@@ -12,6 +12,7 @@ using Fitz.Core.Services.Features;
 using System.Transactions;
 using Fitz.Features.Accounts;
 using Fitz.Features.Bank;
+using Lavalink4NET.Extensions;
 
 namespace Fitz.Core
 {

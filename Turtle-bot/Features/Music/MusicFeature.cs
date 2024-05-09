@@ -1,0 +1,45 @@
+﻿using DSharpPlus;
+using DSharpPlus.SlashCommands;
+using Fitz.Core.Services.Features;
+using Fitz.Features.Music.Commands;
+using Lavalink4NET;
+using Lavalink4NET.Extensions;
+using Lavalink4NET.Players;
+using Lavalink4NET.Players.Queued;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Threading.Tasks;
+
+namespace Fitz.Features.Music
+{
+    public sealed class MusicFeature : Feature
+    {
+        private IServiceScopeFactory scopeFactory;
+        private readonly DiscordClient dClient;
+        private IAudioService audioService;
+        private readonly SlashCommandsExtension slash;
+
+        public MusicFeature(IServiceScopeFactory scopeFactory, DiscordClient dClient, IAudioService audioService)
+        {
+            this.scopeFactory = scopeFactory;
+            this.audioService = audioService;
+            this.slash = dClient.GetSlashCommands();
+        }
+
+        public override string Name => "Music";
+
+        public override string Description => "Play music through voice channels.";
+
+        public override Task Disable()
+        {
+            return base.Disable();
+        }
+
+        public override Task Enable()
+        {
+            this.slash.RegisterCommands<MusicSlashCommands>();
+
+            return base.Enable();
+        }
+    }
+}

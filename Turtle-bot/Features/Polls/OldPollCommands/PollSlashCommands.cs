@@ -37,5 +37,16 @@ namespace Fitz.Features.Polls.Polls
                 .AddComponents(new DiscordTextInputComponent("Poll Title", "Poll Title", "Poll Title", required: true, max_length: 128));
             await ctx.CreateResponseAsync(DiscordInteractionResponseType.Modal, modal);
         }
+
+        [SlashCommand("thisorthat", "Generate a poll of type this or that.")]
+        public async Task ThisOrThatPoll(InteractionContext ctx)
+        {
+            var modal = ModalBuilder.Create("gen_thisorthat")
+                .WithTitle("Poll Creator")
+                .AddComponents(new DiscordTextInputComponent("Poll Title", "Poll Title", "Poll Title", required: true, max_length: 128))
+            .AddComponents(new DiscordTextInputComponent("This", "This", "This", required: true, style: DiscordTextInputStyle.Short, max_length: 25))
+            .AddComponents(new DiscordTextInputComponent("That", "That", "That", required: true, style: DiscordTextInputStyle.Short, max_length: 25));
+            await ctx.CreateResponseAsync(DiscordInteractionResponseType.Modal, modal);
+        }
     }
 }

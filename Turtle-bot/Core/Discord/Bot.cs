@@ -17,6 +17,10 @@ using Serilog;
 using System;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
+using Lavalink4NET.Extensions;
+using Lavalink4NET;
+using Lavalink4NET.Players.Queued;
+using Lavalink4NET.Players;
 
 namespace Fitz.Core.Discord
 {
@@ -27,17 +31,19 @@ namespace Fitz.Core.Discord
         private readonly ActivityManager activityManager;
         private readonly BotLog botLog;
         private readonly DiscordClient dClient;
+        private IAudioService audioService;
         private CommandsNextExtension cNext;
         private SlashCommandsExtension slash;
         private ModalCommandsExtension modals;
 
-        public Bot(IServiceProvider provider, IServiceScopeFactory scopeFactory, ActivityManager activityManager, BotLog botLog, DiscordClient dClient)
+        public Bot(IServiceProvider provider, IServiceScopeFactory scopeFactory, ActivityManager activityManager, BotLog botLog, DiscordClient dClient, IAudioService audioService)
         {
             this.provider = provider;
             this.scopeFactory = scopeFactory;
             this.activityManager = activityManager;
             this.botLog = botLog;
             this.dClient = dClient;
+            this.audioService = audioService;
         }
 
         public static bool Ready { get; private set; }
@@ -98,6 +104,11 @@ namespace Fitz.Core.Discord
             //this.cNext.RegisterCommands<PublicCommands>();
             this.slash.RegisterCommands<PollSlashCommands>();
             this.modals.RegisterModals<PollModalCommands>();
+
+            var playerOptions = new LavalinkPlayerOptions
+            {
+                InitialTrack = new TrackQueueItem("https://www.youtube.com/watch?v=dQw4w9WgXcQ"),
+            };
 
             await this.dClient.InitializeAsync();
             VariableManager.ApplyVariableScopes(this.dClient);
