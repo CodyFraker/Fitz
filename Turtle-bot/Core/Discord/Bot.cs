@@ -21,6 +21,11 @@ using Lavalink4NET.Extensions;
 using Lavalink4NET;
 using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Players;
+using Fitz.Core.Commands.Attributes;
+using Fitz.Features.Accounts.Models;
+using Fitz.Variables.Emojis;
+using Fitz.Features.Bank;
+using System.Security.Principal;
 
 namespace Fitz.Core.Discord
 {
@@ -208,8 +213,86 @@ namespace Fitz.Core.Discord
 
         private async Task OnSlashCommandErrored(SlashCommandsExtension sender, DSharpPlus.SlashCommands.EventArgs.SlashCommandErrorEventArgs args)
         {
-            if (args.Exception is SlashExecutionChecksFailedException)
+            if (args.Exception is SlashExecutionChecksFailedException ex)
             {
+                foreach (SlashCheckBaseAttribute check in ex.FailedChecks)
+                {
+                    #region RequireAccount
+
+                    if (check is RequireAccount)
+                    {
+                        await args.Context.DeferAsync(true);
+                        DiscordButtonComponent accpetBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "signup_confirm", "Confirm", false);
+                        DiscordButtonComponent cancelBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "singup_cancel", "Cancel", false);
+
+                        await args.Context.FollowUpAsync(
+                            new DiscordFollowupMessageBuilder()
+                            .WithContent($"It doesn't seem like you have an account. Would you like to create one?")
+                            .AddComponents(cancelBtn, accpetBtn)
+                            .AsEphemeral(true));
+
+                        args.Context.Client.ComponentInteractionCreated += async (s, e) =>
+                        {
+                            // If the confirm button was pressed
+                            if (e.Id == "signup_confirm")
+                            {
+                                try
+                                {
+                                    DiscordGuild guild = await args.Context.Client.GetGuildAsync(Guilds.Waterbear);
+                                    DiscordMember discordMember = await guild.GetMemberAsync(args.Context.User.Id);
+                                    if (discordMember == null)
+                                    {
+                                        await args.Context.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent("You need to be in the Waterbear guild to create an account."));
+                                        return;
+                                    }
+                                    await discordMember.GrantRoleAsync(guild.GetRole(Roles.Accounts));
+
+                                    AccountService accountService = args.Context.Services.GetService<AccountService>();
+                                    await accountService.AddAsync(args.Context.User, DateTime.Now);
+                                    BankService bankService = args.Context.Services.GetService<BankService>();
+                                    await bankService.AwardAccountCreationBonus(args.Context.User.Id);
+                                    Account account = accountService.FindAccount(args.Context.User.Id);
+                                    DiscordEmbedBuilder accountEmbed = new DiscordEmbedBuilder
+                                    {
+                                        Footer = new DiscordEmbedBuilder.EmbedFooter
+                                        {
+                                            IconUrl = DiscordEmoji.FromGuildEmote(args.Context.Client, ManageRoleEmojis.Warning).Url,
+                                            Text = $"Account Creation | ID: 123",
+                                        },
+                                        Color = new DiscordColor(52, 114, 53),
+                                        Timestamp = DateTime.UtcNow,
+                                        Thumbnail = new DiscordEmbedBuilder.EmbedThumbnail
+                                        {
+                                            Url = args.Context.User.AvatarUrl,
+                                        },
+                                        Description = "I collect beer and stupid user data."
+                                    };
+                                    accountEmbed.AddField($"**Username**", $"`{account.Username}`", true);
+                                    accountEmbed.AddField($"**Creation Date**", $"{account.CreatedDate}", true);
+                                    accountEmbed.AddField($"**Beer**", $"{account.Beer}", true);
+                                    accountEmbed.AddField($"**Lifetime Beer**", $"{account.LifetimeBeer}", true);
+                                    accountEmbed.AddField($"**Favorability**", $"{account.Favorability}", true);
+
+                                    await args.Context.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().AddEmbed(accountEmbed.Build()).WithContent($"Account created. Please try running your original command again."));
+                                    return;
+                                }
+                                catch (Exception ex)
+                                {
+                                    return;
+                                }
+                            }
+                            // if the cancel button was pressed
+                            else if (e.Id == "singup_cancel")
+                            {
+                                await args.Context.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent("You will need an account to run the command. Please use `/signup` to get started."));
+                                return;
+                            }
+                        };
+                        return;
+                    }
+
+                    #endregion RequireAccount
+                }
                 await args.Context.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("You do not have permission to run this command.").AsEphemeral(true));
                 return;
             }

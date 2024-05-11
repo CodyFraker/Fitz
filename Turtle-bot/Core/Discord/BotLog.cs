@@ -3,6 +3,7 @@ using DSharpPlus.Entities;
 using System;
 using Fitz.Variables.Channels;
 using Serilog;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Fitz.Core.Discord
 {
@@ -24,8 +25,14 @@ namespace Fitz.Core.Discord
                 LogConsoleSettings.Jobs => await this.dClient.GetChannelAsync(Waterbear.Jobs),
                 LogConsoleSettings.LotteryLog => await this.dClient.GetChannelAsync(Waterbear.LotteryLog),
             };
-
-            await channel.SendMessageAsync($"**[{DateTime.UtcNow}]** {DiscordEmoji.FromGuildEmote(this.dClient, emoji)} {message}");
+            try
+            {
+                await channel.SendMessageAsync($"**[{DateTime.UtcNow}]** {DiscordEmoji.FromGuildEmote(this.dClient, emoji)} {message}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"Error sending message to log channel\nMessage: {message}");
+            }
         }
 
         public async void Error(string message)

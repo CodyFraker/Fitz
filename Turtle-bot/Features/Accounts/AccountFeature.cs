@@ -3,6 +3,8 @@ using DSharpPlus.CommandsNext;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Discord;
 using Fitz.Core.Services.Features;
+using Fitz.Core.Services.Jobs;
+using Fitz.Features.Accounts.Commands;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Fitz.Variables;
@@ -13,15 +15,21 @@ namespace Fitz.Features.Accounts
 {
     public class UserAccountFeature : Feature
     {
+        private readonly JobManager jobManager;
+        private readonly AccountJob accountJob;
+        private readonly BotLog botLog;
         private readonly SlashCommandsExtension slash;
         private readonly CommandsNextExtension cNext;
         private AccountService accountService;
 
-        public UserAccountFeature(DiscordClient dClient, AccountService accountService, BankService bankService)
+        public UserAccountFeature(DiscordClient dClient, AccountService accountService, BankService bankService, JobManager jobManager, BotLog botLog)
         {
             this.accountService = accountService;
             this.slash = dClient.GetSlashCommands();
             this.cNext = dClient.GetCommandsNext();
+            this.jobManager = jobManager;
+            this.botLog = botLog;
+            this.accountJob = new AccountJob(accountService, dClient, botLog);
         }
 
         public override string Name => "Accounts";
@@ -30,12 +38,14 @@ namespace Fitz.Features.Accounts
 
         public override Task Disable()
         {
+            this.jobManager.RemoveJob(this.accountJob);
             this.cNext.UnregisterCommands<AccountAdminSlashCommands>();
             return base.Disable();
         }
 
         public override Task Enable()
         {
+            this.jobManager.AddJob(this.accountJob);
             this.slash.RegisterCommands<AccountSlashCommands>(Guilds.DodeDuke);
             this.slash.RegisterCommands<AccountSlashCommands>(Guilds.Waterbear);
             this.slash.RegisterCommands<AccountAdminSlashCommands>();

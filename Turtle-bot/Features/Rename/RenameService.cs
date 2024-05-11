@@ -25,10 +25,16 @@ namespace Fitz.Features.Rename
         {
             this.scopeFactory = scopeFactory;
             this.accountService = accountService;
+            this.bankService = bankService;
         }
 
-        public async Task<Result> RenameUserAsync(DiscordUser affectedUser, DiscordUser requestedUser, string newName)
+        public async Task<Result> RenameUserAsync(Account affectedUser, Account requestedUser, string newName)
         {
+            if (affectedUser == null || requestedUser == null)
+            {
+                return new Result(false, "One of the users does not have an account.", null);
+            }
+
             // Don't allow users to rename the bot.
             if (affectedUser.Username == "Fitz")
             {
@@ -41,30 +47,20 @@ namespace Fitz.Features.Rename
                 return new Result(false, "You can't rename yourself.", null);
             }
 
-            // Check to see if the two users has an account.
-            Account affectedUserAccount = accountService.FindAccount(affectedUser.Id);
-            Account requestedUserAccount = accountService.FindAccount(requestedUser.Id);
-            if (affectedUserAccount == null || requestedUserAccount == null)
-            {
-                return new Result(false, "One of the users doesn't have an account.", null);
-            }
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-            Renames rename = new Renames()
+            db.Renames.Add(new Renames()
             {
                 OldName = affectedUser.Username,
                 NewName = newName,
                 AffectedUserId = affectedUser.Id,
                 RequestedUserId = requestedUser.Id,
-                Days = 6,
+                Days = 7,
                 Timestamp = DateTime.Now,
-            };
-
-            // Set the new name for the affected user.
-            using IServiceScope scope = scopeFactory.CreateScope();
-            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-
-            db.Renames.Add(rename);
+            });
             await db.SaveChangesAsync();
+            await this.bankService.PurchaseRenameAsync(requestedUser, 100);
             return new Result(true, "Successfully renamed user.", null);
         }
     }

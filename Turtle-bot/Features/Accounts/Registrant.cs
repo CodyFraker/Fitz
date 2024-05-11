@@ -7,7 +7,7 @@ namespace Fitz.Features.Accounts
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<AccountService>();
+            services.AddTransient<AccountService>();
         }
     }
 }

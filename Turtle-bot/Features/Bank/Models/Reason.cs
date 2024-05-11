@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Fitz.Features.Bank.Models
+﻿namespace Fitz.Features.Bank.Models
 {
     public enum Reason
     {
@@ -32,5 +26,20 @@ namespace Fitz.Features.Bank.Models
         /// Whenever someone wins the lottery.
         /// </summary>
         LottoWin = 5,
+
+        /// <summary>
+        /// Whenever someone renames another user.
+        /// </summary>
+        Rename = 6,
+
+        /// <summary>
+        /// Whenever someone plays music.
+        /// </summary>
+        MusicPlay = 7,
+
+        /// <summary>
+        /// Whenever someone skips someone else's music.
+        /// </summary>
+        MusicSkip = 8,
     }
 }

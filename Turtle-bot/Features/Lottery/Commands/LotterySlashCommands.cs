@@ -1,5 +1,6 @@
 ﻿using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
+using Fitz.Core.Commands.Attributes;
 using Fitz.Core.Contexts;
 using Fitz.Features.Accounts;
 using Fitz.Features.Bank;
@@ -30,6 +31,7 @@ namespace Fitz.Features.Lottery.Commands
         }
 
         [SlashCommand("lottery", "Play stupid games. Win beer. Lose beer. 1 ticket = 1 beer.")]
+        [RequireAccount]
         public async Task Lottery(InteractionContext ctx, [Option("Tickets", "How many tickets do you want? (max: 36)")] long tickets)
         {
             // Check if user has an account
@@ -115,6 +117,7 @@ namespace Fitz.Features.Lottery.Commands
         }
 
         [SlashCommand("lotteryinfo", "Get information about the current lottery.")]
+        [RequireAccount]
         public async Task LotteryInfo(InteractionContext ctx)
         {
             Drawing drawing = lotteryService.GetCurrentDrawing();

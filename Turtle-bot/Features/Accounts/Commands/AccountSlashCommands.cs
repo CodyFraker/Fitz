@@ -1,7 +1,10 @@
 ﻿using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
+using Fitz.Core.Commands.Attributes;
 using Fitz.Core.Contexts;
+using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
+using Fitz.Features.Rename;
 using Fitz.Variables;
 using Fitz.Variables.Emojis;
 using System;
@@ -23,6 +26,8 @@ namespace Fitz.Features.Accounts
             this.bankService = bankService;
         }
 
+        #region Signup
+
         [SlashCommand("signup", "Just sign this form.")]
         public async Task signup(InteractionContext ctx)
         {
@@ -36,7 +41,7 @@ namespace Fitz.Features.Accounts
                     // Give the user some beer
                     await bankService.AwardAccountCreationBonus(ctx.User.Id);
 
-                    Models.Account account = accountService.FindAccount(ctx.User.Id);
+                    Account account = accountService.FindAccount(ctx.User.Id);
 
                     DiscordEmbedBuilder accountEmbed = new DiscordEmbedBuilder
                     {
@@ -67,6 +72,24 @@ namespace Fitz.Features.Accounts
                     {
                         // assign a new role to a user
                         await ctx.Guild.GetMemberAsync(ctx.User.Id).Result.GrantRoleAsync(ctx.Guild.GetRole(Roles.Accounts));
+                        return;
+                    }
+                    else
+                    {
+                        DiscordGuild guild = await ctx.Client.GetGuildAsync(Guilds.Waterbear);
+                        DiscordMember discordMember = await guild.GetMemberAsync(ctx.User.Id);
+
+                        // check to see if the user is in the guild
+                        if (discordMember == null)
+                        {
+                            await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent($"You need to be in the Waterbear guild to get the Accounts role."));
+                            return;
+                        }
+                        else
+                        {
+                            await discordMember.GrantRoleAsync(guild.GetRole(Roles.Accounts));
+                            return;
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -81,12 +104,17 @@ namespace Fitz.Features.Accounts
             }
         }
 
+        #endregion Signup
+
+        #region Profile
+
         [SlashCommand("profile", "You're hired.")]
+        [RequireAccount]
         public async Task Profile(InteractionContext ctx)
         {
-            if (CheckBasics(ctx) == false)
+            Account account = accountService.FindAccount(ctx.User.Id);
+            if (account != null)
             {
-                Models.Account account = accountService.FindAccount(ctx.User.Id);
                 DiscordEmbedBuilder accountEmbed = new DiscordEmbedBuilder
                 {
                     Footer = new DiscordEmbedBuilder.EmbedFooter
@@ -109,10 +137,11 @@ namespace Fitz.Features.Accounts
             }
             else
             {
-                await ctx.Channel.SendMessageAsync($"Doesn't appear that you have an account.");
-                return;
+                await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent($"Doesn't seem like you have an account. Try running `/signup`.").AsEphemeral(true));
             }
         }
+
+        #endregion Profile
 
         private bool CheckBasics(InteractionContext ctx)
         {

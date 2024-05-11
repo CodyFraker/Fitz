@@ -8,10 +8,8 @@ using Fitz.Core.Services.Features;
 using Fitz.Features.Accounts;
 using Fitz.Features.Bank;
 using Fitz.Features.Polls.Models;
-using Fitz.Features.Polls.OldPollCommands;
 using Fitz.Features.Polls.Polls;
 using Fitz.Variables.Channels;
-using Fitz.Variables.Emojis;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -51,7 +49,7 @@ namespace Fitz.Features.Polls
         public override Task Enable()
         {
             this.dClient.MessageReactionAdded += this.OnReactionAddAsync;
-            this.cNext.RegisterCommands<PollsCommands>();
+            // TODO: Fix register of slash commands and add modal context here too
             //this.slash.RegisterCommands<PollSlashCommands>();
             return base.Enable();
         }
@@ -102,6 +100,7 @@ namespace Fitz.Features.Polls
                 {
                     // User has not provided a vote
                     // add beer to user account
+                    // TODO: Create method in bankservice to award beer for voting instead of using AwardBonus.
                     await this.bankService.AwardBonus(reaction.User.Id, 1);
                     await this.pollService.AddVote(poll, userOption, account);
                 }

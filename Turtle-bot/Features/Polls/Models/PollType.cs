@@ -1,17 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using DSharpPlus.SlashCommands;
 
 namespace Fitz.Features.Polls.Models
 {
     public enum PollType
     {
-        Open = 1,
-        Closed = 2,
+        [ChoiceName("Number")]
+        Number = 1,
+
+        [ChoiceName("Yes Or No")]
+        YesOrNo = 2,
+
+        [ChoiceName("Color")]
         Color = 3,
+
+        [ChoiceName("This Or That")]
         ThisOrThat = 4,
+
+        [ChoiceName("Hot Take")]
         HotTake = 5,
     }
 }

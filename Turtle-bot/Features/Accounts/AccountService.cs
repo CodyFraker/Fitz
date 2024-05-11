@@ -1,5 +1,7 @@
-﻿using DSharpPlus.Entities;
+﻿using DSharpPlus;
+using DSharpPlus.Entities;
 using Fitz.Core.Contexts;
+using Fitz.Core.Models;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Microsoft.EntityFrameworkCore;
@@ -14,12 +16,16 @@ namespace Fitz.Features.Accounts
 {
     public sealed class AccountService
     {
+        private readonly DiscordClient dClient;
         private readonly IServiceScopeFactory scopeFactory;
 
-        public AccountService(IServiceScopeFactory scopeFactory)
+        public AccountService(DiscordClient dClient, IServiceScopeFactory scopeFactory)
         {
+            this.dClient = dClient;
             this.scopeFactory = scopeFactory;
         }
+
+        #region Account Creation
 
         public async Task<Account> CreateAccount(Account account)
         {
@@ -31,6 +37,8 @@ namespace Fitz.Features.Accounts
 
             return account;
         }
+
+        #endregion Account Creation
 
         public async Task AddAsync(DiscordUser user, DateTime accountCreated)
         {
@@ -64,9 +72,9 @@ namespace Fitz.Features.Accounts
         }
 
         /// <summary>
-        /// Returns a list of package accounts.
+        /// Returns a list of all accounts.
         /// </summary>
-        /// <returns>All Package Accounts.</returns>
+        /// <returns>All Accounts.</returns>
         public List<Account> QueryAccounts()
         {
             List<Account> dbAccounts = new List<Account>();

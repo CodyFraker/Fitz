@@ -1,5 +1,6 @@
 ﻿using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
+using Fitz.Core.Commands.Attributes;
 using Fitz.Core.Contexts;
 using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Models;
@@ -27,7 +28,44 @@ namespace Fitz.Features.Bank.Commands
             AccountService = accountService;
         }
 
+        [SlashCommand("fridge", "Check how much beer you have in the fridge.")]
+        [RequireAccount]
+        public async Task Balance(InteractionContext ctx)
+        {
+            // Check to see if user has an account
+            Account account = AccountService.FindAccount(ctx.User.Id);
+
+            if (account == null)
+            {
+                await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("You do not have an account. Please sign up using `/signup`.").AsEphemeral(true));
+                return;
+            }
+
+            // Get latest transactions for the user
+            List<Transaction> transactions = bankService.GetTransactions(account.Id);
+
+            DiscordEmbedBuilder balanceEmbed = new DiscordEmbedBuilder
+            {
+                Footer = new DiscordEmbedBuilder.EmbedFooter
+                {
+                    IconUrl = DiscordEmoji.FromGuildEmote(ctx.Client, LotteryEmojis.Ticket).Url,
+                    Text = $"Bank",
+                },
+                Color = new DiscordColor(52, 114, 53),
+                Timestamp = DateTime.UtcNow,
+                Description = "Beer Balance"
+            };
+
+            balanceEmbed.AddField("Beer", $"`{account.Beer}`", true);
+            balanceEmbed.AddField("Lifetime Beer", $"`{account.LifetimeBeer}`", true);
+
+            await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AddEmbed(balanceEmbed.Build()).AsEphemeral(true));
+
+            // TODO: Add transaction history to embed. Make embed pretty.
+        }
+
         [SlashCommand("topbalances", "Get the top 10 balances for all users.")]
+        [RequireAccount]
         public async Task Balances(InteractionContext ctx)
         {
             List<Account> accounts = bankService.GetTopBeerBalances();
@@ -58,6 +96,7 @@ namespace Fitz.Features.Bank.Commands
         }
 
         [SlashCommand("transactions", "Get the last 10 transactions")]
+        [RequireAccount]
         public async Task GetLastTransactions(InteractionContext ctx)
         {
             List<Transaction> transactions = bankService.GetTransactions(10);

@@ -167,5 +167,13 @@ namespace Fitz.Features.Polls
 
             return db.PollsOptions.Where(p => p.PollId == poll.Id).ToList();
         }
+
+        public List<Poll> GetPolls()
+        {
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+            return db.Polls.ToList();
+        }
     }
 }

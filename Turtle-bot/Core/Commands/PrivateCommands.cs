@@ -13,7 +13,6 @@
 
     public class PrivateCommands : BaseCommandModule
     {
-
         /// <summary>
         /// Sends the assembly version which can be found under Project -> {Project} Settings -> Package
         /// </summary>

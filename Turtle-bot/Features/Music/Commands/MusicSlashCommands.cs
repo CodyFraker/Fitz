@@ -1,5 +1,7 @@
 ﻿using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
+using Fitz.Core.Commands.Attributes;
+using Fitz.Features.Accounts;
 using Lavalink4NET;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Queued;
@@ -20,6 +22,7 @@ namespace Fitz.Features.Music.Commands
         }
 
         [SlashCommand("play", "Play a song at the cost of beer.")]
+        [RequireAccount]
         public async Task Play(InteractionContext ctx, [Option("song", "The song to play.")] string song)
         {
             var player = await GetLavaLinkPlayer(ctx, true).ConfigureAwait(false);

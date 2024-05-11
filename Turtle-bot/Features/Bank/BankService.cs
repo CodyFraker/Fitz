@@ -41,11 +41,11 @@ namespace Fitz.Features.Bank
                 return;
             }
 
-            account.Beer = account.Beer + 12;
-            account.LifetimeBeer = account.LifetimeBeer + 12;
+            account.Beer = account.Beer + 128;
+            account.LifetimeBeer = account.LifetimeBeer + 128;
             db.Update(account);
             await db.SaveChangesAsync();
-            await LogTransactionAsync(account, account, 12, Reason.AccountCreationBonus);
+            await LogTransactionAsync(account, account, 128, Reason.AccountCreationBonus);
         }
 
         /// <summary>
@@ -105,9 +105,20 @@ namespace Fitz.Features.Bank
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-            user.Beer = user.Beer - amount;
+            user.Beer -= user.Beer - amount;
             db.Update(user);
             await LogTransactionAsync(user, user, amount, Reason.Lotto);
+            await db.SaveChangesAsync();
+        }
+
+        public async Task PurchaseRenameAsync(Account user, int amount)
+        {
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+            user.Beer = user.Beer - amount;
+            db.Update(user);
+            await LogTransactionAsync(user, user, amount, Reason.Rename);
             await db.SaveChangesAsync();
         }
 
