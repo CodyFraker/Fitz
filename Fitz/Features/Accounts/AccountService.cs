@@ -1,8 +1,10 @@
 ﻿using DSharpPlus.Entities;
 using Fitz.Core.Contexts;
+using Fitz.Core.Discord;
 using Fitz.Core.Models;
 using Fitz.Features.Accounts.Models;
 using Fitz.Variables;
+using Fitz.Variables.Emojis;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -13,14 +15,10 @@ using System.Threading.Tasks;
 
 namespace Fitz.Features.Accounts
 {
-    public sealed class AccountService
+    public sealed class AccountService(IServiceScopeFactory scopeFactory, BotLog botLog)
     {
-        private readonly IServiceScopeFactory scopeFactory;
-
-        public AccountService(IServiceScopeFactory scopeFactory)
-        {
-            this.scopeFactory = scopeFactory;
-        }
+        private readonly IServiceScopeFactory scopeFactory = scopeFactory;
+        private readonly BotLog botLog = botLog;
 
         #region Account Creation
 
@@ -33,7 +31,7 @@ namespace Fitz.Features.Accounts
             }
 
             // Setup default account details.
-            Account account = new Account()
+            Account account = new()
             {
                 Id = user.Id,
                 Username = user.Username,
@@ -60,10 +58,12 @@ namespace Fitz.Features.Accounts
                 await db.SaveChangesAsync();
 
                 Log.Debug($"Added new account to Database: {user.Username} | {user.Id}");
+                this.botLog.Information(LogConsoleSettings.AccountLog, AccountEmojis.Add, $"Created a new account for: {user.Username} | {user.Id}");
                 return new Result(true, "Account created successfully.", account);
             }
             catch (Exception e)
             {
+                this.botLog.Information(LogConsoleSettings.AccountLog, AccountEmojis.Warning, $"Error creating a new account for: {user.Username} | {user.Id}");
                 Log.Error(e, $"Couldn't add new account! {user.Username} | {user.Id}");
                 return new Result(false, "Failed to create account.", account);
             }
@@ -92,10 +92,12 @@ namespace Fitz.Features.Accounts
                 db.Accounts.Add(account);
                 await db.SaveChangesAsync();
                 Log.Debug($"Created an account for Fitz");
+                this.botLog.Information(LogConsoleSettings.AccountLog, AccountEmojis.Add, $"Fitz account not found in database. Created an account for Fitz.");
                 return new Result(true, "Account created successfully.", account);
             }
             catch (Exception e)
             {
+                this.botLog.Information(LogConsoleSettings.AccountLog, AccountEmojis.Warning, $"Failed to create an account for Fitz. {e.StackTrace}");
                 Log.Error(e, $"Failed to create an account for Fitz.");
                 return new Result(false, "Failed to create account.", account);
             }
@@ -123,11 +125,13 @@ namespace Fitz.Features.Accounts
             {
                 db.Accounts.Update(account);
                 await db.SaveChangesAsync();
+                this.botLog.Information(LogConsoleSettings.AccountLog, AccountEmojis.Edit, $"Updated safe balance for {account.Username} | {account.Id} to {safeBalance}");
                 return new Result(true, "Safe balance updated successfully.", account);
             }
             catch (Exception e)
             {
                 Log.Error(e, $"Failed to update safe balance for {account.Id}.");
+                this.botLog.Information(LogConsoleSettings.AccountLog, AccountEmojis.Warning, $"Failed to update safe balance for {account.Username} | {account.Id} | Stack trace: {e.StackTrace}");
                 return new Result(false, "Failed to update safe balance.", account);
             }
         }
@@ -151,10 +155,13 @@ namespace Fitz.Features.Accounts
             {
                 db.Accounts.Update(account);
                 await db.SaveChangesAsync();
+                Log.Debug($"Updated lottery subscription for {account.Username} | {account.Id} to {subscribe}");
+                this.botLog.Information(LogConsoleSettings.AccountLog, AccountEmojis.Edit, $"Updated lottery subscription for {account.Username} | {account.Id} to {subscribe}");
                 return new Result(true, "Lottery subscription updated successfully.", account);
             }
             catch (Exception e)
             {
+                this.botLog.Information(LogConsoleSettings.AccountLog, AccountEmojis.Warning, $"Failed to update lottery subscription for {account.Username} | {account.Id} | Stack trace: {e.StackTrace}");
                 Log.Error(e, $"Failed to update lottery subscription for {account.Id}.");
                 return new Result(false, "Failed to update lottery subscription.", account);
             }
@@ -173,10 +180,14 @@ namespace Fitz.Features.Accounts
                 Account.SubscribeTickets = Amount;
                 db.Update(Account);
                 await db.SaveChangesAsync();
+                Log.Debug($"Updated ticket amount for {Account.Username} | {Account.Id} to {Amount}");
+                this.botLog.Information(LogConsoleSettings.AccountLog, AccountEmojis.Edit, $"Updated ticket amount for {Account.Username} | {Account.Id} to {Amount}");
                 return new Result(true, "Ticket amount updated successfully.", Account);
             }
             catch (Exception ex)
             {
+                Log.Error(ex, $"Failed to update ticket amount for {Account.Id}.");
+                this.botLog.Information(LogConsoleSettings.AccountLog, AccountEmojis.Warning, $"Failed to update ticket amount for {Account.Username} | {Account.Id} | Stack trace: {ex.StackTrace}");
                 return new Result(false, ex.Message, null);
             }
         }
@@ -187,23 +198,66 @@ namespace Fitz.Features.Accounts
 
         public async Task<Result> SetFavorabilityAsync(Account account, int newFavorability)
         {
-            using IServiceScope scope = scopeFactory.CreateScope();
-            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+            try
+            {
+                using IServiceScope scope = scopeFactory.CreateScope();
+                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-            if (account.Favorability >= 100)
-            {
-                return new Result(false, "User already has max favorability.", account);
+                if (account.Favorability >= 100)
+                {
+                    return new Result(false, "User already has max favorability.", account);
+                }
+                else
+                {
+                    account.Favorability = newFavorability;
+                    db.Accounts.Update(account);
+                    await db.SaveChangesAsync();
+                    Log.Debug($"{newFavorability} Favorability added to {account.Id} successfully.");
+                    this.botLog.Information(LogConsoleSettings.AccountLog, AccountEmojis.Edit, $"{newFavorability} Favorability added to {account.Username} | {account.Id} successfully.");
+                    return new Result(true, $"Favorability added to {account.Id} successfully.", account);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                account.Favorability = newFavorability;
-                db.Accounts.Update(account);
-                await db.SaveChangesAsync();
-                return new Result(true, $"Favorability added to {account.Id} successfully.", account);
+                Log.Error(ex, $"Failed to update favorability for {account.Id}.");
+                this.botLog.Information(LogConsoleSettings.AccountLog, AccountEmojis.Warning, $"Failed to update favorability for {account.Username} | {account.Id} | Stack trace: {ex.StackTrace}");
+                return new Result(false, ex.Message, null);
             }
         }
 
         #endregion Set Favorability
+
+        #region Set Username
+
+        public async Task<Result> SetUsernameAsync(Account account, string username)
+        {
+            try
+            {
+                using IServiceScope scope = scopeFactory.CreateScope();
+                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+                if (account == null)
+                {
+                    return new Result(false, "Account not found.", account);
+                }
+
+                account.Username = username;
+
+                db.Accounts.Update(account);
+                await db.SaveChangesAsync();
+                Log.Debug($"Updated username for {account.Id} to {username}");
+                this.botLog.Information(LogConsoleSettings.AccountLog, AccountEmojis.Edit, $"Updated username for {account.Username} | {account.Id} to {username}");
+                return new Result(true, "Username updated successfully.", account);
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, $"Failed to update username for {account.Id}.");
+                this.botLog.Information(LogConsoleSettings.AccountLog, AccountEmojis.Warning, $"Failed to update username for {account.Username} | {account.Id} | Stack trace: {e.StackTrace}");
+                return new Result(false, "Failed to update username.", account);
+            }
+        }
+
+        #endregion Set Username
 
         #endregion Account Updates
 
@@ -215,7 +269,7 @@ namespace Fitz.Features.Accounts
         /// <returns>All Accounts.</returns>
         public List<Account> QueryAccounts()
         {
-            List<Account> dbAccounts = new List<Account>();
+            List<Account> dbAccounts = [];
 
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
@@ -241,7 +295,7 @@ namespace Fitz.Features.Accounts
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-            return db.Accounts.Where(x => x.subscribeToLottery == true).ToList();
+            return [.. db.Accounts.Where(x => x.subscribeToLottery == true)];
         }
 
         public Account FindAccount(ulong id)

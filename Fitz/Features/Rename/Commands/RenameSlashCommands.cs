@@ -1,27 +1,21 @@
-﻿using DSharpPlus;
-using DSharpPlus.Entities;
+﻿using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Commands.Attributes;
 using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
+using System;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Rename.Commands
 {
     [SlashModuleLifespan(SlashModuleLifespan.Scoped)]
-    internal class RenameSlashCommands : ApplicationCommandModule
+    internal class RenameSlashCommands(RenameService renameService, AccountService accountService, BankService bankService) : ApplicationCommandModule
     {
-        private readonly RenameService renameService;
-        private readonly AccountService accountService;
-        private readonly BankService bankService;
-
-        public RenameSlashCommands(RenameService renameService, AccountService accountService, BankService bankService)
-        {
-            this.renameService = renameService;
-            this.accountService = accountService;
-            this.bankService = bankService;
-        }
+        private readonly RenameService renameService = renameService;
+        private readonly AccountService accountService = accountService;
+        private readonly BankService bankService = bankService;
 
         [SlashCommand("rename", "Rename a user within the guild.")]
         [RequireAccount]
@@ -37,10 +31,23 @@ namespace Fitz.Features.Rename.Commands
                 return;
             }
 
+            if (newName.Length > 32)
+            {
+                await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("That name is too long. The max length of a name is 32 characters.").AsEphemeral(true));
+                return;
+            }
+
             // Check to see if a new name was provided
             if (string.IsNullOrWhiteSpace(newName))
             {
                 await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("You need to specify a new name for that user.").AsEphemeral(true));
+                return;
+            }
+
+            // Check to see if the days is a valid number
+            if (days <= 0)
+            {
+                await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("You need to specify a valid number of days. 1-365").AsEphemeral(true));
                 return;
             }
 
@@ -73,34 +80,54 @@ namespace Fitz.Features.Rename.Commands
                 return;
             }
 
-            DiscordButtonComponent accpetBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "rename_confirm", "Confirm", false);
-            DiscordButtonComponent cancelBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "rename_cancel", "Cancel", false);
+            int unique_id = 0;
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            {
+                byte[] data = new byte[4];
+
+                for (int i = 0; i < 4; i++)
+                {
+                    rng.GetBytes(data);
+                    unique_id = BitConverter.ToInt32(data, 0);
+                    unique_id = Math.Abs(unique_id);
+                }
+            }
+
+            DiscordButtonComponent accpetBtn = new(DiscordButtonStyle.Success, $"rename_confirm_{unique_id}", "Confirm", false);
+            DiscordButtonComponent cancelBtn = new(DiscordButtonStyle.Danger, $"rename_cancel_{unique_id}", "Cancel", false);
 
             await ctx.DeferAsync(true);
 
             // Send a follow-up message to confirm the rename
             await ctx.FollowUpAsync(
                 new DiscordFollowupMessageBuilder()
-                .WithContent($"Renaming {user.Username} to {newName} will cost {renameCost} beer. Do you want to proceed?")
+                .WithContent($"Renaming {user.Username} to {newName} for {days} day(s) will cost {renameCost} beer. Do you want to proceed?")
                 .AddComponents(accpetBtn, cancelBtn)
                 .AsEphemeral(true));
 
             ctx.Client.ComponentInteractionCreated += async (s, e) =>
             {
                 // If the confirm button was pressed
-                if (e.Id == "rename_confirm")
+                if (e.Id == $"rename_confirm_{unique_id}" && e.Interaction.User.Id == requestingUser.Id)
                 {
-                    // Store rename in database. Deduct money.
-                    await renameService.RenameUserAsync(affectedUser, requestingUser, newName, (int)days, renameCost);
+                    var renameStatus = ctx.Guild.GetMemberAsync(affectedUser.Id).Result.ModifyAsync(x => x.Nickname = newName);
+                    await renameStatus;
+                    if (renameStatus.IsCompletedSuccessfully)
+                    {
+                        // Store rename in database. Deduct money.
+                        await renameService.RenameUserAsync(affectedUser, requestingUser, newName, (int)days, renameCost);
 
-                    string oldName = affectedUser.Username;
+                        string oldName = affectedUser.Username;
 
-                    await ctx.Guild.GetMemberAsync(affectedUser.Id).Result.ModifyAsync(x => x.Nickname = newName);
-
-                    await ctx.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent($"`{oldName}` has been renamed to `{newName}`."));
+                        await ctx.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent($"`{oldName}` has been renamed to `{newName}` for the next {days} day(s). It costed you {renameCost} beer."));
+                    }
+                    else
+                    {
+                        await ctx.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent($"I couldn't complete that request for some reason. I didn't take any beer for the attempt. Good effort, though."));
+                    }
                 }
                 // if the cancel button was pressed
-                else if (e.Id == "rename_cancel")
+                else if (e.Id == $"rename_cancel_{unique_id}")
                 {
                     await ctx.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent("Rename cancelled."));
                 }

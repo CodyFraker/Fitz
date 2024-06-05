@@ -2,7 +2,6 @@
 using DSharpPlus.Entities;
 using Fitz.Core.Discord;
 using Fitz.Core.Services.Jobs;
-using Fitz.Features.Accounts;
 using Fitz.Features.Polls.Models;
 using Fitz.Variables.Emojis;
 using System.Collections.Generic;
@@ -11,22 +10,15 @@ using System.Threading.Tasks;
 
 namespace Fitz.Features.Polls
 {
-    public class PollJob : ITimedJob
+    public class PollJob(DiscordClient dClient, PollService pollService, BotLog botLog) : ITimedJob
     {
-        private readonly DiscordClient dClient;
-        private readonly PollService PollService;
-        private readonly BotLog botLog;
-
-        public PollJob(DiscordClient dClient, PollService pollService, BotLog botLog)
-        {
-            this.dClient = dClient;
-            this.PollService = pollService;
-            this.botLog = botLog;
-        }
+        private readonly DiscordClient dClient = dClient;
+        private readonly PollService PollService = pollService;
+        private readonly BotLog botLog = botLog;
 
         public ulong Emoji => PollEmojis.InfoIcon;
 
-        public int Interval => 25;
+        public int Interval => 60;
 
         public async Task Execute()
         {
@@ -60,7 +52,7 @@ namespace Fitz.Features.Polls
                     foreach (DiscordReaction pollReaction in message.Reactions)
                     {
                         // Check to see the poll option is in the database for this particular poll. If not, remove it.
-                        if (!pollOptions.Any(x => x.Name == pollReaction.Emoji.Name))
+                        if (!pollOptions.Any(x => x.EmojiName == pollReaction.Emoji.Name))
                         {
                             // Delete the reaction(s)
                             await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
@@ -81,13 +73,13 @@ namespace Fitz.Features.Polls
                                 }
 
                                 // Check to see if the user has voted on the poll
-                                Vote userVote = await this.PollService.GetVoteByUserOnPoll(poll, user.Id);
+                                Vote userVote = this.PollService.GetVoteByUserOnPoll(poll, user.Id);
 
                                 // User has added their vote to the poll but Fitz didn't see when it happened.
                                 if (userVote == null)
                                 {
                                     // Add the vote to the database
-                                    await this.PollService.AddVote(poll, pollOptions.Where(x => x.Name == pollReaction.Emoji.Name).FirstOrDefault(), user.Id);
+                                    await this.PollService.AddVote(poll, pollOptions.Where(x => x.EmojiName == pollReaction.Emoji.Name).FirstOrDefault(), user.Id);
                                 }
                                 else
                                 {
@@ -98,7 +90,7 @@ namespace Fitz.Features.Polls
                                     }
 
                                     // If the user's choice isn't in the pollOptions, we need to remove the reaction.
-                                    if (!pollOptions.Any(x => x.Name == pollReaction.Emoji.Name))
+                                    if (!pollOptions.Any(x => x.EmojiName == pollReaction.Emoji.Name))
                                     {
                                         // Delete the reaction
                                         await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
@@ -110,7 +102,7 @@ namespace Fitz.Features.Polls
                         // Check to see if all poll options were added to the message
                         foreach (PollOptions option in pollOptions)
                         {
-                            if (!message.Reactions.Any(x => x.Emoji.Name == option.Name))
+                            if (!message.Reactions.Any(x => x.Emoji.Name == option.EmojiName))
                             {
                                 // Add the reaction
                             }

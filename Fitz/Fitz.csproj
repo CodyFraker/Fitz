@@ -5,6 +5,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Fitz</RootNamespace>
     <StartupObject>Fitz.Program</StartupObject>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +17,7 @@
     <PackageReference Include="DSharpPlus.SlashCommands" Version="5.0.0-nightly-02211" />
     <PackageReference Include="Lavalink4NET.DSharpPlus" Version="4.0.19-beta.6" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.6" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.2" />
     <PackageReference Include="QRCoder" Version="1.5.1" />
     <PackageReference Include="Serilog.Extensions.Hosting" Version="5.0.1" />

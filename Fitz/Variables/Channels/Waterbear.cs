@@ -28,9 +28,9 @@ namespace Fitz.Variables.Channels
 
         public static ulong Polls { get; set; } = 1066465880671780936;
 
-        public static ulong Jobs { get; set; } = 1066464867848048810;
+        public static ulong PendingPolls { get; set; } = 1245940317513842728;
 
-        public static ulong LotteryLog { get; set; } = 1232351979750031371;
+        public static ulong Jobs { get; set; } = 1066464867848048810;
 
         public static ulong LotteryInfo { get; set; } = 1232083050268069948;
 

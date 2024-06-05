@@ -11,18 +11,11 @@ using System.Threading.Tasks;
 
 namespace Fitz.Features.Accounts
 {
-    public class AccountJob : ITimedJob
+    public class AccountJob(AccountService accountService, DiscordClient dClient, BotLog botLog) : ITimedJob
     {
-        private readonly AccountService accountService;
-        private readonly DiscordClient dClient;
-        private readonly BotLog botLog;
-
-        public AccountJob(AccountService accountService, DiscordClient dClient, BotLog botLog)
-        {
-            this.accountService = accountService;
-            this.dClient = dClient;
-            this.botLog = botLog;
-        }
+        private readonly AccountService accountService = accountService;
+        private readonly DiscordClient dClient = dClient;
+        private readonly BotLog botLog = botLog;
 
         public ulong Emoji => ManageRoleEmojis.Warning;
 

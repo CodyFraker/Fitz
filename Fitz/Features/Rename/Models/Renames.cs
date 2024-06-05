@@ -42,6 +42,12 @@ namespace Fitz.Features.Rename.Models
         public int? Days { get; set; }
 
         /// <summary>
+        /// Whether the affected user has been notified of the name change.
+        /// </summary>
+        [Column("notified")]
+        public bool Notified { get; set; }
+
+        /// <summary>
         /// Timestamp in which this event took place.
         /// </summary>
         [Column("expires")]

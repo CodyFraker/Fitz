@@ -2,6 +2,7 @@
 using DSharpPlus.Entities;
 using Fitz.Core.Discord;
 using Fitz.Core.Services.Jobs;
+using Fitz.Core.Services.Settings;
 using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
@@ -13,47 +14,46 @@ using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Fitz.Core.Models;
+using DSharpPlus.EventArgs;
 
 namespace Fitz.Features.Lottery
 {
-    public class LotteryJob : ITimedJob
+    public class LotteryJob(DiscordClient dClient,
+        LotteryService lotteryService,
+        BankService bankService,
+        AccountService accountService,
+        BotLog botLog,
+        SettingsService settingsService) : ITimedJob
     {
-        private readonly DiscordClient dClient;
-        private readonly LotteryService lotteryService;
-        private readonly BankService bankService;
-        private readonly AccountService accountService;
-        private readonly BotLog botLog;
+        private readonly DiscordClient dClient = dClient;
+        private readonly LotteryService lotteryService = lotteryService;
+        private readonly BankService bankService = bankService;
+        private readonly AccountService accountService = accountService;
+        private readonly BotLog botLog = botLog;
+        private readonly SettingsService settingsService = settingsService;
 
         public ulong Emoji => LotteryEmojis.Lottery;
 
-        public int Interval => 1;
-
-        private int Pool = 36;
-
-        private int DaysToRunLottery = 1;
-
-        public LotteryJob(DiscordClient dClient, LotteryService lotteryService, BankService bankService, AccountService accountService, BotLog botLog)
-        {
-            this.dClient = dClient;
-            this.lotteryService = lotteryService;
-            this.bankService = bankService;
-            this.accountService = accountService;
-            this.botLog = botLog;
-        }
+        public int Interval => 5;
 
         public async Task Execute()
         {
             try
             {
                 this.botLog.Information(LogConsoleSettings.Jobs, LotteryEmojis.Lottery, $"Starting Lottery Job...");
+
                 // Get Current Lottery
-                Models.Lottery currentDrawing = this.lotteryService.GetCurrentDrawing();
+                Models.Lottery currentDrawing = this.lotteryService.GetCurrentLottery();
+
+                // Get current settings
+                Settings settings = this.settingsService.GetSettings();
 
                 if (currentDrawing == null)
                 {
                     // Start new lottery
-                    await this.lotteryService.StartNewLotteryAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(DaysToRunLottery), Pool);
-                    currentDrawing = this.lotteryService.GetCurrentDrawing();
+                    await this.lotteryService.StartNewLotteryAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(settings.LotteryDuration), settings.BaseLotteryPool);
+                    currentDrawing = this.lotteryService.GetCurrentLottery();
                     await this.HandleLotterySubscriptions();
                 }
 
@@ -68,9 +68,10 @@ namespace Fitz.Features.Lottery
                         await this.lotteryService.EndLotteryAsync(currentDrawing);
 
                         // Start new lottery and Roll over the prize pool into the next lottery
-                        await this.lotteryService.StartNewLotteryAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(DaysToRunLottery), (currentDrawing.Pool.Value + Pool));
+                        await this.lotteryService.StartNewLotteryAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(settings.LotteryDuration), (currentDrawing.Pool.Value + settings.BaseLotteryPool));
 
                         // Check to see if there are any lottery subscribers
+                        await this.HandleLotterySubscriptions();
                     }
                     else
                     {
@@ -84,10 +85,10 @@ namespace Fitz.Features.Lottery
                         }
 
                         // Start new lottery with new prize pool.
-                        await this.lotteryService.StartNewLotteryAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(DaysToRunLottery), Pool);
+                        await this.lotteryService.StartNewLotteryAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(settings.LotteryDuration), settings.BaseLotteryPool);
                         await this.HandleLotterySubscriptions();
                     }
-                    currentDrawing = this.lotteryService.GetCurrentDrawing();
+                    currentDrawing = this.lotteryService.GetCurrentLottery();
                 }
 
                 DiscordChannel lotteryChannel = await this.dClient.GetChannelAsync(Waterbear.LotteryInfo);
@@ -105,9 +106,9 @@ namespace Fitz.Features.Lottery
                     },
                     Title = $"Current Lottery Information",
                     Description = $"{DiscordEmoji.FromName(this.dClient, ":beer:")}Beer Pool: `{currentDrawing.Pool}` \n" +
-                    $"{DiscordEmoji.FromName(this.dClient, ":ticket:")}Total Tickets: `{await lotteryService.GetTotalTickets()}`\n" +
-                    $"{DiscordEmoji.FromGuildEmote(this.dClient, LotteryEmojis.User)}Total Users: `{await lotteryService.GetTotalLotteryParticipant()}`\n" +
-                    $"{DiscordEmoji.FromName(this.dClient, ":clock2:")}Time Left: `{await this.lotteryService.GetRemainingHoursUntilNextDrawing()}` Hrs"
+                    $"{DiscordEmoji.FromGuildEmote(this.dClient, LotteryEmojis.Ticket)}Total Tickets: `{(int)lotteryService.GetTotalTickets().Data}`\n" +
+                    $"{DiscordEmoji.FromGuildEmote(this.dClient, AccountEmojis.Users)}Total Users: `{(int)lotteryService.GetTotalLotteryParticipant().Data}`\n" +
+                    $"{DiscordEmoji.FromName(this.dClient, ":clock2:")}Time Left: `{(int)this.lotteryService.GetRemainingHoursUntilNextDrawing().Data}` Hrs"
                 };
 
                 string winnerNames = string.Empty;
@@ -151,42 +152,39 @@ namespace Fitz.Features.Lottery
 
         private async Task HandleLotterySubscriptions()
         {
+            Settings settings = this.settingsService.GetSettings();
             List<Account> lotterySubscribers = this.accountService.GetLotterySubscribers();
             foreach (Account subscriber in lotterySubscribers)
             {
                 if (subscriber == null)
                 {
-                    return;
+                    continue;
                 }
                 if (subscriber.subscribeToLottery && subscriber.SubscribeTickets != 0)
                 {
-                    if (subscriber == null)
-                    {
-                        return;
-                    }
                     // If the user's beer is equal to or less than the safe balance, do nothing.
                     if (subscriber.Beer <= subscriber.safeBalance)
                     {
-                        break;
+                        continue;
                     }
                     // If the user's beer is greater than the safe balance, buy tickets
                     else if (subscriber.Beer > subscriber.safeBalance)
                     {
                         // Only buy tickets if the user has enough beer to buy a ticket.
-                        if (subscriber.Beer >= (subscriber.SubscribeTickets * 1))
+                        if (subscriber.Beer >= (subscriber.SubscribeTickets * settings.TicketCost))
                         {
-                            // Check to see if the user has already bought tickets. We only allow 36 tickets per user.
-                            List<Ticket> userTickets = lotteryService.GetUserTickets(subscriber);
-                            if (userTickets.Count == 36)
+                            // Check to see if the user has already bought tickets.
+                            List<Ticket> userTickets = lotteryService.GetUserTickets(subscriber).Data as List<Ticket>;
+                            if (userTickets.Count == settings.MaxTickets)
                             {
                                 // TODO: DM the user that the lottery tried to buy tickets for them but they were at the limit.
-                                return;
+                                continue;
                             }
-                            if (userTickets.Count + subscriber.SubscribeTickets > 36)
+                            if (userTickets.Count + subscriber.SubscribeTickets > settings.MaxTickets)
                             {
                                 // If the user is trying to buy more tickets than the limit, only buy up to the limit.
                             }
-                            if (userTickets.Count + subscriber.SubscribeTickets <= 36)
+                            if (userTickets.Count + subscriber.SubscribeTickets <= settings.MaxTickets)
                             {
                                 // Buy the tickets for the user.
 
@@ -196,11 +194,52 @@ namespace Fitz.Features.Lottery
 
                                 await lotteryService.AddToPool(subscriber.SubscribeTickets);
 
-                                // TODO: DM the user that they have bought tickets.
+                                await MessageEnrolleeSuccess(subscriber, userTickets);
                             }
                         }
                     }
                 }
+            }
+        }
+
+        private async Task MessageEnrolleeSuccess(Account account, List<Ticket> userTickets)
+        {
+            try
+            {
+                // Get discord user
+                DiscordUser user = await this.dClient.GetUserAsync(account.Id);
+
+                // Get current lottery
+                Models.Lottery drawing = this.lotteryService.GetCurrentLottery();
+
+                DiscordEmbedBuilder lotteryEmbed = new DiscordEmbedBuilder
+                {
+                    Footer = new DiscordEmbedBuilder.EmbedFooter
+                    {
+                        IconUrl = DiscordEmoji.FromGuildEmote(this.dClient, LotteryEmojis.Ticket).Url,
+                        Text = $"Lottery #{drawing.Id}",
+                    },
+                    Color = new DiscordColor(52, 114, 53),
+                    Thumbnail = new DiscordEmbedBuilder.EmbedThumbnail
+                    {
+                        Url = DiscordEmoji.FromGuildEmote(this.dClient, LotteryEmojis.Lottery).Url,
+                    },
+                    Title = $"Lottery Subscription",
+                    Timestamp = DateTime.UtcNow,
+                    Description = $"Since you've enrolled in the lottery, I went ahead and purchased {userTickets.Count} ticket(s) for you.\n\n" +
+                    $"You can disable your lottery subscription via `/settings`.\n\n" +
+                    $"Your current beer balance is: {account.Beer}.\n\n" +
+                    $"I will not purchase any tickets if your beer is below {account.safeBalance}.\n\n" +
+                    $"You can change your safe balance at any time via `/settings`",
+                };
+                DiscordGuild guild = await this.dClient.GetGuildAsync(Guilds.Waterbear);
+                DiscordMember member = await guild.GetMemberAsync(user.Id);
+                DiscordDmChannel userDMChannel = await member.CreateDmChannelAsync();
+                await Task.Delay(5000);
+                await userDMChannel.SendMessageAsync(embed: lotteryEmbed.Build());
+            }
+            catch (Exception ex)
+            {
             }
         }
 
@@ -212,33 +251,18 @@ namespace Fitz.Features.Lottery
             }
             else
             {
+                List<Account> winners = this.lotteryService.GetLastLotteryWinnerAccounts();
                 DiscordGuild guild = await this.dClient.GetGuildAsync(Guilds.Waterbear);
                 DiscordMember member = await guild.GetMemberAsync(userId);
                 if (member == null || member.IsBot)
                 {
                     return;
                 }
+
                 // DM The winner to let them know.
                 DiscordDmChannel userDMChannel = await member.CreateDmChannelAsync();
 
-                DiscordEmbedBuilder lotteryEmbed = new DiscordEmbedBuilder
-                {
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        IconUrl = DiscordEmoji.FromGuildEmote(this.dClient, LotteryEmojis.Ticket).Url,
-                        Text = $"Lottery | #{drawing.Id}",
-                    },
-                    Color = new DiscordColor(52, 114, 53),
-                    Thumbnail = new DiscordEmbedBuilder.EmbedThumbnail
-                    {
-                        Url = DiscordEmoji.FromGuildEmote(this.dClient, LotteryEmojis.Lottery).Url,
-                    },
-                    Title = $"Congratulations! You've won lottery#{drawing.Id}!",
-                    Timestamp = DateTime.UtcNow,
-                    Description = $"Winnings have been distributed.\n" +
-                    $"New beer balance: `{this.bankService.GetBalance(userId)}`",
-                };
-                await userDMChannel.SendMessageAsync(embed: lotteryEmbed.Build());
+                await userDMChannel.SendMessageAsync(embed: this.lotteryService.WinnerEmbed(this.dClient, drawing, winners));
             }
         }
     }

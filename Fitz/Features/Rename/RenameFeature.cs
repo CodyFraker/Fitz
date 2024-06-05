@@ -10,23 +10,15 @@ using System.Threading.Tasks;
 
 namespace Fitz.Features.Rename
 {
-    public class RenameFeature : Feature
+    public class RenameFeature(DiscordClient dClient, JobManager jobManager, RenameService renameService, AccountService accountService) : Feature
     {
         private readonly DiscordClient dClient;
-        private readonly SlashCommandsExtension slash;
-        private readonly CommandsNextExtension cNext;
-        private readonly RenameJob renameJob;
-        private readonly JobManager jobManager;
+        private readonly SlashCommandsExtension slash = dClient.GetSlashCommands();
+        private readonly CommandsNextExtension cNext = dClient.GetCommandsNext();
+        private readonly RenameJob renameJob = new RenameJob(dClient, renameService, accountService);
+        private readonly JobManager jobManager = jobManager;
         private readonly RenameService renameService;
         private readonly AccountService accountService;
-
-        public RenameFeature(DiscordClient dClient, JobManager jobManager)
-        {
-            this.slash = dClient.GetSlashCommands();
-            this.renameJob = new RenameJob(dClient, renameService, accountService);
-            this.jobManager = jobManager;
-            this.cNext = dClient.GetCommandsNext();
-        }
 
         public override string Name => "User Renaming";
 

@@ -8,18 +8,13 @@ using System.Threading.Tasks;
 
 namespace Fitz.Features.Blackjack.Modals
 {
-    public class Hand
+    public class Hand(bool isDealer = false)
     {
         private readonly List<Card> cards = new List<Card>(5);
 
-        public Hand(bool isDealer = false)
-        {
-            this.IsDealer = isDealer;
-        }
-
         public event EventHandler Changed;
 
-        public bool IsDealer { get; private set; }
+        public bool IsDealer { get; private set; } = isDealer;
 
         public ReadOnlyCollection<Card> Cards
         {

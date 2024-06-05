@@ -1,128 +1,182 @@
 ﻿using DSharpPlus.Entities;
 using DSharpPlus.ModalCommands;
 using DSharpPlus.ModalCommands.Attributes;
+using DSharpPlus.SlashCommands;
 using Fitz.Core.Models;
+using Fitz.Core.Services.Settings;
 using Fitz.Features.Polls.Models;
 using Fitz.Variables.Emojis;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Polls.Polls
 {
-    public class PollModalCommands : ModalCommandModule
+    [SlashModuleLifespan(SlashModuleLifespan.Transient)]
+    public class PollModalCommands(PollService pollService, SettingsService settingsService) : ModalCommandModule
     {
-        private PollService pollService;
-
-        public PollModalCommands(PollService pollService)
-        {
-            this.pollService = pollService;
-        }
+        private readonly PollService pollService = pollService;
+        private readonly Settings settings = settingsService.GetSettings();
 
         #region Number
 
         [ModalCommand("gen_number")]
         public async Task GenerateNumberPoll(ModalContext ctx, string question, string choices)
         {
-            // The message of the embed
-            string embedMessage = string.Empty;
-            string[] pollOptions = choices.Split(',');
-            List<DiscordEmoji> options = new List<DiscordEmoji>();
+            int unique_id = 0;
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            {
+                byte[] data = new byte[4];
 
-            if (pollOptions.Length > 10 || pollOptions.Length <= 1)
+                for (int i = 0; i < 4; i++)
+                {
+                    rng.GetBytes(data);
+                    unique_id = BitConverter.ToInt32(data, 0);
+                    unique_id = Math.Abs(unique_id);
+                }
+            }
+            string[] answerOptions = choices.Split(',');
+            answerOptions = answerOptions.Where(x => !string.IsNullOrEmpty(x)).ToArray();
+
+            List<PollOptions> pollOptions = new List<PollOptions>();
+
+            if (answerOptions.Length > 10 || answerOptions.Length <= 1)
             {
                 await ctx.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
                     new DiscordInteractionResponseBuilder()
-                    .WithContent($"You need at least 2 options but no more than 10. You provided {pollOptions.Length} option(s).")
+                    .WithContent($"You need at least 2 options but no more than 10. You provided {answerOptions.Length} option(s).")
                     .AsEphemeral(true));
                 return;
             }
 
-            for (int i = 0; i < pollOptions.Length; i++)
+            for (int i = 0; i < answerOptions.Length; i++)
             {
                 switch (i)
                 {
                     case 0:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":one:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":one:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":one:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":one:").Id,
+                        });
                         break;
 
                     case 1:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":two:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":two:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":two:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":two:").Id,
+                        });
                         break;
 
                     case 2:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":three:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":three:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":three:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":three:").Id,
+                        });
                         break;
 
                     case 3:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":four:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":four:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":four:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":four:").Id,
+                        });
                         break;
 
                     case 4:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":five:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":five:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":five:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":five:").Id,
+                        });
                         break;
 
                     case 5:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":six:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":six:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":six:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":six:").Id,
+                        });
                         break;
 
                     case 6:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":seven:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":seven:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":seven:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":seven:").Id,
+                        });
                         break;
 
                     case 7:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":eight:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":eight:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":eight:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":eight:").Id,
+                        });
                         break;
 
                     case 8:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":nine:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":nine:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":nine:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":nine:").Id,
+                        });
                         break;
 
                     case 9:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":keycap_ten:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":keycap_ten:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":keycap_ten:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":keycap_ten:").Id,
+                        });
                         break;
                 }
             }
 
-            DiscordButtonComponent accpetBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "number_poll_confirm", "Confirm", false);
-            DiscordButtonComponent cancelBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "number_poll_cancel", "Cancel", false);
+            DiscordButtonComponent accpetBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, $"number_poll_confirm_{unique_id}", "Confirm", false);
+            DiscordButtonComponent cancelBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, $"number_poll_cancel_{unique_id}", "Cancel", false);
 
             await ctx.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
                 new DiscordInteractionResponseBuilder()
-                .WithContent($"Here is what the poll will look like. Do you wish to post it?")
-                .AddEmbed(GeneratePollEmbed(ctx, question, embedMessage, PollType.Number))
+                .WithContent($"Here is what the poll will look like. If everything looks good, hit 'Confirm' and you will be charged {settings.PollSubmittedPenalty} beer for the poll submission. Clicking cancel will *NOT* submit the poll and you will be forced to start over.")
+                .AddEmbed(GeneratePollEmbed(ctx, question, pollOptions, PollType.Number))
                 .AddComponents(cancelBtn, accpetBtn).AsEphemeral(true));
 
             ctx.Client.ComponentInteractionCreated += async (s, e) =>
             {
                 // If the confirm button was pressed
-                if (e.Id == "number_poll_confirm")
+                if (e.Id == $"number_poll_confirm_{unique_id}")
                 {
-                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Posting poll.."));
-                    var sendPoll = await SendPollMessageAsync(ctx, question, embedMessage, options, PollType.Number);
-                    if (sendPoll.Success)
+                    // Notify the user that the poll is being submitted.
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Submitting number poll..."));
+                    var sendPendingPoll = await SendPendingPoll(ctx, question, pollOptions, PollType.Number);
+                    if (sendPendingPoll.Success)
                     {
-                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll Created."));
+                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("I will evaluate if the poll is worthy of posting. If so, you will gain beer."));
                         return;
                     }
                     else
                     {
-                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent($"Poll Creation Failed. {sendPoll.Message}"));
+                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent($"Poll Submission Failed. {sendPendingPoll.Message}"));
                         return;
                     }
                 }
                 // if the cancel button was pressed
-                else if (e.Id == "number_poll_cancel")
+                else if (e.Id == $"number_poll_cancel_{unique_id}")
                 {
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll not created."));
                 }
@@ -136,87 +190,134 @@ namespace Fitz.Features.Polls.Polls
         [ModalCommand("generate_color_poll")]
         public async Task GenerateColorPoll(ModalContext ctx, string question, string choices)
         {
-            // The message of the embed
-            string embedMessage = string.Empty;
-            string[] pollOptions = choices.Split(',');
-            List<DiscordEmoji> options = new List<DiscordEmoji>();
+            int unique_id = 0;
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            {
+                byte[] data = new byte[4];
 
-            if (pollOptions.Length > 9)
+                for (int i = 0; i < 4; i++)
+                {
+                    rng.GetBytes(data);
+                    unique_id = BitConverter.ToInt32(data, 0);
+                    unique_id = Math.Abs(unique_id);
+                }
+            }
+            string[] answerOptions = choices.Split(',');
+            answerOptions = answerOptions.Where(x => !string.IsNullOrEmpty(x)).ToArray();
+            List<PollOptions> pollOptions = new List<PollOptions>();
+
+            if (answerOptions.Length > 9)
             {
                 await ctx.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
                     new DiscordInteractionResponseBuilder()
-                    .WithContent($"You can only have a maximum of 9 options for color polls. You provided {pollOptions.Length}")
+                    .WithContent($"You can only have a maximum of 9 options for color polls. You provided {answerOptions.Length}")
                     .AsEphemeral(true));
                 return;
             }
 
-            for (int i = 0; i < pollOptions.Length; i++)
+            for (int i = 0; i < answerOptions.Length; i++)
             {
                 switch (i)
                 {
                     case 0:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":blue_circle:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":blue_circle:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":blue_circle:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":blue_circle:").Id,
+                        });
                         break;
 
                     case 1:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":green_circle:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":green_circle:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":green_circle:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":green_circle:").Id,
+                        });
                         break;
 
                     case 2:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":orange_circle:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":orange_circle:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":orange_circle:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":orange_circle:").Id,
+                        });
                         break;
 
                     case 3:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":purple_circle:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":purple_circle:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":purple_circle:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":purple_circle:").Id,
+                        });
                         break;
 
                     case 4:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":red_circle:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":red_circle:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":red_circle:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":red_circle:").Id,
+                        });
                         break;
 
                     case 5:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":yellow_circle:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":yellow_circle:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":yellow_circle:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":yellow_circle:").Id,
+                        });
                         break;
 
                     case 6:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":brown_circle:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":brown_circle:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":brown_circle:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":brown_circle:").Id,
+                        });
                         break;
 
                     case 7:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":black_circle:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":black_circle:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":black_circle:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":black_circle:").Id,
+                        });
                         break;
 
                     case 8:
-                        embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":white_circle:")} **{pollOptions[i]}**\n";
-                        options.Add(DiscordEmoji.FromName(ctx.Client, ":white_circle:"));
+                        pollOptions.Add(new PollOptions
+                        {
+                            Answer = answerOptions[i],
+                            EmojiName = ":white_circle:",
+                            EmojiId = DiscordEmoji.FromName(ctx.Client, ":white_circle:").Id,
+                        });
                         break;
                 }
             }
 
-            DiscordButtonComponent accpetBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "color_poll_confirm", "Confirm", false);
-            DiscordButtonComponent cancelBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "color_poll_cancel", "Cancel", false);
+            DiscordButtonComponent accpetBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, $"color_poll_confirm_{unique_id}", "Confirm", false);
+            DiscordButtonComponent cancelBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, $"color_poll_cancel_{unique_id}", "Cancel", false);
 
             await ctx.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
                 new DiscordInteractionResponseBuilder()
-                .WithContent($"Here is what the poll will look like. Do you wish to post it?")
-                .AddEmbed(GeneratePollEmbed(ctx, question, embedMessage, PollType.Color))
+                .WithContent($"Here is what the poll will look like. If everything looks good, hit 'Confirm' and you will be charged {settings.PollSubmittedPenalty} beer for the poll submission. Clicking cancel will *NOT* submit the poll and you will be forced to start over.")
+                .AddEmbed(GeneratePollEmbed(ctx, question, pollOptions, PollType.Color))
                 .AddComponents(cancelBtn, accpetBtn).AsEphemeral(true));
 
             ctx.Client.ComponentInteractionCreated += async (s, e) =>
             {
                 // If the confirm button was pressed
-                if (e.Id == "color_poll_confirm")
+                if (e.Id == $"color_poll_confirm_{unique_id}")
                 {
-                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Posting poll.."));
-                    var sendPoll = await SendPollMessageAsync(ctx, question, embedMessage, options, PollType.Color);
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Submitting color poll.."));
+                    var sendPoll = await this.SendPendingPoll(ctx, question, pollOptions, PollType.Color);
                     if (sendPoll.Success)
                     {
                         await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll Created."));
@@ -229,7 +330,7 @@ namespace Fitz.Features.Polls.Polls
                     }
                 }
                 // if the cancel button was pressed
-                else if (e.Id == "color_poll_cancel")
+                else if (e.Id == $"color_poll_cancel_{unique_id}")
                 {
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll not created."));
                     return;
@@ -245,33 +346,51 @@ namespace Fitz.Features.Polls.Polls
         [ModalCommand("gen_yesno")]
         public async Task GenerateYesNoPoll(ModalContext ctx, string question)
         {
-            // The message of the embed
-            string embedMessage = string.Empty;
+            int unique_id = 0;
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            {
+                byte[] data = new byte[4];
 
-            embedMessage += $"{DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.Yes)} **Yes**\n";
-            embedMessage += $"{DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.No)} **No**\n";
+                for (int i = 0; i < 4; i++)
+                {
+                    rng.GetBytes(data);
+                    unique_id = BitConverter.ToInt32(data, 0);
+                    unique_id = Math.Abs(unique_id);
+                }
+            }
+            DiscordButtonComponent accpetBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, $"yesno_poll_confirm_{unique_id}", "Confirm", false);
+            DiscordButtonComponent cancelBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, $"yesno_poll_cancel_{unique_id}", "Cancel", false);
 
-            DiscordButtonComponent accpetBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "yesno_poll_confirm", "Confirm", false);
-            DiscordButtonComponent cancelBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "yesno_poll_cancel", "Cancel", false);
+            List<PollOptions> pollOptions =
+            [
+                new PollOptions
+                {
+                    Answer = "Yes",
+                    EmojiName = DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.Yes).Name,
+                    EmojiId = DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.Yes).Id,
+                },
+                new PollOptions
+                {
+                    Answer = "No",
+                    EmojiName = DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.No).Name,
+                    EmojiId = DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.No).Id,
+                },
+            ];
 
             await ctx.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
                 new DiscordInteractionResponseBuilder()
-                .WithContent($"Here is what the poll will look like. Do you wish to post it?")
-                .AddEmbed(GeneratePollEmbed(ctx, question, embedMessage, PollType.YesOrNo))
+                .WithContent($"Here is what the poll will look like. If everything looks good, hit 'Confirm' and you will be charged {settings.PollSubmittedPenalty} beer for the poll submission. Clicking cancel will *NOT* submit the poll and you will be forced to start over.")
+                .AddEmbed(GeneratePollEmbed(ctx, question, pollOptions, PollType.YesOrNo))
                 .AddComponents(cancelBtn, accpetBtn).AsEphemeral(true));
 
             ctx.Client.ComponentInteractionCreated += async (s, e) =>
             {
                 // If the confirm button was pressed
-                if (e.Id == "yesno_poll_confirm")
+                if (e.Id == $"yesno_poll_confirm_{unique_id}")
                 {
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Posting poll.."));
-                    List<DiscordEmoji> options = new List<DiscordEmoji>
-                    {
-                        DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.Yes),
-                        DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.No),
-                    };
-                    var sendPoll = await SendPollMessageAsync(ctx, question, embedMessage, options, PollType.YesOrNo);
+
+                    var sendPoll = await SendPendingPoll(ctx, question, pollOptions, PollType.YesOrNo);
                     if (sendPoll.Success)
                     {
                         await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll Created."));
@@ -284,7 +403,7 @@ namespace Fitz.Features.Polls.Polls
                     }
                 }
                 // if the cancel button was pressed
-                else if (e.Id == "yesno_poll_cancel")
+                else if (e.Id == $"yesno_poll_cancel_{unique_id}")
                 {
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll not created."));
                     return;
@@ -300,33 +419,50 @@ namespace Fitz.Features.Polls.Polls
         [ModalCommand("gen_thisorthat")]
         public async Task GenerateThisOrThatPoll(ModalContext ctx, string question, string thisResponse, string thatResponse)
         {
-            // The message of the embed
-            string embedMessage = string.Empty;
+            int unique_id = 0;
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            {
+                byte[] data = new byte[4];
 
-            embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":point_left:")} **{thisResponse}**\n";
-            embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":point_right:")} **{thatResponse}**\n";
+                for (int i = 0; i < 4; i++)
+                {
+                    rng.GetBytes(data);
+                    unique_id = BitConverter.ToInt32(data, 0);
+                    unique_id = Math.Abs(unique_id);
+                }
+            }
+            DiscordButtonComponent accpetBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, $"thisorthat_poll_confirm_{unique_id}", "Confirm", false);
+            DiscordButtonComponent cancelBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, $"thisorthat_poll_cancel_{unique_id}", "Cancel", false);
 
-            DiscordButtonComponent accpetBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "thisorthat_poll_confirm", "Confirm", false);
-            DiscordButtonComponent cancelBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "thisorthat_poll_cancel", "Cancel", false);
+            List<PollOptions> pollOptions =
+            [
+                new PollOptions
+                {
+                    Answer = thisResponse,
+                    EmojiName = ":point_left:",
+                    EmojiId = DiscordEmoji.FromName(ctx.Client, ":point_left:").Id,
+                },
+                new PollOptions
+                {
+                    Answer = thatResponse,
+                    EmojiName = ":point_right:",
+                    EmojiId = DiscordEmoji.FromName(ctx.Client, ":point_right:").Id,
+                },
+            ];
 
             await ctx.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
                 new DiscordInteractionResponseBuilder()
-                .WithContent($"Here is what the poll will look like. Do you wish to post it?")
-                .AddEmbed(GeneratePollEmbed(ctx, question, embedMessage, PollType.ThisOrThat))
+                .WithContent($"Here is what the poll will look like. If everything looks good, hit 'Confirm' and you will be charged {settings.PollSubmittedPenalty} beer for the poll submission. Clicking cancel will *NOT* submit the poll and you will be forced to start over.")
+                .AddEmbed(GeneratePollEmbed(ctx, question, pollOptions, PollType.ThisOrThat))
                 .AddComponents(cancelBtn, accpetBtn).AsEphemeral(true));
 
             ctx.Client.ComponentInteractionCreated += async (s, e) =>
             {
                 // If the confirm button was pressed
-                if (e.Id == "thisorthat_poll_confirm")
+                if (e.Id == $"thisorthat_poll_confirm_{unique_id}")
                 {
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Posting poll.."));
-                    List<DiscordEmoji> options = new List<DiscordEmoji>
-                    {
-                        DiscordEmoji.FromName(ctx.Client, ":point_left:"),
-                        DiscordEmoji.FromName(ctx.Client, ":point_right:"),
-                    };
-                    var sendPoll = await SendPollMessageAsync(ctx, question, embedMessage, options, PollType.ThisOrThat);
+                    var sendPoll = await SendPendingPoll(ctx, question, pollOptions, PollType.ThisOrThat);
                     if (sendPoll.Success)
                     {
                         await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll Created."));
@@ -339,7 +475,7 @@ namespace Fitz.Features.Polls.Polls
                     }
                 }
                 // if the cancel button was pressed
-                else if (e.Id == "thisorthat_poll_cancel")
+                else if (e.Id == $"thisorthat_poll_cancel_{unique_id}")
                 {
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll not created."));
                     return;
@@ -355,46 +491,59 @@ namespace Fitz.Features.Polls.Polls
         [ModalCommand("gen_hottake")]
         public async Task GenerateHotTakePoll(ModalContext ctx, string question)
         {
-            // The message of the embed
-            string embedMessage = string.Empty;
+            int unique_id = 0;
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            {
+                byte[] data = new byte[4];
 
-            embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":fire:")} **Agree**\n";
-            embedMessage += $"{DiscordEmoji.FromName(ctx.Client, ":x:")} **Disagree**\n";
+                for (int i = 0; i < 4; i++)
+                {
+                    rng.GetBytes(data);
+                    unique_id = BitConverter.ToInt32(data, 0);
+                    unique_id = Math.Abs(unique_id);
+                }
+            }
+            DiscordButtonComponent accpetBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, $"hottake_poll_confirm_{unique_id}", "Confirm", false);
+            DiscordButtonComponent cancelBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, $"hottake_poll_cancel_{unique_id}", "Cancel", false);
 
-            DiscordButtonComponent accpetBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "hottake_poll_confirm", "Confirm", false);
-            DiscordButtonComponent cancelBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "hottake_poll_cancel", "Cancel", false);
+            List<PollOptions> pollOptions = new List<PollOptions>();
+            pollOptions.Add(new PollOptions
+            {
+                Answer = "Agree",
+                EmojiName = ":fire:",
+                EmojiId = DiscordEmoji.FromName(ctx.Client, ":fire:").Id,
+            });
+            pollOptions.Add(new PollOptions
+            {
+                Answer = "Shit Take",
+                EmojiName = ":poop:",
+                EmojiId = DiscordEmoji.FromName(ctx.Client, ":poop:").Id,
+            });
 
-            await ctx.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
+            var tests = ctx.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
                 new DiscordInteractionResponseBuilder()
-                .WithContent($"Here is what the poll will look like. Do you wish to post it?")
-                .AddEmbed(GeneratePollEmbed(ctx, question, embedMessage, PollType.HotTake))
+                .WithContent($"Here is what the poll will look like. If everything looks good, hit 'Confirm' and you will be charged {settings.PollSubmittedPenalty} beer for the poll submission. Clicking cancel will *NOT* submit the poll and you will be forced to start over.")
+                .AddEmbed(GeneratePollEmbed(ctx, question, pollOptions, PollType.HotTake))
                 .AddComponents(cancelBtn, accpetBtn).AsEphemeral(true));
 
             ctx.Client.ComponentInteractionCreated += async (s, e) =>
             {
                 // If the confirm button was pressed
-                if (e.Id == "hottake_poll_confirm")
+                if (e.Id == $"hottake_poll_confirm_{unique_id}")
                 {
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Posting poll.."));
-                    List<DiscordEmoji> options = new List<DiscordEmoji>
-                    {
-                        DiscordEmoji.FromName(ctx.Client, ":fire:"),
-                        DiscordEmoji.FromName(ctx.Client, ":x:"),
-                    };
-                    var sendPoll = await SendPollMessageAsync(ctx, question, embedMessage, options, PollType.HotTake);
+                    var sendPoll = await SendPendingPoll(ctx, question, pollOptions, PollType.HotTake);
                     if (sendPoll.Success)
                     {
                         await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll Created."));
-                        return;
                     }
                     else
                     {
                         await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent($"Poll Creation Failed. {sendPoll.Message}"));
-                        return;
                     }
                 }
                 // if the cancel button was pressed
-                else if (e.Id == "hottake_poll_cancel")
+                else if (e.Id == $"hottake_poll_cancel_{unique_id}")
                 {
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll not created."));
                     return;
@@ -404,9 +553,11 @@ namespace Fitz.Features.Polls.Polls
 
         #endregion Hot Take
 
-        private async Task<Result> SendPollMessageAsync(ModalContext ctx, string question, string embedMessage, List<DiscordEmoji> options, PollType pollType)
+        #region Send Poll to Pending Polls Channel
+
+        private async Task<Result> SendPendingPoll(ModalContext ctx, string question, List<PollOptions> options, PollType pollType)
         {
-            DiscordChannel pollChannel = ctx.Guild.GetChannel(Variables.Channels.Waterbear.Polls);
+            DiscordChannel pollChannel = ctx.Guild.GetChannel(Variables.Channels.Waterbear.PendingPolls);
             if (pollChannel == null)
             {
                 return new Result(false, "Poll channel not found.", null);
@@ -415,24 +566,54 @@ namespace Fitz.Features.Polls.Polls
             try
             {
                 // Send the message to the channel
-                DiscordMessage pollMessage = await ctx.Client.SendMessageAsync(pollChannel, embed: GeneratePollEmbed(ctx, question, embedMessage, pollType));
+                DiscordMessage pollMessage = await ctx.Client.SendMessageAsync(pollChannel, GeneratePollEmbed(ctx, question, options, pollType));
 
-                // Iterate through the options and add reactions to the message
-                foreach (DiscordEmoji option in options)
+                if (pollMessage == null)
                 {
-                    await pollMessage.CreateReactionAsync(option);
+                    return new Result(false, "Failed to send poll message.", null);
                 }
 
-                Poll poll = await this.pollService.AddPoll(new Poll
+                var pendingPollResult = await this.pollService.AddPoll(new Poll
                 {
+                    AccountId = ctx.User.Id,
+                    MessageId = pollMessage.Id,
                     Question = question,
                     Type = pollType,
-                    MessageId = pollMessage.Id,
-                    Timestamp = DateTime.UtcNow,
+                    Status = PollStatus.Pending,
+                    EvaluatedOn = null,
+                    SubmittedOn = DateTime.UtcNow,
                 });
 
-                await this.pollService.AddPollOption(poll, options);
-                return new Result(true, "Poll created.", poll);
+                if (pendingPollResult.Success)
+                {
+                    try
+                    {
+                        if (pendingPollResult.Data != null)
+                        {
+                            var addPollOptionsResult = await this.pollService.AddPollOption(pendingPollResult.Data as Poll, options);
+                            if (addPollOptionsResult.Success)
+                            {
+                                // Send approval reactions
+                                await pollMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.Yes));
+                                await pollMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.No));
+                            }
+                            else
+                            {
+                                return new Result(false, "Adding poll options failed.", null);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        return new Result(false, ex.Message, null);
+                    }
+
+                    return new Result(true, "Poll added to pending polls.", pendingPollResult.Data);
+                }
+                else
+                {
+                    return new Result(false, pendingPollResult.Message, null);
+                }
             }
             catch (Exception ex)
             {
@@ -440,26 +621,29 @@ namespace Fitz.Features.Polls.Polls
             }
         }
 
-        private DiscordEmbed GeneratePollEmbed(ModalContext ctx, string question, string embedMessage, PollType? pollType)
+        #endregion Send Poll to Pending Polls Channel
+
+        #region Generate Poll Embed
+
+        private DiscordEmbed GeneratePollEmbed(ModalContext ctx, string question, List<PollOptions> pollOptions, PollType? pollType)
         {
-            DiscordColor embedColor = new DiscordColor(250, 250, 250);
+            // Set base embed color to white.
+            DiscordColor embedColor = new DiscordColor(PollEmbedColors.PendingPoll);
 
-            switch (pollType)
+            // Set description to empty string.
+            string description = string.Empty;
+            foreach (PollOptions option in pollOptions)
             {
-                case PollType.Number:
-
-                    break;
-
-                case PollType.YesOrNo:
-                    break;
-
-                case PollType.ThisOrThat:
-                    embedColor = new DiscordColor(225, 173, 1);
-                    break;
-
-                case PollType.HotTake:
-                    embedColor = new DiscordColor(255, 103, 0);
-                    break;
+                // If built in emoji
+                if (option.EmojiId == 0)
+                {
+                    description += $"{DiscordEmoji.FromName(ctx.Client, option.EmojiName)} **{option.Answer}**\n";
+                }
+                else if (option.EmojiId != 0 && option.EmojiId != null)
+                {
+                    // If custom emoji
+                    description += $"{DiscordEmoji.FromGuildEmote(ctx.Client, option.EmojiId.Value)} **{option.Answer}**\n";
+                }
             }
 
             DiscordEmbed pollEmbed = new DiscordEmbedBuilder
@@ -467,15 +651,17 @@ namespace Fitz.Features.Polls.Polls
                 Footer = new DiscordEmbedBuilder.EmbedFooter
                 {
                     IconUrl = DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.InfoIcon).Url,
-                    Text = $"Vote using reactions | {pollType.ToString()}",
+                    Text = $"{pollType}",
                 },
                 Color = embedColor,
                 Timestamp = DateTime.UtcNow,
-                Title = $"**{question}**",
-                Description = embedMessage,
+                Title = $"__{question}__",
+                Description = description,
             };
 
             return pollEmbed;
         }
+
+        #endregion Generate Poll Embed
     }
 }

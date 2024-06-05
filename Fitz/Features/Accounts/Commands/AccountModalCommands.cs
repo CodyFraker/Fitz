@@ -7,16 +7,10 @@ using System.Threading.Tasks;
 
 namespace Fitz.Features.Accounts.Commands
 {
-    public class AccountModalCommands : ModalCommandModule
+    public class AccountModalCommands(AccountService accountService, DiscordClient dClient) : ModalCommandModule
     {
-        private readonly DiscordClient dClient;
-        private readonly AccountService accountService;
-
-        public AccountModalCommands(AccountService accountService, DiscordClient dClient)
-        {
-            this.dClient = dClient;
-            this.accountService = accountService;
-        }
+        private readonly DiscordClient dClient = dClient;
+        private readonly AccountService accountService = accountService;
 
         [ModalCommand("set_safe_balance")]
         public async Task CreateAccountAsync(ModalContext ctx, int value)

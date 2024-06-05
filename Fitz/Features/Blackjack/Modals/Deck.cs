@@ -64,7 +64,6 @@ namespace Fitz.Features.Blackjack.Modals
         {
             if (this.cards.Count < 2)
             {
-                // TODO: Add a descriptive error message
                 throw new InvalidOperationException();
             }
 
@@ -87,7 +86,6 @@ namespace Fitz.Features.Blackjack.Modals
         {
             if (this.cards.Count < 1)
             {
-                // TODO: Add a descriptive error message
                 throw new InvalidOperationException();
             }
 

@@ -36,5 +36,25 @@
         /// <see cref="Fitz.Variables.Channels.Waterbear.LotteryLog"/>
         /// </summary>
         LotteryLog = 6,
+
+        /// <summary>
+        /// <see cref="Fitz.Variables.Channels.DodeDuke.AccountLog"/>
+        /// </summary>
+        AccountLog = 7,
+
+        /// <summary>
+        /// <see cref="Fitz.Variables.Channels.DodeDuke.Transactions"/>
+        /// </summary>
+        Transactions = 8,
+
+        /// <summary>
+        /// <see cref="Fitz.Variables.Channels.DodeDuke.PollLog"/>
+        /// </summary>
+        PollLog = 9,
+
+        /// <summary>
+        /// <see cref="Fitz.Variables.Channels.DodeDuke.RenameLog"/>
+        /// </summary>
+        RenameLog = 10
     }
 }

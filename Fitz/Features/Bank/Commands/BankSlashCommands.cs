@@ -14,18 +14,11 @@ using System.Threading.Tasks;
 namespace Fitz.Features.Bank.Commands
 {
     [SlashModuleLifespan(SlashModuleLifespan.Scoped)]
-    internal class BankSlashCommands : ApplicationCommandModule
+    public sealed class BankSlashCommands(BotContext db, BankService bankService, AccountService accountService) : ApplicationCommandModule
     {
-        private readonly BotContext db;
-        private readonly BankService bankService;
-        private AccountService AccountService;
-
-        public BankSlashCommands(BotContext db, BankService bankService, AccountService accountService)
-        {
-            this.db = db;
-            this.bankService = bankService;
-            AccountService = accountService;
-        }
+        private readonly BotContext db = db;
+        private readonly BankService bankService = bankService;
+        private readonly AccountService AccountService = accountService;
 
         [SlashCommand("fridge", "Check how much beer you have in the fridge.")]
         [RequireAccount]
@@ -67,13 +60,13 @@ namespace Fitz.Features.Bank.Commands
                 }
                 else
                 {
-                    transactionsField += $"{transaction.Amount} | {transaction.Reason} | {transaction.Timestamp}\n";
+                    transactionsField += $"{transaction.Amount} | {transaction.Reason} | {transaction.Timestamp.ToShortDateString()}\n";
                 }
             }
 
             balanceEmbed.AddField("Beer", $"`{account.Beer}`", true);
             balanceEmbed.AddField("Lifetime Beer", $"`{account.LifetimeBeer}`", true);
-            balanceEmbed.AddField("Transactions", $"```{transactionsField}```", false);
+            balanceEmbed.AddField("Transactions", $"{transactionsField}", false);
 
             await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AddEmbed(balanceEmbed.Build()).AsEphemeral(true));
 

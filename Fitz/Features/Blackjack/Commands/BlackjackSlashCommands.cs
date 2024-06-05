@@ -1,5 +1,6 @@
 ﻿using DSharpPlus;
 using DSharpPlus.Entities;
+using DSharpPlus.EventArgs;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Commands.Attributes;
 using Fitz.Features.Accounts;
@@ -57,22 +58,20 @@ namespace Fitz.Features.Blackjack.Commands
                             .WithContent("You have joined the game.").AsEphemeral(true));
                     }
                     DiscordButtonComponent joinBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "blackjack_join", "Join", false);
-                    DiscordButtonComponent leaveBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "blackjack_leave", "Quit", false);
                     DiscordButtonComponent startBtn = new DiscordButtonComponent(DiscordButtonStyle.Primary, "blackjack_Start", "Start", false);
 
                     await BlackjackMessage.ModifyAsync(new DiscordMessageBuilder()
-                                               .ClearEmbeds().AddEmbed(blackJackEmbed(Players)).AddComponents(leaveBtn, startBtn, joinBtn));
+                                               .ClearEmbeds().AddEmbed(blackJackEmbed(Players)).AddComponents(startBtn, joinBtn));
                 }
                 if (e.Id == "blackjack_player_ready")
                 {
                     Player player = Players.Find(x => x.Account.Id == e.User.Id);
 
                     DiscordButtonComponent joinBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "blackjack_join", "Join", false);
-                    DiscordButtonComponent leaveBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "blackjack_leave", "Leave", false);
                     DiscordButtonComponent startBtn = new DiscordButtonComponent(DiscordButtonStyle.Primary, "blackjack_Start", "Start", false);
 
                     await BlackjackMessage.ModifyAsync(new DiscordMessageBuilder()
-                           .ClearEmbeds().AddEmbed(blackJackEmbed(Players)).AddComponents(leaveBtn, startBtn, joinBtn));
+                           .ClearEmbeds().AddEmbed(blackJackEmbed(Players)).AddComponents(startBtn, joinBtn));
                 }
                 // if the cancel button was pressed
                 if (e.Id == "blackjack_leave")
@@ -89,7 +88,6 @@ namespace Fitz.Features.Blackjack.Commands
                     }
                     DiscordButtonComponent hitBtn = new DiscordButtonComponent(DiscordButtonStyle.Primary, "blackjack_hit", "Hit", true);
                     DiscordButtonComponent stayBtn = new DiscordButtonComponent(DiscordButtonStyle.Secondary, "blackjack_stay", "Stay", true);
-                    DiscordButtonComponent dealBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "blackjack_deal", "Deal", true);
                     DiscordButtonComponent leaveBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "blackjack_leave", "Quit", false);
 
                     if ((game.AllowedActions & GameAction.Hit) == GameAction.Hit)
@@ -100,11 +98,7 @@ namespace Fitz.Features.Blackjack.Commands
                     {
                         stayBtn = new DiscordButtonComponent(DiscordButtonStyle.Secondary, "blackjack_stay", "Stay", false);
                     }
-                    if ((game.AllowedActions & GameAction.Deal) == GameAction.Deal)
-                    {
-                        dealBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "blackjack_deal", "Deal", false);
-                    }
-                    await BlackjackMessage.ModifyAsync(new DiscordMessageBuilder().ClearEmbeds().AddEmbed(blackJackEmbed(game)).AddComponents(hitBtn, stayBtn, dealBtn, leaveBtn));
+                    await BlackjackMessage.ModifyAsync(new DiscordMessageBuilder().ClearEmbeds().AddEmbed(blackJackEmbed(game)).AddComponents(hitBtn, stayBtn, leaveBtn));
                 }
 
                 if (e.Id == "blackjack_hit")
@@ -116,7 +110,6 @@ namespace Fitz.Features.Blackjack.Commands
                             game.Hit(Players.Where(x => x.Account.Id == e.User.Id).FirstOrDefault());
                             DiscordButtonComponent hitBtn = new DiscordButtonComponent(DiscordButtonStyle.Primary, "blackjack_hit", "Hit", true);
                             DiscordButtonComponent stayBtn = new DiscordButtonComponent(DiscordButtonStyle.Secondary, "blackjack_stay", "Stay", true);
-                            DiscordButtonComponent dealBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "blackjack_deal", "Deal", true);
                             DiscordButtonComponent leaveBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "blackjack_leave", "Quit", false);
 
                             if ((game.AllowedActions & GameAction.Hit) == GameAction.Hit)
@@ -127,28 +120,28 @@ namespace Fitz.Features.Blackjack.Commands
                             {
                                 stayBtn = new DiscordButtonComponent(DiscordButtonStyle.Secondary, "blackjack_stay", "Stay", false);
                             }
-                            if ((game.AllowedActions & GameAction.Deal) == GameAction.Deal)
-                            {
-                                dealBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "blackjack_deal", "Deal", false);
-                            }
                             if (game.LastState == GameState.DealerWon)
                             {
                                 await BlackjackMessage.ModifyAsync(new DiscordMessageBuilder().ClearEmbeds().AddEmbed(blackJackEmbed(game)).WithContent("Dealer Won."));
                                 Players.Clear();
+                                return;
                             }
                             else if (game.LastState == GameState.PlayerWon)
                             {
                                 await BlackjackMessage.ModifyAsync(new DiscordMessageBuilder().ClearEmbeds().AddEmbed(blackJackEmbed(game)).WithContent("Player won."));
                                 Players.Clear();
+                                return;
                             }
                             else if (game.LastState == GameState.Draw)
                             {
                                 await BlackjackMessage.ModifyAsync(new DiscordMessageBuilder().ClearEmbeds().AddEmbed(blackJackEmbed(game)).WithContent("Game Draw."));
                                 Players.Clear();
+                                return;
                             }
                             else
                             {
-                                await BlackjackMessage.ModifyAsync(new DiscordMessageBuilder().ClearEmbeds().AddEmbed(blackJackEmbed(game)).AddComponents(hitBtn, stayBtn, dealBtn, leaveBtn));
+                                await BlackjackMessage.ModifyAsync(new DiscordMessageBuilder().ClearEmbeds().AddEmbed(blackJackEmbed(game)).AddComponents(hitBtn, stayBtn, leaveBtn));
+                                return;
                             }
                         }
                         else
@@ -168,7 +161,6 @@ namespace Fitz.Features.Blackjack.Commands
                             game.Stand(Players.Where(x => x.Account.Id == e.User.Id).FirstOrDefault());
                             DiscordButtonComponent hitBtn = new DiscordButtonComponent(DiscordButtonStyle.Primary, "blackjack_hit", "Hit", true);
                             DiscordButtonComponent stayBtn = new DiscordButtonComponent(DiscordButtonStyle.Secondary, "blackjack_stay", "Stay", true);
-                            DiscordButtonComponent dealBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "blackjack_deal", "Deal", true);
                             DiscordButtonComponent leaveBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "blackjack_leave", "Quit", false);
 
                             if ((game.AllowedActions & GameAction.Hit) == GameAction.Hit)
@@ -178,10 +170,6 @@ namespace Fitz.Features.Blackjack.Commands
                             if ((game.AllowedActions & GameAction.Stand) == GameAction.Stand)
                             {
                                 stayBtn = new DiscordButtonComponent(DiscordButtonStyle.Secondary, "blackjack_stay", "Stay", false);
-                            }
-                            if ((game.AllowedActions & GameAction.Deal) == GameAction.Deal)
-                            {
-                                dealBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "blackjack_deal", "Deal", false);
                             }
 
                             if (game.LastState == GameState.DealerWon)
@@ -201,7 +189,7 @@ namespace Fitz.Features.Blackjack.Commands
                             }
                             else
                             {
-                                await BlackjackMessage.ModifyAsync(new DiscordMessageBuilder().ClearEmbeds().AddEmbed(blackJackEmbed(game)).AddComponents(hitBtn, stayBtn, dealBtn, leaveBtn));
+                                await BlackjackMessage.ModifyAsync(new DiscordMessageBuilder().ClearEmbeds().AddEmbed(blackJackEmbed(game)).AddComponents(hitBtn, stayBtn, leaveBtn));
                             }
                         }
                         else
@@ -274,8 +262,8 @@ namespace Fitz.Features.Blackjack.Commands
                 },
                 Color = new DiscordColor(52, 114, 53),
                 Title = $"Blackjack",
-                Description = $"{DiscordEmoji.FromName(dClient, ":house:")}Dealer: {game.Dealer.Fitz.Username}" +
-                $"Beer Pool: 120\n",
+                Description = $"Dealer: {game.Dealer.Fitz.Username}\n" +
+                $"Beer Pool: 128\n",
             };
 
             string dealerHand = string.Empty;
@@ -300,7 +288,22 @@ namespace Fitz.Features.Blackjack.Commands
                         break;
                 }
             }
-            embed.AddField($"Dealer Hand: {game.Dealer.Hand.TotalValue}", dealerHand);
+
+            if (game.LastState == GameState.DealerWon)
+            {
+                embed.AddField($"{DiscordEmoji.FromName(dClient, ":house:")}Dealer Hand: {game.Dealer.Hand.TotalValue}{DiscordEmoji.FromName(dClient, ":star:")}", dealerHand);
+            }
+            else
+            {
+                if (game.LastState == GameState.PlayerWon)
+                {
+                    embed.AddField($"{DiscordEmoji.FromName(dClient, ":house:")}~~Dealer Hand: {game.Dealer.Hand.TotalValue}~~", dealerHand);
+                }
+                else
+                {
+                    embed.AddField($"{DiscordEmoji.FromName(dClient, ":house:")}Dealer Hand: {game.Dealer.Hand.TotalValue}", dealerHand);
+                }
+            }
 
             foreach (Player player in game.Players)
             {
@@ -328,7 +331,7 @@ namespace Fitz.Features.Blackjack.Commands
                 }
                 if (player.Lost)
                 {
-                    embed.AddField($"~~{player.Account.Username}'s Hand: {player.Hand.TotalValue}~~", playerHand);
+                    embed.AddField($"~~{player.Account.Username}'s Hand: {player.Hand.TotalValue}~~{DiscordEmoji.FromName(dClient, ":x:")}", playerHand);
                 }
                 else
                 {
@@ -338,7 +341,14 @@ namespace Fitz.Features.Blackjack.Commands
                     }
                     else
                     {
-                        embed.AddField($"{player.Account.Username}'s Hand: {player.Hand.TotalValue}", playerHand);
+                        if (!player.Lost && game.LastState == GameState.PlayerWon)
+                        {
+                            embed.AddField($"{player.Account.Username}'s Hand: {player.Hand.TotalValue}{DiscordEmoji.FromName(dClient, ":star:")}", playerHand);
+                        }
+                        else
+                        {
+                            embed.AddField($"{player.Account.Username}'s Hand: {player.Hand.TotalValue}", playerHand);
+                        }
                     }
                 }
             }

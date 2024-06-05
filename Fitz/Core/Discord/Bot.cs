@@ -8,6 +8,7 @@ using DSharpPlus.ModalCommands.Extensions;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Commands;
 using Fitz.Core.Commands.Attributes;
+using Fitz.Core.Commands.Settings;
 using Fitz.Core.Services.Features;
 using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Commands;
@@ -29,27 +30,17 @@ using System.Threading.Tasks;
 
 namespace Fitz.Core.Discord
 {
-    public class Bot : Feature
+    public class Bot(IServiceProvider provider, IServiceScopeFactory scopeFactory, ActivityManager activityManager, BotLog botLog, DiscordClient dClient, IAudioService audioService) : Feature
     {
-        private readonly IServiceProvider provider;
-        private readonly IServiceScopeFactory scopeFactory;
-        private readonly ActivityManager activityManager;
-        private readonly BotLog botLog;
-        private readonly DiscordClient dClient;
-        private IAudioService audioService;
+        private readonly IServiceProvider provider = provider;
+        private readonly IServiceScopeFactory scopeFactory = scopeFactory;
+        private readonly ActivityManager activityManager = activityManager;
+        private readonly BotLog botLog = botLog;
+        private readonly DiscordClient dClient = dClient;
+        private readonly IAudioService audioService = audioService;
         private CommandsNextExtension cNext;
         private SlashCommandsExtension slash;
         private ModalCommandsExtension modals;
-
-        public Bot(IServiceProvider provider, IServiceScopeFactory scopeFactory, ActivityManager activityManager, BotLog botLog, DiscordClient dClient, IAudioService audioService)
-        {
-            this.provider = provider;
-            this.scopeFactory = scopeFactory;
-            this.activityManager = activityManager;
-            this.botLog = botLog;
-            this.dClient = dClient;
-            this.audioService = audioService;
-        }
 
         public static bool Ready { get; private set; }
 
@@ -107,8 +98,10 @@ namespace Fitz.Core.Discord
             //this.slash.RegisterCommands<PollSlashCommands>();
 
             //this.cNext.RegisterCommands<PublicCommands>();
+            this.slash.RegisterCommands<SettingsCommands>();
             this.slash.RegisterCommands<PollSlashCommands>();
             this.slash.RegisterCommands<BlackjackSlashCommands>();
+            this.modals.RegisterModals<SettingsModalComands>();
             this.modals.RegisterModals<PollModalCommands>();
             this.modals.RegisterModals<AccountModalCommands>();
 
@@ -240,8 +233,8 @@ namespace Fitz.Core.Discord
                     if (check is RequireAccount)
                     {
                         await args.Context.DeferAsync(true);
-                        DiscordButtonComponent accpetBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "signup_confirm", "Confirm", false);
-                        DiscordButtonComponent cancelBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "singup_cancel", "Cancel", false);
+                        DiscordButtonComponent accpetBtn = new(DiscordButtonStyle.Success, "signup_confirm", "Confirm", false);
+                        DiscordButtonComponent cancelBtn = new(DiscordButtonStyle.Danger, "singup_cancel", "Cancel", false);
 
                         await args.Context.FollowUpAsync(
                             new DiscordFollowupMessageBuilder()
@@ -265,31 +258,38 @@ namespace Fitz.Core.Discord
                                     }
                                     await discordMember.GrantRoleAsync(guild.GetRole(Roles.Accounts));
 
+                                    // Create an account for the user.
                                     AccountService accountService = args.Context.Services.GetService<AccountService>();
-                                    await accountService.CreateAccountAsync(args.Context.User);
-                                    BankService bankService = args.Context.Services.GetService<BankService>();
-                                    Account account = accountService.FindAccount(args.Context.User.Id);
-                                    DiscordEmbedBuilder accountEmbed = new DiscordEmbedBuilder
-                                    {
-                                        Footer = new DiscordEmbedBuilder.EmbedFooter
-                                        {
-                                            IconUrl = DiscordEmoji.FromGuildEmote(args.Context.Client, ManageRoleEmojis.Warning).Url,
-                                            Text = $"Account Creation | ID: 123",
-                                        },
-                                        Color = new DiscordColor(52, 114, 53),
-                                        Timestamp = DateTime.UtcNow,
-                                        Thumbnail = new DiscordEmbedBuilder.EmbedThumbnail
-                                        {
-                                            Url = args.Context.User.AvatarUrl,
-                                        },
-                                        Description = "I collect beer and stupid user data."
-                                    };
-                                    accountEmbed.AddField($"**Creation Date**", $"{account.CreatedDate}", true);
-                                    accountEmbed.AddField($"**Beer**", $"{account.Beer}", true);
-                                    accountEmbed.AddField($"**Lifetime Beer**", $"{account.LifetimeBeer}", true);
-                                    accountEmbed.AddField($"**Favorability**", $"{account.Favorability}", true);
+                                    var accountCreationResult = await accountService.CreateAccountAsync(args.Context.User);
 
-                                    await args.Context.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().AddEmbed(accountEmbed.Build()).WithContent($"Account created. Please try running your original command again."));
+                                    if (accountCreationResult.Success == true)
+                                    {
+                                        // Give user account creation beer
+                                        BankService bankService = args.Context.Services.GetService<BankService>();
+                                        await bankService.AwardAccountCreationBonusAsync(accountCreationResult.Data as Account);
+
+                                        // Get account details from db.
+                                        Account account = accountService.FindAccount(args.Context.User.Id);
+                                        DiscordEmbedBuilder accountEmbed = new DiscordEmbedBuilder
+                                        {
+                                            Footer = new DiscordEmbedBuilder.EmbedFooter
+                                            {
+                                                IconUrl = DiscordEmoji.FromGuildEmote(args.Context.Client, ManageRoleEmojis.Warning).Url,
+                                                Text = $"Account Creation",
+                                            },
+                                            Color = new DiscordColor(52, 114, 53),
+                                            Timestamp = DateTime.UtcNow,
+                                            Thumbnail = new DiscordEmbedBuilder.EmbedThumbnail
+                                            {
+                                                Url = args.Context.User.AvatarUrl,
+                                            },
+                                            Description = "I collect beer and stupid user data."
+                                        };
+                                        accountEmbed.AddField($"**Beer**", $"{account.Beer}", true);
+                                        accountEmbed.AddField($"**Lifetime Beer**", $"{account.LifetimeBeer}", true);
+                                        accountEmbed.AddField($"**Favorability**", $"{account.Favorability}", true);
+                                        await args.Context.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().AddEmbed(accountEmbed.Build()).WithContent($"Account created. Please try running your original command again."));
+                                    }
                                     return;
                                 }
                                 catch (Exception ex)
@@ -300,7 +300,7 @@ namespace Fitz.Core.Discord
                             // if the cancel button was pressed
                             else if (e.Id == "singup_cancel")
                             {
-                                await args.Context.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent("You will need an account to run the command. Please use `/signup` to get started."));
+                                await args.Context.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent("You will need an account to run that command. Use `/signup` to get started."));
                                 return;
                             }
                         };
@@ -324,8 +324,6 @@ namespace Fitz.Core.Discord
             this.botLog.Information(LogConsoleSettings.Commands, Emoji.Run, logMessage);
 
             Log.Debug(logMessage);
-
-            using IServiceScope scope = this.scopeFactory.CreateScope();
 
             return;
         }

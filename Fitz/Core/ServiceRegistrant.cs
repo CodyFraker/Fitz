@@ -13,6 +13,7 @@ using System.Transactions;
 using Fitz.Features.Accounts;
 using Fitz.Features.Bank;
 using Lavalink4NET.Extensions;
+using Fitz.Core.Services.Settings;
 
 namespace Fitz.Core
 {
@@ -40,6 +41,7 @@ namespace Fitz.Core
 #pragma warning restore CA2000 // Dispose objects before losing scope
                 .AddSingleton<FeatureManager>()
                 .AddSingleton<BankService>()
+                .AddSingleton<SettingsService>()
                 .AddSingleton<JobManager>();
         }
     }

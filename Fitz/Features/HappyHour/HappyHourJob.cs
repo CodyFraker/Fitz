@@ -1,6 +1,5 @@
 ﻿using DSharpPlus;
 using DSharpPlus.Entities;
-using Fitz.Core.Discord;
 using Fitz.Core.Services.Jobs;
 using Fitz.Features.Bank;
 using Fitz.Variables;
@@ -8,21 +7,14 @@ using Fitz.Variables.Emojis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.HappyHour
 {
-    public class HappyHourJob : ITimedJob
+    public class HappyHourJob(DiscordClient dClient, BankService bankService) : ITimedJob
     {
-        private readonly DiscordClient dClient;
-        private readonly BankService bankService;
-
-        public HappyHourJob(DiscordClient dClient, BankService bankService)
-        {
-            this.dClient = dClient;
-            this.bankService = bankService;
-        }
+        private readonly DiscordClient dClient = dClient;
+        private readonly BankService bankService = bankService;
 
         public ulong Emoji => PollEmojis.HotTake;
 
@@ -49,7 +41,7 @@ namespace Fitz.Features.HappyHour
                         {
                             foreach (DiscordUser voiceChannelUser in voiceChannel.Users)
                             {
-                                var happyHourResult = await this.bankService.AwardHappyHour(voiceChannelUser.Id, 6);
+                                var happyHourResult = await this.bankService.AwardHappyHour(voiceChannelUser.Id);
                             }
                         }
                     }

@@ -10,16 +10,10 @@ using System.Threading.Tasks;
 namespace Fitz.Core.Commands
 {
     [SlashModuleLifespan(SlashModuleLifespan.Scoped)]
-    internal class GeneralSlashCommands : ApplicationCommandModule
+    public sealed class GeneralSlashCommands(BankService bankService, AccountService accountService) : ApplicationCommandModule
     {
-        private readonly BankService bankService;
-        private readonly AccountService accountService;
-
-        public GeneralSlashCommands(BankService bankService, AccountService accountService)
-        {
-            this.bankService = bankService;
-            this.accountService = accountService;
-        }
+        private readonly BankService bankService = bankService;
+        private readonly AccountService accountService = accountService;
 
         [SlashCommand("beer", "Give a beer to Fitz")]
         [RequireAccount]

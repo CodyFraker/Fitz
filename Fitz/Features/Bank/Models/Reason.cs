@@ -46,5 +46,27 @@
         /// Whenever a user is in a voice channel during happy hour.
         /// </summary>
         HappyHour = 9,
+
+        /// <summary>
+        /// Whenever a user submits a poll.
+        /// </summary>
+        PollSubmitted = 10,
+
+        /// <summary>
+        /// Whenever a user submitted poll is approved.
+        /// </summary>
+        PollApproved = 11,
+
+        /// <summary>
+        /// Whenever a user submitted poll is declined.
+        /// </summary>
+        PollDeclined = 12,
+
+        /// <summary>
+        /// Whenever a user votes on a poll.
+        /// </summary>
+        PollVote = 13,
+
+        PollCreatorTip = 14
     }
 }

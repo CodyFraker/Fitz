@@ -1,6 +1,5 @@
 ﻿using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
-using Fitz.Core.Contexts;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Fitz.Variables;
@@ -11,18 +10,10 @@ using System.Threading.Tasks;
 namespace Fitz.Features.Accounts.Commands
 {
     [SlashModuleLifespan(SlashModuleLifespan.Scoped)]
-    public class AccountAdminSlashCommands : ApplicationCommandModule
+    public class AccountAdminSlashCommands(AccountService accountService, BankService bankService) : ApplicationCommandModule
     {
-        private readonly BotContext db;
-        private readonly AccountService accountService;
-        private readonly BankService bankService;
-
-        public AccountAdminSlashCommands(BotContext db, AccountService accountService, BankService bankService)
-        {
-            this.db = db;
-            this.accountService = accountService;
-            this.bankService = bankService;
-        }
+        private readonly AccountService accountService = accountService;
+        private readonly BankService bankService = bankService;
 
         [SlashCommand("manacc", "Manage account for a specified user.")]
         public async Task ManageAccount(InteractionContext ctx,

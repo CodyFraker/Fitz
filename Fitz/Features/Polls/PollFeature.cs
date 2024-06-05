@@ -11,34 +11,24 @@ using Fitz.Features.Bank;
 using Fitz.Features.Polls.Models;
 using Fitz.Features.Polls.Polls;
 using Fitz.Variables.Channels;
+using Fitz.Variables.Emojis;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Polls
 {
-    public class PollFeature : Feature
+    public class PollFeature(DiscordClient dClient, BotLog botLog, AccountService accountService, BankService bankService, PollService pollService, JobManager jobManager) : Feature
     {
-        private readonly CommandsNextExtension cNext;
-        private readonly JobManager jobManager;
-        private readonly SlashCommandsExtension slash;
-        private AccountService accountService;
-        private PollService pollService;
-        private readonly PollJob pollJob;
-        private BankService bankService;
-        private readonly DiscordClient dClient;
-
-        public PollFeature(DiscordClient dClient, BotLog botLog, AccountService accountService, BankService bankService, PollService pollService, JobManager jobManager)
-        {
-            this.dClient = dClient;
-            this.accountService = accountService;
-            this.bankService = bankService;
-            this.cNext = dClient.GetCommandsNext();
-            this.slash = dClient.GetSlashCommands();
-            this.pollService = pollService;
-            this.pollJob = new PollJob(dClient, pollService, botLog);
-            this.jobManager = jobManager;
-        }
+        private readonly CommandsNextExtension cNext = dClient.GetCommandsNext();
+        private readonly JobManager jobManager = jobManager;
+        private readonly SlashCommandsExtension slash = dClient.GetSlashCommands();
+        private readonly AccountService accountService = accountService;
+        private readonly PollService pollService = pollService;
+        private readonly PollJob pollJob = new PollJob(dClient, pollService, botLog);
+        private readonly BankService bankService = bankService;
+        private readonly DiscordClient dClient = dClient;
 
         public override string Name => "Polls";
 
@@ -63,91 +53,213 @@ namespace Fitz.Features.Polls
 
         private async Task OnReactionAddAsync(DiscordClient dClient, MessageReactionAddEventArgs reaction)
         {
-            // Check if the channel the reaction was added in is the polls channel
-            if (reaction.Channel.Id != Waterbear.Polls)
-            {
-                return;
-            }
-            // We don't want to award bots beer. Or do we?
+            // If Fitz reacted, ignore.
             if (reaction.User.IsBot)
             {
                 return;
             }
 
-            Poll poll = this.pollService.GetPoll(reaction.Message.Id);
-            // Check to see if the message is a poll.
-            if (poll == null)
+            // Check to see if the reaction is in the pending polls channel
+            if (reaction.Message.Channel.Id == Waterbear.PendingPolls || reaction.Message.Channel.Id == Waterbear.Polls)
             {
-                return;
-            }
-            List<PollOptions> options = this.pollService.GetValidPollOptions(poll);
+                // Get the poll from the database.
+                Poll poll = this.pollService.GetPoll(reaction.Message.Id);
+                List<PollOptions> pollOptions = this.pollService.GetPollOptions(poll);
+                DiscordChannel pollChannel = await this.dClient.GetChannelAsync(Waterbear.Polls);
 
-            // Check to see if we're adding a valid poll emoji.
-            if (options.Any((x) => x.EmojiId == reaction.Emoji.Id) || options.Any((x) => x.Name == reaction.Emoji.Name))
-            {
-                PollOptions userOption = new PollOptions();
-                if (reaction.Emoji.Id == 0)
-                {
-                    userOption = options.FirstOrDefault((x) => x.Name == reaction.Emoji.Name);
-                }
-                else
-                {
-                    userOption = options.FirstOrDefault((x) => x.EmojiId == reaction.Emoji.Id);
-                }
+                #region Pending Polls
 
-                // Check to see if reaction.user has an account
-                var account = this.accountService.FindAccount(reaction.User.Id);
-                if (account == null)
+                if (reaction.Message.Channel.Id == Waterbear.PendingPolls)
                 {
-                    // User had no account to award beer. Ignore.
-                    return;
-                }
-                Vote vote = await this.pollService.GetVoteByUserOnPoll(poll, reaction.User.Id);
-                if (vote == null)
-                {
-                    // User has not provided a vote
-                    // add beer to user account
-                    // TODO: Create method in bankservice to award beer for voting instead of using AwardBonus.
-                    await this.bankService.AwardBonus(reaction.User.Id, 1);
-                    await this.pollService.AddVote(poll, userOption, account);
-                }
-                else
-                {
-                    // If user has voted but the choice has entered a null state, update their vote with whatever valid option they chose.
-                    if (vote.Choice == null)
+                    // TODO: Check to see if poll was already approved.
+                    List<DiscordMember> pollApprovers = reaction.Message.Channel.Users.Where(DiscordMember => !DiscordMember.IsBot).ToList();
+
+                    IReadOnlyList<DiscordUser> approvalReactions = await reaction.Message.GetReactionsAsync(DiscordEmoji.FromGuildEmote(dClient, PollEmojis.Yes));
+                    IReadOnlyList<DiscordUser> denyReactions = await reaction.Message.GetReactionsAsync(DiscordEmoji.FromGuildEmote(dClient, PollEmojis.No));
+
+                    // Approved
+                    if (approvalReactions.Where(x => !x.IsBot).Count() >= 2)
                     {
-                        // Update the vote
-                        await this.pollService.UpdateVote(vote, userOption.Id, account);
-                        return;
-                    }
-                    else
-                    {
-                        // If the user has already voted, we need to remove their previous vote and update their vote with the new one.
-                        // Remove their original reaction
-                        PollOptions userOldOption = options.FirstOrDefault((x) => x.Id == vote.Choice.Value);
-                        if (userOldOption == null)
+                        var approvalPendingPollResult = await this.pollService.EvaluatePoll(poll, PollStatus.Approved);
+                        if (approvalPendingPollResult.Success)
                         {
-                            return;
+                            if (pollChannel != null)
+                            {
+                                // Send the poll to the poll channel
+                                DiscordMessage pollMessage = await pollChannel.SendMessageAsync(this.pollService.GeneratePollEmbed(dClient, poll, pollOptions));
+                                foreach (PollOptions option in pollOptions)
+                                {
+                                    if (option.EmojiId == 0)
+                                    {
+                                        await pollMessage.CreateReactionAsync(DiscordEmoji.FromName(dClient, option.EmojiName));
+                                        await Task.Delay(250);
+                                    }
+                                    else if (option.EmojiId != 0)
+                                    {
+                                        await pollMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(dClient, option.EmojiId.Value));
+                                        await Task.Delay(250);
+                                    }
+                                }
+                                // Update the poll's message.id to the new message ID.
+                                poll.MessageId = pollMessage.Id;
+                                await this.pollService.UpdatePollAsync(poll);
+
+                                // Update the pending poll message to show it was approved.
+                                await reaction.Message.ModifyAsync(this.pollService.UpdatePollEmbed(dClient, poll, pollOptions, pollMessage));
+                                await reaction.Message.DeleteAllReactionsAsync();
+
+                                // Send a notification to the user who submitted the poll.
+                                DiscordMember pollCreator = await this.dClient.Guilds.Where(x => x.Value.Id == Variables.Guilds.Waterbear).FirstOrDefault().Value.GetMemberAsync(poll.AccountId);
+                                if (pollCreator != null)
+                                {
+                                    DiscordDmChannel pollCreatorDm = await pollCreator.CreateDmChannelAsync();
+                                    await pollCreatorDm.SendMessageAsync(this.NotifyPollCreatorEmbed(dClient, poll, pollMessage));
+                                }
+                            }
                         }
-                        if (userOldOption.EmojiId == 0)
+                    }
+                    // Denied
+                    else if (denyReactions.Where(x => !x.IsBot).Count() >= 2)
+                    {
+                        var denyPendingPollResult = await this.pollService.EvaluatePoll(poll, PollStatus.Declined);
+                        if (denyPendingPollResult.Success)
                         {
-                            await reaction.Message.DeleteReactionAsync(DiscordEmoji.FromUnicode(userOldOption.Name), reaction.User);
+                            if (pollChannel != null)
+                            {
+                                // Update the pending poll message to show it was denied.
+                                await reaction.Message.ModifyAsync(this.pollService.UpdatePollEmbed(dClient, poll, pollOptions, null));
+                                await reaction.Message.DeleteAllReactionsAsync();
+
+                                // Send a notification to the user who submitted the poll.
+                                DiscordMember pollCreator = await this.dClient.Guilds.Where(x => x.Value.Id == Variables.Guilds.Waterbear).FirstOrDefault().Value.GetMemberAsync(poll.AccountId);
+                                if (pollCreator != null)
+                                {
+                                    DiscordDmChannel pollCreatorDm = await pollCreator.CreateDmChannelAsync();
+                                    await pollCreatorDm.SendMessageAsync(this.NotifyPollCreatorEmbed(dClient, poll, null));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                #endregion Pending Polls
+
+                #region Poll Vote
+
+                if (reaction.Message.ChannelId == Waterbear.Polls)
+                {
+                    // Check to see if we're adding a valid poll emoji.
+                    if (pollOptions.Any((x) => x.EmojiId == reaction.Emoji.Id) || pollOptions.Any((x) => x.EmojiName == reaction.Emoji.Name))
+                    {
+                        PollOptions userOption = new();
+                        if (reaction.Emoji.Id == 0)
+                        {
+                            userOption = pollOptions.FirstOrDefault((x) => x.EmojiName == reaction.Emoji.GetDiscordName());
                         }
                         else
                         {
-                            await reaction.Message.DeleteReactionAsync(DiscordEmoji.FromGuildEmote(dClient, userOldOption.EmojiId.Value), reaction.User);
+                            userOption = pollOptions.FirstOrDefault((x) => x.EmojiId == reaction.Emoji.Id);
                         }
-                        var sdfsdfsdf = userOption;
 
-                        await this.pollService.UpdateVote(vote, userOption.Id, account);
+                        // Check to see if reaction.user has an account
+                        var account = this.accountService.FindAccount(reaction.User.Id);
+                        if (account == null)
+                        {
+                            // User had no account to award beer. Ignore.
+                            return;
+                        }
+                        Vote vote = this.pollService.GetVoteByUserOnPoll(poll, reaction.User.Id);
+                        if (vote == null)
+                        {
+                            // User has not provided a vote
+                            // add beer to user account
+                            await this.pollService.AddVote(poll, userOption, account);
+                        }
+                        else
+                        {
+                            // If user has voted but the choice has entered a null state, update their vote with whatever valid option they chose.
+                            if (vote.Choice == null)
+                            {
+                                // Update the vote
+                                await this.pollService.UpdateVote(vote, userOption.Id, account);
+                                return;
+                            }
+                            else
+                            {
+                                // If the user has already voted, we need to remove their previous vote and update their vote with the new one.
+                                // Remove their original reaction
+                                PollOptions userOldOption = pollOptions.FirstOrDefault((x) => x.Id == vote.Choice.Value);
+                                if (userOldOption == null)
+                                {
+                                    return;
+                                }
+                                if (userOldOption.EmojiId == 0)
+                                {
+                                    await reaction.Message.DeleteReactionAsync(DiscordEmoji.FromUnicode(userOldOption.EmojiName), reaction.User);
+                                }
+                                else
+                                {
+                                    await reaction.Message.DeleteReactionAsync(DiscordEmoji.FromGuildEmote(dClient, userOldOption.EmojiId.Value), reaction.User);
+                                }
+                                var sdfsdfsdf = userOption;
+
+                                await this.pollService.UpdateVote(vote, userOption.Id, account);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        await reaction.Message.DeleteReactionAsync(reaction.Emoji, reaction.User);
+                        return;
                     }
                 }
+
+                #endregion Poll Vote
             }
-            else
+        }
+
+        private DiscordEmbed NotifyPollCreatorEmbed(DiscordClient dClient, Poll poll, DiscordMessage? pollMessage)
+        {
+            // Set base embed color to white.
+            DiscordColor embedColor = new DiscordColor(250, 250, 250);
+            string embedTitle = string.Empty;
+            string description = string.Empty;
+
+            if (poll.Status == PollStatus.Approved)
             {
-                await reaction.Message.DeleteReactionAsync(reaction.Emoji, reaction.User);
-                return;
+                embedColor = new DiscordColor(34, 206, 131);
+                embedTitle = $"Poll #{poll.Id} was approved!";
+                description += $"Question: {poll.Question}\n";
+                description += $"When users react to your poll, you will obtain beer for their votes.\n";
             }
+            if (poll.Status == PollStatus.Declined)
+            {
+                embedColor = new DiscordColor(255, 95, 31);
+                embedTitle = $"Poll #{poll.Id} was denied...";
+                description += $"Question: {poll.Question}\n";
+            }
+
+            description += $"\n";
+
+            if (pollMessage != null)
+            {
+                description += $"\nView Poll -> {pollMessage.JumpLink}\n";
+            }
+
+            DiscordEmbed pollEmbed = new DiscordEmbedBuilder
+            {
+                Footer = new DiscordEmbedBuilder.EmbedFooter
+                {
+                    IconUrl = DiscordEmoji.FromGuildEmote(dClient, PollEmojis.InfoIcon).Url,
+                    Text = $"Poll #{poll.Id} | {poll.Type}",
+                },
+                Color = embedColor,
+                Timestamp = DateTime.UtcNow,
+                Title = embedTitle,
+                Description = description,
+            };
+
+            return pollEmbed;
         }
     }
 }

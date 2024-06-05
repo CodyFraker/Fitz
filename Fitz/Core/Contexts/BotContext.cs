@@ -11,13 +11,8 @@
     using Newtonsoft.Json;
     using System;
 
-    public partial class BotContext : DbContext
+    public partial class BotContext(DbContextOptions<BotContext> options) : DbContext(options)
     {
-        public BotContext(DbContextOptions<BotContext> options)
-            : base(options)
-        {
-        }
-
         /// <summary>
         /// Pulls variables stored in the .env file.
         /// </summary>
@@ -37,7 +32,7 @@
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            JsonSerializerSettings settings = new JsonSerializerSettings()
+            JsonSerializerSettings settings = new()
             {
                 Formatting = Formatting.None,
             };
@@ -46,12 +41,13 @@
                 .Property(s => s.Reason)
                 .HasConversion(new EnumToStringConverter<Reason>());
 
-            modelBuilder.Entity<Settings>()
-                .HasNoKey();
-
             modelBuilder.Entity<Poll>()
                 .Property(s => s.Type)
                 .HasConversion(new EnumToStringConverter<PollType>());
+
+            modelBuilder.Entity<Poll>()
+                .Property(s => s.Status)
+                .HasConversion(new EnumToStringConverter<PollStatus>());
 
             base.OnModelCreating(modelBuilder);
         }

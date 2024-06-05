@@ -20,9 +20,17 @@ namespace Fitz.Core.Discord
             Log.Information(message);
             DiscordChannel channel = consoleChannel switch
             {
-                LogConsoleSettings.Commands => await this.dClient.GetChannelAsync(Waterbear.loggingChannel),
-                LogConsoleSettings.Jobs => await this.dClient.GetChannelAsync(Waterbear.Jobs),
-                LogConsoleSettings.LotteryLog => await this.dClient.GetChannelAsync(Waterbear.LotteryLog),
+                LogConsoleSettings.None => throw new NotImplementedException(),
+                LogConsoleSettings.Commands => await this.dClient.GetChannelAsync(DodeDuke.Commands),
+                LogConsoleSettings.Jobs => await this.dClient.GetChannelAsync(DodeDuke.Jobs),
+                LogConsoleSettings.LotteryLog => await this.dClient.GetChannelAsync(DodeDuke.LotteryLog),
+                LogConsoleSettings.Console => throw new NotImplementedException(),
+                LogConsoleSettings.RoleEdits => throw new NotImplementedException(),
+                LogConsoleSettings.UserInfo => throw new NotImplementedException(),
+                LogConsoleSettings.AccountLog => await this.dClient.GetChannelAsync(DodeDuke.AccountLog),
+                LogConsoleSettings.Transactions => await this.dClient.GetChannelAsync(DodeDuke.Transactions),
+                LogConsoleSettings.PollLog => await this.dClient.GetChannelAsync(DodeDuke.PollLog),
+                LogConsoleSettings.RenameLog => await this.dClient.GetChannelAsync(DodeDuke.RenameLog),
             };
             try
             {
@@ -39,6 +47,11 @@ namespace Fitz.Core.Discord
             Log.Error(message);
             DiscordChannel logChannel = await this.dClient.GetChannelAsync(Waterbear.Exceptions);
             await logChannel.SendMessageAsync(message);
+        }
+
+        internal void Information(LogConsoleSettings accountLog, string v)
+        {
+            throw new NotImplementedException();
         }
     }
 }

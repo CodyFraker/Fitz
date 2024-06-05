@@ -84,7 +84,6 @@ namespace Fitz.Features.Blackjack.Modals
         {
             if ((this.AllowedActions & GameAction.Deal) != GameAction.Deal)
             {
-                // TODO: Add a descriptive error message
                 throw new InvalidOperationException();
             }
 
@@ -134,7 +133,6 @@ namespace Fitz.Features.Blackjack.Modals
                 }
                 else
                 {
-                    // TODO: Add support of other actions
                     this.AllowedActions = GameAction.Hit | GameAction.Stand;
                 }
             }
@@ -144,7 +142,6 @@ namespace Fitz.Features.Blackjack.Modals
         {
             if ((this.AllowedActions & GameAction.Hit) != GameAction.Hit)
             {
-                // TODO: Add a descriptive error message
                 throw new InvalidOperationException();
             }
 
@@ -157,9 +154,7 @@ namespace Fitz.Features.Blackjack.Modals
                 this.NextPlayerTurn();
                 if (CheckIfAnyPlayersHaveTurn() == false)
                 {
-                    this.Dealer.Hand.Show();
-                    this.LastState = GameState.DealerWon;
-                    this.AllowedActions = GameAction.Deal;
+                    this.FinishGame();
                 }
             }
         }
@@ -168,7 +163,6 @@ namespace Fitz.Features.Blackjack.Modals
         {
             if ((this.AllowedActions & GameAction.Stand) != GameAction.Stand)
             {
-                // TODO: Add a descriptive error message
                 throw new InvalidOperationException();
             }
             this.NextPlayerTurn();
@@ -177,26 +171,50 @@ namespace Fitz.Features.Blackjack.Modals
             // If no players have a turn left
             if (CheckIfAnyPlayersHaveTurn() == false)
             {
-                while (this.Dealer.Hand.SoftValue < 17)
-                {
-                    this.deck.GiveAdditionalCard(this.Dealer.Hand);
-                }
-                if (this.Dealer.Hand.TotalValue > 21 || player.Hand.TotalValue > this.Dealer.Hand.TotalValue)
-                {
-                    this.LastState = GameState.PlayerWon;
-                }
-                else if (this.Dealer.Hand.TotalValue == player.Hand.TotalValue)
-                {
-                    this.LastState = GameState.Draw;
-                }
-                else
-                {
-                    this.LastState = GameState.DealerWon;
-                }
-
-                this.Dealer.Hand.Show();
-                this.AllowedActions = GameAction.Deal;
+                this.FinishGame();
             }
+        }
+
+        private void FinishGame()
+        {
+            // If the dealer's hand is less than 17, draw a card
+            while (this.Dealer.Hand.SoftValue < 17)
+            {
+                this.deck.GiveAdditionalCard(this.Dealer.Hand);
+            }
+
+            // If the dealer busts
+            if (this.Dealer.Hand.TotalValue > 21)
+            {
+                // Determine if there is one or more winners
+                List<Player> winners = Players.Where(x => x.Hand.TotalValue > Dealer.Hand.TotalValue && x.Lost == false).ToList();
+                if (winners.Count == 1)
+                {
+                }
+                if (winners.Count >= 2)
+                {
+                }
+                this.LastState = GameState.PlayerWon;
+            }
+            else if (this.Dealer.Hand.TotalValue == 21)
+            {
+                this.LastState = GameState.DealerWon;
+            }
+            else if (Players.Any(x => x.Hand.TotalValue == this.Dealer.Hand.TotalValue && x.Lost == false))
+            {
+                this.LastState = GameState.Draw;
+            }
+            else if (Players.Any(x => x.Hand.TotalValue > this.Dealer.Hand.TotalValue && x.Lost == false))
+            {
+                this.LastState = GameState.PlayerWon;
+            }
+            else
+            {
+                this.LastState = GameState.DealerWon;
+            }
+
+            this.Dealer.Hand.Show();
+            this.AllowedActions = GameAction.Deal;
         }
 
         // Try to find the next player that has a turn if they have lost, skip them.

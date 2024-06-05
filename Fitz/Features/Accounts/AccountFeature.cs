@@ -5,32 +5,18 @@ using Fitz.Core.Discord;
 using Fitz.Core.Services.Features;
 using Fitz.Core.Services.Jobs;
 using Fitz.Features.Accounts.Commands;
-using Fitz.Features.Accounts.Models;
-using Fitz.Features.Bank;
 using Fitz.Variables;
-using System;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Accounts
 {
-    public class UserAccountFeature : Feature
+    public class UserAccountFeature(DiscordClient dClient, AccountService accountService, JobManager jobManager, BotLog botLog) : Feature
     {
-        private readonly JobManager jobManager;
-        private readonly AccountJob accountJob;
-        private readonly BotLog botLog;
-        private readonly SlashCommandsExtension slash;
-        private readonly CommandsNextExtension cNext;
-        private AccountService accountService;
-
-        public UserAccountFeature(DiscordClient dClient, AccountService accountService, BankService bankService, JobManager jobManager, BotLog botLog)
-        {
-            this.accountService = accountService;
-            this.slash = dClient.GetSlashCommands();
-            this.cNext = dClient.GetCommandsNext();
-            this.jobManager = jobManager;
-            this.botLog = botLog;
-            this.accountJob = new AccountJob(accountService, dClient, botLog);
-        }
+        private readonly JobManager jobManager = jobManager;
+        private readonly AccountJob accountJob = new AccountJob(accountService, dClient, botLog);
+        private readonly SlashCommandsExtension slash = dClient.GetSlashCommands();
+        private readonly CommandsNextExtension cNext = dClient.GetCommandsNext();
+        private AccountService accountService = accountService;
 
         public override string Name => "Accounts";
 
@@ -46,8 +32,11 @@ namespace Fitz.Features.Accounts
         public override Task Enable()
         {
             this.jobManager.AddJob(this.accountJob);
-            this.slash.RegisterCommands<AccountSlashCommands>(Guilds.DodeDuke);
+
+            // For some reason, discord isn't wanting to register the command globally.
+            // Hence why I register the commands in two guilds here.
             this.slash.RegisterCommands<AccountSlashCommands>(Guilds.Waterbear);
+            this.slash.RegisterCommands<AccountSlashCommands>(Guilds.DodeDuke);
             this.slash.RegisterCommands<AccountAdminSlashCommands>();
 
             // Check to see if Fitz has an account registered in the database.

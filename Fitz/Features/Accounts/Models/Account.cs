@@ -15,7 +15,7 @@ namespace Fitz.Features.Accounts.Models
         public ulong Id { get; set; }
 
         [Column("username")]
-        public string Username { get; set; }
+        public string? Username { get; set; }
 
         /// <summary>
         /// The currency of the user.

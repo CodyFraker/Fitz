@@ -38,6 +38,8 @@ namespace Fitz.Variables.Channels
         /// </summary>
         public static ulong Exceptions { get; set; } = 1066464756380221580;
 
+        public static ulong Commands { get; set; } = 1066465514655858698;
+
         /// <summary>
         /// Where do we send role edit notifications?
         /// https://discord.com/channels/196820438398140417/1049375962845937774
@@ -55,5 +57,15 @@ namespace Fitz.Variables.Channels
         /// https://discord.com/channels/196820438398140417/1049376002217885757
         /// </summary>
         public static ulong Jobs { get; set; } = 1066464867848048810;
+
+        public static ulong AccountLog { get; set; } = 1247948886480261271;
+
+        public static ulong LotteryLog { get; set; } = 1232351979750031371;
+
+        public static ulong Transactions { get; set; } = 1232354188735021147;
+
+        public static ulong PollLog { get; set; } = 1247990296181080084;
+
+        public static ulong RenameLog { get; set; } = 1247957910827569173;
     }
 }
