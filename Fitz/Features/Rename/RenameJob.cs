@@ -1,5 +1,6 @@
 ﻿using DSharpPlus;
 using DSharpPlus.Entities;
+using DSharpPlus.Exceptions;
 using Fitz.Core.Services.Jobs;
 using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Models;
@@ -39,7 +40,23 @@ namespace Fitz.Features.Rename
                     // Get the affected user
                     Account affectedUser = accountService.FindAccount(rename.AffectedUserId);
                     DiscordGuild waterbear = await this.dClient.GetGuildAsync(Variables.Guilds.Waterbear);
-                    DiscordMember discordMember = await waterbear.GetMemberAsync(affectedUser.Id);
+                    DiscordMember discordMember;
+                    try
+                    {
+                        discordMember = await waterbear.GetMemberAsync(affectedUser.Id);
+                    }
+                    catch(NotFoundException e)
+                    {
+                        // Set the rename as notified.
+                        await renameService.SetUserNotified(rename);
+                        continue;
+                    }
+                    catch (Exception e)
+                    {
+                        // Set the rename as notified.
+                        await renameService.SetUserNotified(rename);
+                        continue;
+                    }
 
                     // If the affected user exists
                     if (affectedUser != null)
