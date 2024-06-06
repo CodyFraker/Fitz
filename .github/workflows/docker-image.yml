@@ -1,28 +1,24 @@
 name: Build Docker Image
-
 on:
   push:
-    branches: [ "master" ]
+    branches:
+      - master
   pull_request:
-    branches: [ "master" ]
-
+    branches:
+      - master
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build . --file Fitz/Dockerfile --tag babys-first-image:$(date +%s)
+      - uses: actions/checkout@v4
+      - name: Build the Docker image
+        run: docker build . --file Fitz/Dockerfile --tag babys-first-image:$(date +%s)
     uses: docker/login-action@v1
-with:
+with: null
 registry: ghcr.io
 username: ${{ github.actor }}
-  password: ${{ secrets.GITHUB_TOKEN }}
-- name: Build the hello-docker Docker image
+password: ${{ secrets.GITHUB_TOKEN }}
 run: |
-       docker build . --tag ghcr.io/CodyFraker/Fitz:latest
-       docker run ghcr.io/CodyFraker/Fitz:latest
-       docker push ghcr.io/CodyFraker/Fitz:latest
+  docker build . --tag ghcr.io/CodyFraker/Fitz:latest
+  docker run ghcr.io/CodyFraker/Fitz:latest
+  docker push ghcr.io/CodyFraker/Fitz:latest
