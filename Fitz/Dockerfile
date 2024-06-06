@@ -5,7 +5,7 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["Fitz/Fitz.csproj", "Fitz/"]
+COPY ["Fitz.csproj", "Fitz/"]
 RUN dotnet restore "./Fitz/Fitz.csproj"
 COPY . .
 WORKDIR "/src/Fitz"
