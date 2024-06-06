@@ -18,7 +18,7 @@
     /// </summary>
 #pragma warning disable CA1001 // Types that own disposable fields should be disposable
 
-    internal class Program
+    public class Program
     {
         private static readonly SystemConsoleTheme BloonConsoleTheme = new SystemConsoleTheme(
             new Dictionary<ConsoleThemeStyle, SystemConsoleThemeStyle>
