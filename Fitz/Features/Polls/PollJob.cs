@@ -102,9 +102,9 @@ namespace Fitz.Features.Polls
                         // Check to see if all poll options were added to the message
                         foreach (PollOptions option in pollOptions)
                         {
-                            if (!message.Reactions.Any(x => x.Emoji.Name == option.EmojiName))
+                            if (!message.Reactions.Any(x => x.Emoji.Name.Contains(option.EmojiName)))
                             {
-                                if (option.EmojiName.Contains(":"))
+                                if (option.EmojiName.Contains(':'))
                                 {
                                     await message.CreateReactionAsync(DiscordEmoji.FromName(dClient, option.EmojiName));
                                 }
