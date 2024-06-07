@@ -18,7 +18,7 @@ namespace Fitz.Features.Polls
 
         public ulong Emoji => PollEmojis.InfoIcon;
 
-        public int Interval => 60;
+        public int Interval => 5;
 
         public async Task Execute()
         {
@@ -47,6 +47,24 @@ namespace Fitz.Features.Polls
                 {
                     // Retrieve all poll options from the database for this poll.
                     List<PollOptions> pollOptions = this.PollService.GetPollOptions(poll);
+                    // Check to see if all poll options were added to the message
+                    if (message.Reactions == null || message.Reactions.Count == 0)
+                    {
+                        foreach (PollOptions option in pollOptions)
+                        {
+                            if (!message.Reactions.Any(x => x.Emoji.Name.Contains(option.EmojiName)))
+                            {
+                                if (option.EmojiName.Contains(':'))
+                                {
+                                    await message.CreateReactionAsync(DiscordEmoji.FromName(dClient, option.EmojiName));
+                                }
+                                else
+                                {
+                                    await message.CreateReactionAsync(DiscordEmoji.FromName(dClient, $":{option.EmojiName}:"));
+                                }
+                            }
+                        }
+                    }
 
                     // Iterate through each reaction on the poll.
                     foreach (DiscordReaction pollReaction in message.Reactions)
@@ -95,22 +113,6 @@ namespace Fitz.Features.Polls
                                         //// Delete the reaction
                                         //await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
                                     }
-                                }
-                            }
-                        }
-
-                        // Check to see if all poll options were added to the message
-                        foreach (PollOptions option in pollOptions)
-                        {
-                            if (!message.Reactions.Any(x => x.Emoji.Name.Contains(option.EmojiName)))
-                            {
-                                if (option.EmojiName.Contains(':'))
-                                {
-                                    await message.CreateReactionAsync(DiscordEmoji.FromName(dClient, option.EmojiName));
-                                }
-                                else
-                                {
-                                    await message.CreateReactionAsync(DiscordEmoji.FromName(dClient, $":{option.EmojiName}:"));
                                 }
                             }
                         }
