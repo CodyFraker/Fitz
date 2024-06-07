@@ -52,7 +52,7 @@ namespace Fitz.Features.Polls
                     foreach (DiscordReaction pollReaction in message.Reactions)
                     {
                         // Check to see the poll option is in the database for this particular poll. If not, remove it.
-                        if (!pollOptions.Any(x => x.EmojiName == pollReaction.Emoji.Name))
+                        if (!pollOptions.Any(x => x.EmojiName.Contains(pollReaction.Emoji.Name)))
                         {
                             // Delete the reaction(s)
                             await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
