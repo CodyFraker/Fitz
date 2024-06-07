@@ -73,7 +73,7 @@ namespace Fitz.Features.Polls
                         if (!pollOptions.Any(x => x.EmojiName.Contains(pollReaction.Emoji.Name)))
                         {
                             // Delete the reaction(s)
-                            await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
+                            //await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
                         }
                         else
                         {
