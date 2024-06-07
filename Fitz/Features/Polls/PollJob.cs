@@ -85,15 +85,15 @@ namespace Fitz.Features.Polls
                                 {
                                     if (userVote.PollId != poll.Id)
                                     {
-                                        // Delete the reaction
-                                        await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
+                                        //// Delete the reaction
+                                        //await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
                                     }
 
                                     // If the user's choice isn't in the pollOptions, we need to remove the reaction.
                                     if (!pollOptions.Any(x => x.EmojiName == pollReaction.Emoji.Name))
                                     {
-                                        // Delete the reaction
-                                        await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
+                                        //// Delete the reaction
+                                        //await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
                                     }
                                 }
                             }
@@ -104,7 +104,14 @@ namespace Fitz.Features.Polls
                         {
                             if (!message.Reactions.Any(x => x.Emoji.Name == option.EmojiName))
                             {
-                                // Add the reaction
+                                if (option.EmojiName.Contains(":"))
+                                {
+                                    await message.CreateReactionAsync(DiscordEmoji.FromName(dClient, option.EmojiName));
+                                }
+                                else
+                                {
+                                    await message.CreateReactionAsync(DiscordEmoji.FromName(dClient, $":{option.EmojiName}:"));
+                                }
                             }
                         }
                     }
