@@ -8,6 +8,7 @@ using Fitz.Features.Rename.Models;
 using Fitz.Variables.Emojis;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Rename
@@ -32,7 +33,7 @@ namespace Fitz.Features.Rename
                 return;
             }
 
-            foreach (Renames rename in renames)
+            foreach (Renames rename in renames.Where(x => x.Notified == false))
             {
                 // if the rename has expired
                 if (rename.Expiration < DateTime.Now)
@@ -45,7 +46,7 @@ namespace Fitz.Features.Rename
                     {
                         discordMember = await waterbear.GetMemberAsync(affectedUser.Id);
                     }
-                    catch(NotFoundException e)
+                    catch (NotFoundException e)
                     {
                         // Set the rename as notified.
                         await renameService.SetUserNotified(rename);
@@ -96,7 +97,7 @@ namespace Fitz.Features.Rename
 
         private DiscordEmbed renameEmbed(Renames rename, Account affectedUser)
         {
-            DiscordEmbedBuilder embed = new DiscordEmbedBuilder
+            DiscordEmbedBuilder embed = new()
             {
                 Footer = new DiscordEmbedBuilder.EmbedFooter
                 {

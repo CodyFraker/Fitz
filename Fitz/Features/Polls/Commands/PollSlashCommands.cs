@@ -5,6 +5,7 @@ using Fitz.Core.Models;
 using Fitz.Core.Services.Settings;
 using Fitz.Features.Accounts;
 using Fitz.Features.Polls.Models;
+using Fitz.Variables;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -22,7 +23,6 @@ namespace Fitz.Features.Polls.Polls
             [Option("Type", "pollType")] PollType pollType = PollType.Number)
         {
             var account = accountService.FindAccount(ctx.User.Id);
-
             if (account == null)
             {
                 await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder()
@@ -34,6 +34,7 @@ namespace Fitz.Features.Polls.Polls
             {
                 await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder()
                                                           .WithContent($"You need at least {settings.PollSubmittedPenalty + settings.PollDeclinedPenalty} beer to create a poll.").AsEphemeral(true));
+                return;
             }
 
             if (this.pollService.GetPollsSubmittedByUser(account.Id).Where(x => x.Status == PollStatus.Pending).Count() >= settings.MaxPendingPolls)

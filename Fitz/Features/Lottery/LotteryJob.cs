@@ -35,7 +35,7 @@ namespace Fitz.Features.Lottery
 
         public ulong Emoji => LotteryEmojis.Lottery;
 
-        public int Interval => 5;
+        public int Interval => 1;
 
         public async Task Execute()
         {
@@ -92,7 +92,7 @@ namespace Fitz.Features.Lottery
                 }
 
                 DiscordChannel lotteryChannel = await this.dClient.GetChannelAsync(Waterbear.LotteryInfo);
-                DiscordEmbedBuilder lotteryEmbed = new DiscordEmbedBuilder
+                DiscordEmbedBuilder lotteryEmbed = new()
                 {
                     Footer = new DiscordEmbedBuilder.EmbedFooter
                     {
@@ -108,7 +108,9 @@ namespace Fitz.Features.Lottery
                     Description = $"{DiscordEmoji.FromName(this.dClient, ":beer:")}Beer Pool: `{currentDrawing.Pool}` \n" +
                     $"{DiscordEmoji.FromGuildEmote(this.dClient, LotteryEmojis.Ticket)}Total Tickets: `{(int)lotteryService.GetTotalTickets().Data}`\n" +
                     $"{DiscordEmoji.FromGuildEmote(this.dClient, AccountEmojis.Users)}Total Users: `{(int)lotteryService.GetTotalLotteryParticipant().Data}`\n" +
-                    $"{DiscordEmoji.FromName(this.dClient, ":clock2:")}Time Left: `{(int)this.lotteryService.GetRemainingHoursUntilNextDrawing().Data}` Hrs"
+                    $"{DiscordEmoji.FromName(this.dClient, ":clock2:")}Time Left: `{(int)this.lotteryService.GetRemainingHoursUntilNextDrawing().Data}` Hrs\n" +
+                    $"Ticket cost: `{settings.TicketCost}` beer\n" +
+                    $"Max Tickets per user: `{settings.MaxTickets}`"
                 };
 
                 string winnerNames = string.Empty;
@@ -133,7 +135,7 @@ namespace Fitz.Features.Lottery
                     {
                         if (message.Author.Id == this.dClient.CurrentUser.Id)
                         {
-                            await message.ModifyAsync(content: "Use `/lottery` to get started.", embed: lotteryEmbed.Build());
+                            await message.ModifyAsync(content: "Use `/lottery 0` for help.", embed: lotteryEmbed.Build());
                             this.botLog.Information(LogConsoleSettings.Jobs, LotteryEmojis.Lottery, $"Finished Lottery Job");
                             return;
                         }

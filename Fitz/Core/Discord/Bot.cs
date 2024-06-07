@@ -8,6 +8,7 @@ using DSharpPlus.ModalCommands.Extensions;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Commands;
 using Fitz.Core.Commands.Attributes;
+using Fitz.Core.Commands.Help;
 using Fitz.Core.Commands.Settings;
 using Fitz.Core.Services.Features;
 using Fitz.Features.Accounts;
@@ -99,6 +100,7 @@ namespace Fitz.Core.Discord
 
             //this.cNext.RegisterCommands<PublicCommands>();
             this.slash.RegisterCommands<SettingsCommands>();
+            this.slash.RegisterCommands<HelpSlashCommands>();
             this.slash.RegisterCommands<PollSlashCommands>();
             this.slash.RegisterCommands<BlackjackSlashCommands>();
             this.modals.RegisterModals<SettingsModalComands>();
@@ -270,7 +272,7 @@ namespace Fitz.Core.Discord
 
                                         // Get account details from db.
                                         Account account = accountService.FindAccount(args.Context.User.Id);
-                                        DiscordEmbedBuilder accountEmbed = new DiscordEmbedBuilder
+                                        DiscordEmbedBuilder accountEmbed = new()
                                         {
                                             Footer = new DiscordEmbedBuilder.EmbedFooter
                                             {

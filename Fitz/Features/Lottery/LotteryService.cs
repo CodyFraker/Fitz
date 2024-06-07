@@ -587,7 +587,7 @@ namespace Fitz.Features.Lottery
                 multiWinners = $"With a total of {winners.Count()} winner(s), you've won `{lottery.Pool / winners.Count()}`\n";
             }
 
-            DiscordEmbedBuilder lotteryEmbed = new DiscordEmbedBuilder
+            DiscordEmbedBuilder lotteryEmbed = new()
             {
                 Footer = new DiscordEmbedBuilder.EmbedFooter
                 {
@@ -608,6 +608,31 @@ namespace Fitz.Features.Lottery
                 $"New beer balance: `BEER AMOUNT`",
             };
 
+            return lotteryEmbed;
+        }
+
+        public DiscordEmbed LotteryEmbed(DiscordClient dClient, Models.Lottery lottery, Settings settings)
+        {
+            DiscordEmbedBuilder lotteryEmbed = new()
+            {
+                Footer = new DiscordEmbedBuilder.EmbedFooter
+                {
+                    IconUrl = DiscordEmoji.FromGuildEmote(dClient, LotteryEmojis.Ticket).Url,
+                    Text = $"Lottery#{lottery.Id} | Last Winning Ticket: {this.GetLastWinningTicket()}",
+                },
+                Color = new DiscordColor(52, 114, 53),
+                Thumbnail = new DiscordEmbedBuilder.EmbedThumbnail
+                {
+                    Url = DiscordEmoji.FromGuildEmote(dClient, LotteryEmojis.Lottery).Url,
+                },
+                Title = $"Current Lottery Information",
+                Description = $"{DiscordEmoji.FromName(dClient, ":beer:")}Beer Pool: `{lottery.Pool}` \n" +
+                $"{DiscordEmoji.FromGuildEmote(dClient, LotteryEmojis.Ticket)}Total Tickets: `{(int)this.GetTotalTickets().Data}`\n" +
+                $"{DiscordEmoji.FromGuildEmote(dClient, AccountEmojis.Users)}Total Users: `{(int)this.GetTotalLotteryParticipant().Data}`\n" +
+                $"{DiscordEmoji.FromName(dClient, ":clock2:")}Time Left: `{(int)this.GetRemainingHoursUntilNextDrawing().Data}` Hrs\n" +
+                $"Ticket cost: `{settings.TicketCost}` beer\n" +
+                $"Max Tickets per user: `{settings.MaxTickets}`"
+            };
             return lotteryEmbed;
         }
 

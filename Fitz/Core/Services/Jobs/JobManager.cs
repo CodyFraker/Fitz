@@ -27,7 +27,7 @@
         {
             this.factory = factory;
             this.botLog = botLog;
-            jobs = new HashSet<ITimedJob>();
+            jobs = [];
         }
 
         public void Start()
@@ -72,10 +72,10 @@
 
         private async void TimerElapsed(object sender, ElapsedEventArgs e)
         {
-            List<ITimedJob> timedJobs = new List<ITimedJob>();
+            List<ITimedJob> timedJobs = [];
             using IServiceScope scope = factory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-            List<Job> dbJobs = db.Jobs.ToList();
+            List<Job> dbJobs = [.. db.Jobs];
 
             foreach (ITimedJob timedJob in jobs)
             {

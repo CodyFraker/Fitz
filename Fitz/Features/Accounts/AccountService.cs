@@ -1,4 +1,5 @@
-﻿using DSharpPlus.Entities;
+﻿using DSharpPlus;
+using DSharpPlus.Entities;
 using Fitz.Core.Contexts;
 using Fitz.Core.Discord;
 using Fitz.Core.Models;
@@ -11,6 +12,7 @@ using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Principal;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Accounts
@@ -311,5 +313,30 @@ namespace Fitz.Features.Accounts
         }
 
         #endregion Query & Find Accounts
+
+        #region Embeds
+
+        public DiscordEmbed AccountHelpEmbed(DiscordClient dClient)
+        {
+            DiscordEmbedBuilder accountHelpEmbed = new DiscordEmbedBuilder
+            {
+                Footer = new DiscordEmbedBuilder.EmbedFooter
+                {
+                    IconUrl = DiscordEmoji.FromGuildEmote(dClient, AccountEmojis.Users).Url,
+                    Text = $"Account Command Help",
+                },
+                Color = new DiscordColor(52, 114, 53),
+                Timestamp = DateTime.UtcNow,
+                Title = "Account Command Help",
+                Description = "**Commands**\n" +
+                $"`/signup`: Create an account with me. Everyone needs one.\n" +
+                $"`/settings`: Edit your account settings.\n" +
+                $"`/account`: View your account details\n"
+            };
+
+            return accountHelpEmbed.Build();
+        }
+
+        #endregion Embeds
     }
 }

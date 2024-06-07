@@ -32,9 +32,9 @@ namespace Fitz.Features.Lottery.Commands
 
         #region Lottery
 
-        [SlashCommand("lottery", "Play stupid games. Win beer. Lose beer. 1 ticket = 1 beer.")]
+        [SlashCommand("lottery", "Play stupid games. Win beer. Lose beer.")]
         [RequireAccount]
-        public async Task Lottery(InteractionContext ctx, [Option("Tickets", "How many tickets do you want? (max: 36)")] long tickets = 0)
+        public async Task Lottery(InteractionContext ctx, [Option("Tickets", "How many tickets do you want?")] long tickets = 0)
         {
             await ctx.DeferAsync(true);
             // If no tickets are specified, send help embed.
@@ -128,20 +128,18 @@ namespace Fitz.Features.Lottery.Commands
 
             using var qrGenerator = new QRCodeGenerator();
             using var qrCodeData = qrGenerator.CreateQrCode(ticketNumbers, QRCodeGenerator.ECCLevel.Q);
-            PngByteQRCode qrCodeImage = new PngByteQRCode(qrCodeData);
-            using (MemoryStream ms = new MemoryStream(qrCodeImage.GetGraphic(5, false)))
-            {
-                DiscordInteractionResponseBuilder responseBuilder = new DiscordInteractionResponseBuilder();
-                responseBuilder.AddFile("qrCode.png", ms);
-                responseBuilder.AddEmbed(lotteryEmbed(account, lottery, daysLeft, userTickets)).AsEphemeral(true);
+            PngByteQRCode qrCodeImage = new(qrCodeData);
+            using MemoryStream ms = new(qrCodeImage.GetGraphic(5, false));
+            DiscordInteractionResponseBuilder responseBuilder = new();
+            responseBuilder.AddFile("qrCode.png", ms);
+            responseBuilder.AddEmbed(lotteryEmbed(account, lottery, daysLeft, userTickets)).AsEphemeral(true);
 
-                DiscordWebhookBuilder webhookBuilder = new DiscordWebhookBuilder();
-                webhookBuilder.AddFile("qrCode.png", ms);
-                webhookBuilder.AddEmbed(lotteryEmbed(account, lottery, daysLeft, userTickets));
+            DiscordWebhookBuilder webhookBuilder = new();
+            webhookBuilder.AddFile("qrCode.png", ms);
+            webhookBuilder.AddEmbed(lotteryEmbed(account, lottery, daysLeft, userTickets));
 
-                //await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, responseBuilder);
-                await ctx.EditResponseAsync(webhookBuilder);
-            }
+            //await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, responseBuilder);
+            await ctx.EditResponseAsync(webhookBuilder);
         }
 
         #endregion Lottery
@@ -153,7 +151,7 @@ namespace Fitz.Features.Lottery.Commands
         public async Task LotteryInfo(InteractionContext ctx)
         {
             Models.Lottery drawing = lotteryService.GetCurrentLottery();
-            List<Ticket> userTickets = new List<Ticket>();
+            List<Ticket> userTickets = new();
             Account account = accountService.FindAccount(ctx.User.Id);
             int daysLeft = (int)this.lotteryService.GetRemainingHoursUntilNextDrawing().Data;
             userTickets = lotteryService.GetUserTickets(accountService.FindAccount(ctx.User.Id)).Data as List<Ticket>;
@@ -165,16 +163,14 @@ namespace Fitz.Features.Lottery.Commands
 
             using var qrGenerator = new QRCodeGenerator();
             using var qrCodeData = qrGenerator.CreateQrCode(ticketNumbers, QRCodeGenerator.ECCLevel.Q);
-            PngByteQRCode qrCodeImage = new PngByteQRCode(qrCodeData);
+            PngByteQRCode qrCodeImage = new(qrCodeData);
 
-            using (MemoryStream ms = new MemoryStream(qrCodeImage.GetGraphic(5, false)))
-            {
-                DiscordInteractionResponseBuilder responseBuilder = new DiscordInteractionResponseBuilder();
-                responseBuilder.AddFile("qrCode.png", ms);
-                responseBuilder.AddEmbed(lotteryEmbed(account, drawing, daysLeft, userTickets)).AsEphemeral(true);
+            using MemoryStream ms = new MemoryStream(qrCodeImage.GetGraphic(5, false));
+            DiscordInteractionResponseBuilder responseBuilder = new();
+            responseBuilder.AddFile("qrCode.png", ms);
+            responseBuilder.AddEmbed(lotteryEmbed(account, drawing, daysLeft, userTickets)).AsEphemeral(true);
 
-                await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, responseBuilder);
-            }
+            await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, responseBuilder);
         }
 
         #endregion Lottery Info
@@ -202,7 +198,7 @@ namespace Fitz.Features.Lottery.Commands
             {
                 ticketNumbers += $"{DiscordEmoji.FromName(ctx.Client, ":ticket:")}{ticket.Number}, ";
             }
-            DiscordEmbedBuilder lotteryEmbed = new DiscordEmbedBuilder
+            DiscordEmbedBuilder lotteryEmbed = new()
             {
                 Footer = new DiscordEmbedBuilder.EmbedFooter
                 {

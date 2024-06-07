@@ -48,7 +48,6 @@ namespace Fitz.Features.HappyHour
                 }
                 else
                 {
-                    Console.WriteLine("Not happy hour");
                 }
             }
             catch (Exception ex)

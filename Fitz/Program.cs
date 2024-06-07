@@ -104,7 +104,6 @@
                 registrant.ConfigureServices(services);
             }
             services.AddHostedService<Service>();
-
             Log.Information("Services configured");
         }
     }

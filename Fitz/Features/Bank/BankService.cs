@@ -275,10 +275,10 @@ namespace Fitz.Features.Bank
                     return new Result(false, $"{userId} did not have an account.", null);
                 }
 
-                account.Beer -= settings.PollSubmittedPenalty;
+                account.Beer -= (settings.PollSubmittedPenalty + settings.PollDeclinedPenalty);
                 db.Update(account);
                 await db.SaveChangesAsync();
-                await LogTransactionAsync(account, account, settings.PollSubmittedPenalty, Reason.PollSubmitted);
+                await LogTransactionAsync(account, account, (settings.PollSubmittedPenalty + settings.PollDeclinedPenalty), Reason.PollSubmitted);
 
                 return new Result(true, $"Deducted poll submitted penalty to {account.Username}.", account);
             }

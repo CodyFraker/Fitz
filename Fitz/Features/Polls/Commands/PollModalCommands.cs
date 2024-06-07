@@ -531,11 +531,11 @@ namespace Fitz.Features.Polls.Polls
                 // If the confirm button was pressed
                 if (e.Id == $"hottake_poll_confirm_{unique_id}")
                 {
-                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Posting poll.."));
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Submitting poll.."));
                     var sendPoll = await SendPendingPoll(ctx, question, pollOptions, PollType.HotTake);
                     if (sendPoll.Success)
                     {
-                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll Created."));
+                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll Submitted."));
                     }
                     else
                     {
@@ -545,7 +545,7 @@ namespace Fitz.Features.Polls.Polls
                 // if the cancel button was pressed
                 else if (e.Id == $"hottake_poll_cancel_{unique_id}")
                 {
-                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll not created."));
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll creation canceled"));
                     return;
                 }
             };
