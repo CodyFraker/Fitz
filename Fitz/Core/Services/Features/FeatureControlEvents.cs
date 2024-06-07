@@ -54,13 +54,13 @@ namespace Fitz.Core.Services.Features
 
         private async Task OnMessageReactionAdded(DiscordClient dClient, MessageReactionAddEventArgs args)
         {
-            if (args.Guild.Id != Guilds.DodeDuke || args.Channel.Id != Waterbear.Settings || args.User.Id == dClient.CurrentUser.Id)
+            if (args.Guild.Id != Guilds.DodeDuke || args.Channel.Id != DodeDuke.Settings || args.User.Id == dClient.CurrentUser.Id)
             {
                 return;
             }
 
-            DiscordChannel settingsChannel = await this.dClient.GetChannelAsync(Waterbear.Settings);
-            DiscordChannel botMods = await this.dClient.GetChannelAsync(Waterbear.BotMods);
+            DiscordChannel settingsChannel = await this.dClient.GetChannelAsync(DodeDuke.Settings);
+            DiscordChannel botMods = await this.dClient.GetChannelAsync(DodeDuke.BotMods);
             DiscordMessage featureMessage = await settingsChannel.GetMessageAsync(args.Message.Id);
             Feature feature = this.featureManager.Features.Where(f => f.Name == featureMessage.Embeds[0]?.Title).FirstOrDefault();
 
@@ -96,7 +96,7 @@ namespace Fitz.Core.Services.Features
 
             await this.dClient.Guilds[Guilds.DodeDuke].GetEmojisAsync();
 
-            DiscordChannel settingsChannel = await this.dClient.GetChannelAsync(Waterbear.Settings);
+            DiscordChannel settingsChannel = await this.dClient.GetChannelAsync(DodeDuke.Settings);
 
             IAsyncEnumerable<DiscordMessage> messages = settingsChannel.GetMessagesAsync(this.featureManager.Features.Count);
 

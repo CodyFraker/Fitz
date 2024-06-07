@@ -476,8 +476,8 @@ namespace Fitz.Features.Bank
                 };
                 db.Add(transaction);
                 await db.SaveChangesAsync();
-                Log.Debug($"Transaction logged: Sender: {sender} | Recipient: {recipient} | Amount: {amount}, Reason: {reason}");
-                this.botLog.Information(LogConsoleSettings.Transactions, BankEmojis.Transaction, $"Transaction logged: Sender: {sender} | Recipient: {recipient} | Amount: {amount}, Reason: {reason}");
+                Log.Debug($"Transaction logged: Sender: {sender.Username} | Recipient: {recipient.Username} | Amount: {amount}, Reason: {reason}");
+                this.botLog.Information(LogConsoleSettings.Transactions, BankEmojis.Transaction, $"Transaction logged: Sender: {sender.Username} | Recipient: {recipient.Username} | Amount: {amount}, Reason: {reason}");
             }
             catch (Exception ex)
             {

@@ -195,7 +195,7 @@ namespace Fitz.Features.Lottery
                                 await lotteryService.CreateTicket(subscriber, subscriber.SubscribeTickets);
 
                                 await lotteryService.AddToPool(subscriber.SubscribeTickets);
-
+                                userTickets = lotteryService.GetUserTickets(subscriber).Data as List<Ticket>;
                                 await MessageEnrolleeSuccess(subscriber, userTickets);
                             }
                         }

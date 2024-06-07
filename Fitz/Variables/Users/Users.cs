@@ -2,8 +2,8 @@
 {
     public static class Users
     {
-        public static ulong productionBot = 225677282709209090;
-        public static ulong developmentBot = 225677282709209090;
+        public static ulong ProductionBot = 746797148263415989;
+        public static ulong DevelopmentBot = 842058955043897394;
         public const ulong DukeofSussex = 244407876683169792;
         public const ulong Spy = 104359875206725632;
         public const ulong Dodecuplet = 103967428408512512;
@@ -11,7 +11,7 @@
 
         public static void MockFakeStub()
         {
-            productionBot = developmentBot;
+            ProductionBot = DevelopmentBot;
         }
     }
 }

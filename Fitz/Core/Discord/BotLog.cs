@@ -35,6 +35,7 @@ namespace Fitz.Core.Discord
             try
             {
                 await channel.SendMessageAsync($"**[{DateTime.UtcNow}]** {DiscordEmoji.FromGuildEmote(this.dClient, emoji)} {message}");
+                Console.WriteLine($"**[{DateTime.UtcNow}]** {message}");
             }
             catch (Exception ex)
             {
@@ -45,7 +46,8 @@ namespace Fitz.Core.Discord
         public async void Error(string message)
         {
             Log.Error(message);
-            DiscordChannel logChannel = await this.dClient.GetChannelAsync(Waterbear.Exceptions);
+            Console.WriteLine($"**[{DateTime.UtcNow}]** {message}");
+            DiscordChannel logChannel = await this.dClient.GetChannelAsync(DodeDuke.Exceptions);
             await logChannel.SendMessageAsync(message);
         }
 

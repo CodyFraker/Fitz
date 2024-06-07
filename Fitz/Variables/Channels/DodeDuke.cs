@@ -42,9 +42,9 @@ namespace Fitz.Variables.Channels
 
         /// <summary>
         /// Where do we send role edit notifications?
-        /// https://discord.com/channels/196820438398140417/1049375962845937774
+        /// https://discord.com/channels/196820438398140417/1248654353833918596
         /// </summary>
-        public static ulong RoleEdits { get; set; } = 1066465514655858698;
+        public static ulong RoleEdits { get; set; } = 1248654353833918596;
 
         /// <summary>
         /// Where do we send user event notifications?

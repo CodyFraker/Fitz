@@ -36,7 +36,7 @@ namespace Fitz.Features.Accounts
             // For some reason, discord isn't wanting to register the command globally.
             // Hence why I register the commands in two guilds here.
             this.slash.RegisterCommands<AccountSlashCommands>(Guilds.Waterbear);
-            this.slash.RegisterCommands<AccountSlashCommands>(Guilds.DodeDuke);
+            //this.slash.RegisterCommands<AccountSlashCommands>(Guilds.DodeDuke);
             this.slash.RegisterCommands<AccountAdminSlashCommands>();
 
             // Check to see if Fitz has an account registered in the database.

@@ -3,11 +3,7 @@ using DSharpPlus.SlashCommands;
 using Fitz.Core.Services.Features;
 using Fitz.Features.Music.Commands;
 using Lavalink4NET;
-using Lavalink4NET.Extensions;
-using Lavalink4NET.Players;
-using Lavalink4NET.Players.Queued;
 using Microsoft.Extensions.DependencyInjection;
-using System;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Music

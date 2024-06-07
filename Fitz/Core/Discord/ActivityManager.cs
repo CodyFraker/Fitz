@@ -56,49 +56,6 @@ namespace Fitz.Core.Discord
         }
 
         /// <summary>
-        /// Advertises/Shares a stream. '<paramref name="force"/>' overrides any current stream.
-        /// </summary>
-        /// <param name="streamerID">Discord user id.</param>
-        /// <param name="streamerName">Stream name.</param>
-        /// <param name="url">Stream url.</param>
-        /// <param name="force">Force Bloon to switch to this stream.</param>
-        /// <returns>Awaitable task.</returns>
-#pragma warning disable CA1054 // Uri parameters should not be strings
-
-        public async Task SetStreamAsync(ulong streamerID, string streamerName, string url, bool force = false)
-#pragma warning restore CA1054 // Uri parameters should not be strings
-        {
-            if (!force && this.dClient.CurrentUser.Presence.Activity.ActivityType == DiscordActivityType.Streaming)
-            {
-                return;
-            }
-
-            DiscordChannel sbgGeneral = await this.dClient.GetChannelAsync(Waterbear.loggingChannel);
-            DiscordEmbed streamEmbed = new DiscordEmbedBuilder
-            {
-                Footer = new DiscordEmbedBuilder.EmbedFooter
-                {
-                    Text = url,
-                    IconUrl = DiscordEmoji.FromGuildEmote(this.dClient, Emoji.Run).Url,
-                },
-                Description = $"{streamerName} is streaming Intruder! Stop by and check them out! [**{streamerName}'s Stream**]({url})",
-                Color = new DiscordColor(100, 64, 165),
-                Timestamp = DateTime.UtcNow,
-                Title = $"*Stream Detected!*",
-            };
-
-            this.streamOwnerID = streamerID;
-            await this.dClient.UpdateStatusAsync(new DiscordActivity
-            {
-                ActivityType = DiscordActivityType.Streaming,
-                Name = $"Intruder with {streamerName}",
-                StreamUrl = url,
-            });
-
-            await sbgGeneral.SendMessageAsync(embed: streamEmbed);
-        }
-
-        /// <summary>
         /// Sets Bloon's activity if not currently streaming.
         /// </summary>
         /// <param name="activity">Activity description.</param>

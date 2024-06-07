@@ -1,4 +1,5 @@
 ﻿using DSharpPlus;
+using Fitz.Variables.Channels;
 using Serilog;
 
 namespace Fitz.Variables
@@ -7,14 +8,16 @@ namespace Fitz.Variables
     {
         public static void ApplyVariableScopes(DiscordClient dClient)
         {
-            bool isDev = dClient.CurrentUser.Id == Users.Dodecuplet;
+            bool isDev = dClient.CurrentUser.Id == Users.DevelopmentBot;
 
             if (isDev)
             {
                 Log.Warning("Development account detected, overriding variables.");
-                Channels.DodeDuke.Settings = Channels.DodeDuke.Settings;
+                DodeDuke.Settings = DodeDuke.DevelopmentSettings;
+                Waterbear.MockFakeStub();
                 Guilds.MockFakeStub();
-                Fitz.Variables.Users.MockFakeStub();
+                Roles.MockFakeStub();
+                Users.MockFakeStub();
             }
         }
     }
