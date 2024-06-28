@@ -10,53 +10,47 @@ using Fitz.Variables.Emojis;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Rename
 {
     public class RenameService(IServiceScopeFactory scopeFactory, AccountService accountService, BankService bankService, SettingsService settingsService, BotLog botLog)
     {
+        #region Private Members
+
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly AccountService accountService = accountService;
         private readonly BankService bankService = bankService;
         private readonly SettingsService settingsService = settingsService;
         private readonly BotLog botLog = botLog;
 
-        public async Task<Result> RenameUserAsync(Account affectedUser, Account requestedUser, string newName, int days, int cost)
+        #endregion Private Members
+
+        #region Create Rename
+
+        public async Task<Result> RenameUserAsync(Renames rename)
         {
-            if (affectedUser == null || requestedUser == null)
+            try
             {
-                return new Result(false, "One of the users does not have an account.", null);
+                using IServiceScope scope = scopeFactory.CreateScope();
+                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+                db.Renames.Add(rename);
+                await db.SaveChangesAsync();
+                await this.bankService.PurchaseRenameAsync(rename.RequestedUserId, rename.Cost);
+                this.botLog.Information(LogConsoleSettings.RenameLog, AccountEmojis.Edit, $"User {rename.RequestedUserId} has renamed user {rename.AffectedUserId} with the name {rename.NewName} for {rename.Days} day(s). Costed: {rename.Cost}");
+                return new Result(true, "Successfully renamed user.", null);
             }
-
-            // Don't allow users to rename the bot.
-            if (affectedUser.Username == "Fitz")
+            catch (Exception ex)
             {
-                return new Result(false, "You can't rename the bot.", null);
+                return new Result(false, ex.Message, null);
             }
-
-            using IServiceScope scope = scopeFactory.CreateScope();
-            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-
-            db.Renames.Add(new Renames()
-            {
-                OldName = affectedUser.Username,
-                NewName = newName,
-                AffectedUserId = affectedUser.Id,
-                RequestedUserId = requestedUser.Id,
-                Days = days,
-                Expiration = DateTime.Now.AddDays(days),
-                Timestamp = DateTime.Now,
-            });
-            await db.SaveChangesAsync();
-            await this.bankService.PurchaseRenameAsync(requestedUser, cost);
-            this.botLog.Information(LogConsoleSettings.RenameLog, AccountEmojis.Edit, $"User {requestedUser.Id} has renamed user {affectedUser.Id} with the name {newName} for {days} day(s). Costed: {cost}");
-            return new Result(true, "Successfully renamed user.", null);
         }
+
+        #endregion Create Rename
+
+        #region Set Renames
 
         public async Task<Result> SetUserNotified(Renames rename)
         {
@@ -77,7 +71,38 @@ namespace Fitz.Features.Rename
             }
         }
 
+        public async Task<Result> BuyoutRenameRequests(ulong accountId)
+        {
+            try
+            {
+                using IServiceScope scope = scopeFactory.CreateScope();
+                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+                List<Renames> renames = this.GetRenamesByAccountId(accountId);
+                foreach (Renames rename in renames)
+                {
+                    rename.Status = RenameStatus.BoughtOut;
+                    db.Renames.Update(rename);
+                    await db.SaveChangesAsync();
+                }
+                this.botLog.Information(LogConsoleSettings.RenameLog, AccountEmojis.Edit, $"User {accountId} has bought out all rename requests.");
+                return new Result(true, "Successfully bought out all rename requests.", null);
+            }
+            catch (Exception ex)
+            {
+                return new Result(false, ex.Message, null);
+            }
+        }
+
+        #endregion Set Renames
+
         #region Get Renames
+
+        public List<Renames> GetRenamesByAccountId(ulong accountId)
+        {
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+            return db.Renames.Where(x => x.AffectedUserId == accountId && x.Status != RenameStatus.Expired).ToList();
+        }
 
         public List<Renames> GetExpiredRenames()
         {
@@ -102,15 +127,9 @@ namespace Fitz.Features.Rename
             return db.Renames.Where(x => x.AffectedUserId == accountId).Count();
         }
 
-        //public int GetHighestRenameCostByAccountId(ulong accountId)
-        //{
-        //    using IServiceScope scope = scopeFactory.CreateScope();
-        //    using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-
-        //    return db.Renames.Where(x => x.AffectedUserId == accountId).OrderByDescending(x => x.Cost).FirstOrDefault().Cost;
-        //}
-
         #endregion Get Renames
+
+        #region Generate Rename Cost
 
         public int GenerateRenameCost(Account affectedUser, Account requestedUser, double daysOfRename, string newName)
         {
@@ -122,6 +141,11 @@ namespace Fitz.Features.Rename
             Settings settings = this.settingsService.GetSettings();
 
             double baseCost = (double)settings.RenameBaseCost;
+
+            if (affectedUser.Id == requestedUser.Id)
+            {
+                baseCost += 150;
+            }
 
             // The less the bot likes the affected user, the cheaper the cost is.
             if (affectedUser.Favorability <= 5)
@@ -176,9 +200,11 @@ namespace Fitz.Features.Rename
 
             foreach (char c in newName)
             {
-                baseCost = baseCost * 1.2;
+                baseCost *= 1.2;
             }
             return int.Parse(Math.Ceiling(baseCost * daysOfRename).ToString());
         }
+
+        #endregion Generate Rename Cost
     }
 }

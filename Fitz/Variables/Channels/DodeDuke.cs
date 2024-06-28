@@ -67,5 +67,9 @@ namespace Fitz.Variables.Channels
         public static ulong PollLog { get; set; } = 1247990296181080084;
 
         public static ulong RenameLog { get; set; } = 1247957910827569173;
+
+        public static ulong LotteryDev { get; set; } = 1253788400516075530;
+
+        public static ulong PollDev { get; set; } = 1253788431616839700;
     }
 }

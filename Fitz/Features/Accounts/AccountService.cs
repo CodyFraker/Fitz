@@ -43,6 +43,7 @@ namespace Fitz.Features.Accounts
                 CreatedDate = DateTime.Now,
                 LastSeenDate = DateTime.Now,
                 LastActivityDate = DateTime.Now,
+                Deactivated = false,
                 subscribeToLottery = false,
                 SubscribeTickets = 1,
             };
@@ -260,6 +261,38 @@ namespace Fitz.Features.Accounts
 
         #endregion Set Username
 
+        #region Set Deactivated
+
+        public async Task<Result> SetDeactivatedAsync(Account account, bool deactivated)
+        {
+            try
+            {
+                using IServiceScope scope = scopeFactory.CreateScope();
+                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+                if (account == null)
+                {
+                    return new Result(false, "Account not found.", account);
+                }
+
+                account.Deactivated = deactivated;
+
+                db.Accounts.Update(account);
+                await db.SaveChangesAsync();
+                Log.Debug($"Updated deactivated status for {account.Id} to {deactivated}");
+                this.botLog.Information(LogConsoleSettings.AccountLog, AccountEmojis.Edit, $"Updated deactivated status for {account.Username} | {account.Id} to {deactivated}");
+                return new Result(true, "Deactivated status updated successfully.", account);
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, $"Failed to update deactivated status for {account.Id}.");
+                this.botLog.Information(LogConsoleSettings.AccountLog, AccountEmojis.Warning, $"Failed to update deactivated status for {account.Username} | {account.Id} | Stack trace: {e.StackTrace}");
+                return new Result(false, "Failed to update deactivated status.", account);
+            }
+        }
+
+        #endregion Set Deactivated
+
         #endregion Account Updates
 
         #region Query & Find Accounts
@@ -296,7 +329,7 @@ namespace Fitz.Features.Accounts
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-            return [.. db.Accounts.Where(x => x.subscribeToLottery == true)];
+            return [.. db.Accounts.Where(x => x.subscribeToLottery == true && x.Deactivated == false)];
         }
 
         public Account FindAccount(ulong id)

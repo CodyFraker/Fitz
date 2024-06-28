@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Fitz.Features.Accounts
+namespace Fitz.Features.Accounts.Jobs
 {
     public class AccountJob(AccountService accountService, DiscordClient dClient, BotLog botLog) : ITimedJob
     {
@@ -23,7 +23,7 @@ namespace Fitz.Features.Accounts
 
         public async Task Execute()
         {
-            this.botLog.Information(LogConsoleSettings.Jobs, ManageRoleEmojis.Warning, $"Starting Account Pruning..");
+            botLog.Information(LogConsoleSettings.Jobs, ManageRoleEmojis.Warning, $"Checking account members & their roles...");
             // Get all accounts
             List<Account> accounts = accountService.QueryAccounts();
 
@@ -51,17 +51,19 @@ namespace Fitz.Features.Accounts
                     else
                     {
                         // If the user is not in the database, remove the role "account"
-                        this.botLog.Information(LogConsoleSettings.Jobs, ManageRoleEmojis.Demotion, $"User {member.Username} does not have an account. Removing role.");
+                        botLog.Information(LogConsoleSettings.Jobs, ManageRoleEmojis.Demotion, $"User {member.Username} does not have an account. Removing role.");
                         await member.RevokeRoleAsync(guild.GetRole(Roles.Accounts), "User had account role but did not have an account.");
                     }
                 }
                 // if the user has an account but doesn't have the role, we need to add them to the role.
                 if (accounts.Any(x => x.Id == member.Id) && !member.Roles.Any(role => role.Id == Roles.Accounts))
                 {
-                    this.botLog.Information(LogConsoleSettings.Jobs, ManageRoleEmojis.Promotion, $"{member.Username} had an account but didn't have the account role. Added role.");
+                    botLog.Information(LogConsoleSettings.Jobs, ManageRoleEmojis.Promotion, $"{member.Username} had an account but didn't have the account role. Added role.");
                     await member.GrantRoleAsync(guild.GetRole(Roles.Accounts), $"{member.Username} had an account but didn't have the account role. Added role.");
                 }
             }
+
+            botLog.Information(LogConsoleSettings.Jobs, ManageRoleEmojis.Warning, $"Finished checking account members & their roles.");
         }
     }
 }

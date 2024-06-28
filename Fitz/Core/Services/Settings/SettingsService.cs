@@ -11,6 +11,52 @@ namespace Fitz.Core.Services.Settings
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
 
+        #region Create Settings
+
+        public async Task<Result> CreateBaseSettings()
+        {
+            try
+            {
+                using IServiceScope scope = scopeFactory.CreateScope();
+                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+                Models.Settings settings = db.Settings.FirstOrDefault();
+
+                if (settings != null)
+                {
+                    return new Result(false, "Settings already exist.", null);
+                }
+                else
+                {
+                    settings = new Models.Settings();
+                    settings.LotteryDuration = 7;
+                    settings.BaseLotteryPool = 36;
+                    settings.LotteryPoolRollover = true;
+                    settings.TicketCost = 1;
+                    settings.MaxTickets = 128;
+                    settings.AccountCreationBonusAmount = 128;
+                    settings.BaseHappyHourAmount = 6;
+                    settings.RenameBaseCost = 6;
+                    settings.PollApprovedBonus = 24;
+                    settings.PollSubmittedPenalty = 36;
+                    settings.PollDeclinedPenalty = 0;
+                    settings.PollVote = 12;
+                    settings.PollCreatorTip = 6;
+                    settings.MaxPendingPolls = 10;
+
+                    db.Settings.Add(settings);
+                    await db.SaveChangesAsync();
+                    return new Result(true, "Base settings created.", settings);
+                }
+            }
+            catch (Exception ex)
+            {
+                return new Result(false, $"Failed creating base settings. Exception message: {ex.Message}", null);
+            }
+        }
+
+        #endregion Create Settings
+
         #region Set Lottery Duration
 
         public async Task<Result> SetLotteryDuration(int days)
@@ -24,7 +70,7 @@ namespace Fitz.Core.Services.Settings
 
                 if (settings == null)
                 {
-                    return new Result(false, "Settings not found.", null);
+                    await this.CreateBaseSettings();
                 }
 
                 if (days > 365)
@@ -63,7 +109,7 @@ namespace Fitz.Core.Services.Settings
 
                 if (settings == null)
                 {
-                    return new Result(false, "Settings not found.", null);
+                    await this.CreateBaseSettings();
                 }
 
                 if (pool < 0)
@@ -98,7 +144,7 @@ namespace Fitz.Core.Services.Settings
 
                 if (settings == null)
                 {
-                    return new Result(false, "Settings not found.", null);
+                    await this.CreateBaseSettings();
                 }
 
                 settings.LotteryPoolRollover = rollover;
@@ -128,7 +174,7 @@ namespace Fitz.Core.Services.Settings
 
                 if (settings == null)
                 {
-                    return new Result(false, "Settings not found.", null);
+                    await this.CreateBaseSettings();
                 }
 
                 if (cost < 0)
@@ -163,7 +209,7 @@ namespace Fitz.Core.Services.Settings
 
                 if (settings == null)
                 {
-                    return new Result(false, "Settings not found.", null);
+                    await this.CreateBaseSettings();
                 }
 
                 if (maxTickets < 0)
@@ -198,7 +244,7 @@ namespace Fitz.Core.Services.Settings
 
                 if (settings == null)
                 {
-                    return new Result(false, "Settings not found.", null);
+                    await this.CreateBaseSettings();
                 }
 
                 if (amount < 0)
@@ -233,7 +279,7 @@ namespace Fitz.Core.Services.Settings
 
                 if (settings == null)
                 {
-                    return new Result(false, "Settings not found.", null);
+                    await this.CreateBaseSettings();
                 }
 
                 if (amount < 0)
@@ -268,7 +314,7 @@ namespace Fitz.Core.Services.Settings
 
                 if (settings == null)
                 {
-                    return new Result(false, "Settings not found.", null);
+                    await this.CreateBaseSettings();
                 }
 
                 if (cost < 0)
@@ -296,6 +342,13 @@ namespace Fitz.Core.Services.Settings
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+            Models.Settings settings = db.Settings.FirstOrDefault();
+
+            if (settings == null)
+            {
+                this.CreateBaseSettings();
+            }
 
             return db.Settings.FirstOrDefault();
         }

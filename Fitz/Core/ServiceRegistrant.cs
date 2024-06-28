@@ -1,19 +1,16 @@
 ﻿using DSharpPlus;
+using Fitz.Core.Contexts;
+using Fitz.Core.Discord;
+using Fitz.Core.Services;
+using Fitz.Core.Services.Features;
+using Fitz.Core.Services.Jobs;
+using Fitz.Core.Services.Settings;
+using Fitz.Features.Bank;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Extensions.Logging;
 using System;
-using Fitz.Core.Contexts;
-using Fitz.Core.Discord;
-using Fitz.Core.Services;
-using Fitz.Core.Services.Jobs;
-using Fitz.Core.Services.Features;
-using System.Transactions;
-using Fitz.Features.Accounts;
-using Fitz.Features.Bank;
-using Lavalink4NET.Extensions;
-using Fitz.Core.Services.Settings;
 
 namespace Fitz.Core
 {
@@ -23,8 +20,11 @@ namespace Fitz.Core
         {
             ServerVersion version = ServerVersion.AutoDetect(BotContext.ConnectionString);
 
-            services.AddSingleton<BotLog>()
-                .AddDbContextPool<BotContext>(options => options.UseMySql(BotContext.ConnectionString, version))
+            services.AddDbContext<BotContext>(
+                DbContextOptions => DbContextOptions
+                .UseMySql(BotContext.ConnectionString, version))
+                .AddSingleton<BotLog>()
+                //.AddDbContextPool<BotContext>(options => options.UseMySql(BotContext.ConnectionString, version))
                 .AddSingleton<ActivityManager>()
 
 #pragma warning disable CA2000 // Dispose objects before losing scope

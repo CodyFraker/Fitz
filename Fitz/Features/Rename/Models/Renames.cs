@@ -42,19 +42,34 @@ namespace Fitz.Features.Rename.Models
         public int? Days { get; set; }
 
         /// <summary>
+        /// The total cost of the rename.
+        /// </summary>
+        [Column("cost")]
+        public int Cost { get; set; }
+
+        /// <summary>
         /// Whether the affected user has been notified of the name change.
         /// </summary>
         [Column("notified")]
         public bool Notified { get; set; }
 
+        [Column("status")]
+        public RenameStatus Status { get; set; }
+
         /// <summary>
-        /// Timestamp in which this event took place.
+        /// The date in which this rename should start.
+        /// </summary>
+        [Column("start_date")]
+        public DateTime? StartDate { get; set; }
+
+        /// <summary>
+        /// The date in which this rename should expire.
         /// </summary>
         [Column("expires")]
         public DateTime? Expiration { get; set; }
 
         /// <summary>
-        /// Timestamp in which this event took place.
+        /// Timestamp in which this rename was created.
         /// </summary>
         [Column("timestamp")]
         public DateTime Timestamp { get; set; }

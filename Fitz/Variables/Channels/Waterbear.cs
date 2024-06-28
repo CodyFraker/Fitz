@@ -45,9 +45,9 @@ namespace Fitz.Variables.Channels
             VoiceChatOne = DodeDuke.ground0;
             VoiceChatTwo = DodeDuke.ground0;
             VoiceChatThree = DodeDuke.ground0;
-            Polls = DodeDuke.ground0;
-            PendingPolls = DodeDuke.ground0;
-            LotteryInfo = DodeDuke.ground0;
+            Polls = DodeDuke.PollDev;
+            PendingPolls = DodeDuke.PollDev;
+            LotteryInfo = DodeDuke.LotteryDev;
             WaterbearAdmins = DodeDuke.BotMods;
         }
     }

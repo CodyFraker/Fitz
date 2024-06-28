@@ -9,6 +9,7 @@ using Fitz.Features.Bank.Models;
 using Fitz.Variables.Emojis;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Bank.Commands
@@ -19,6 +20,8 @@ namespace Fitz.Features.Bank.Commands
         private readonly BotContext db = db;
         private readonly BankService bankService = bankService;
         private readonly AccountService AccountService = accountService;
+
+        #region Fridge
 
         [SlashCommand("fridge", "Check how much beer you have in the fridge.")]
         [RequireAccount]
@@ -73,11 +76,20 @@ namespace Fitz.Features.Bank.Commands
             // TODO: Make embed pretty.
         }
 
+        #endregion Fridge
+
+        #region Top Balances
+
         [SlashCommand("topbalances", "Get the top 10 balances for all users.")]
         [RequireAccount]
         public async Task Balances(InteractionContext ctx)
         {
             List<Account> accounts = bankService.GetTopBeerBalances();
+            string table = accounts.Select(account => new
+            {
+                User = account.Username,
+                Beer = account.Beer + " "
+            }).ToMarkdownTable();
 
             DiscordEmbedBuilder balanceEmbed = new DiscordEmbedBuilder
             {
@@ -88,27 +100,39 @@ namespace Fitz.Features.Bank.Commands
                 },
                 Color = new DiscordColor(52, 114, 53),
                 Timestamp = DateTime.UtcNow,
-                Description = "Top Beer Balances"
+                Description = $"```md\n{table}\n```",
             };
 
-            string usernames = string.Empty;
-            string beer = string.Empty;
-            foreach (Account account in accounts)
-            {
-                usernames += $"{account.Username}\n";
-                beer += $"`{account.Beer}`\n";
-            }
+            //string usernames = string.Empty;
+            //string beer = string.Empty;
+            //foreach (Account account in accounts)
+            //{
+            //    usernames += $"{account.Username}\n";
+            //    beer += $"`{account.Beer}`\n";
+            //}
 
-            balanceEmbed.AddField($"**Username**", $"{usernames}", true);
-            balanceEmbed.AddField($"**Beer**", $"{beer}", true);
+            //balanceEmbed.AddField($"**Username**", $"{usernames}", true);
+            //balanceEmbed.AddField($"**Beer**", $"{beer}", true);
             await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AddEmbed(balanceEmbed.Build()).AsEphemeral(true));
         }
+
+        #endregion Top Balances
+
+        #region Transactions
 
         [SlashCommand("transactions", "Get the last 10 transactions")]
         [RequireAccount]
         public async Task GetLastTransactions(InteractionContext ctx)
         {
             List<Transaction> transactions = bankService.GetTransactions(10);
+
+            string table = transactions.Select(transaction => new
+            {
+                User = this.AccountService.FindAccount(transaction.Sender).Username,
+                Beer = transaction.Amount,
+                Type = transaction.Reason,
+                Date = transaction.Timestamp.ToShortDateString()
+            }).ToMarkdownTable();
 
             DiscordEmbedBuilder transactionEmbed = new DiscordEmbedBuilder
             {
@@ -119,27 +143,15 @@ namespace Fitz.Features.Bank.Commands
                 },
                 Color = new DiscordColor(52, 114, 53),
                 Timestamp = DateTime.UtcNow,
-                Description = "Last 10 Transactions"
+                Description = $"```md\n{table}\n```",
             };
 
-            string usernames = string.Empty;
-            string beer = string.Empty;
-            string transactionType = string.Empty;
-            string transactionDate = string.Empty;
-            foreach (Transaction transaction in transactions)
-            {
-                usernames += $"{transaction.Recipient}\n";
-                beer += $"`{transaction.Amount}`\n";
-                transactionType += $"{transaction.Reason}\n";
-                transactionDate += $"{transaction.Timestamp}\n";
-            }
-
-            transactionEmbed.AddField($"**Username**", $"{usernames}", true);
-            transactionEmbed.AddField($"**Beer**", $"{beer}", true);
-            transactionEmbed.AddField($"**Type**", $"{transactionType}", true);
-            transactionEmbed.AddField($"**Date**", $"{transactionDate}", true);
             await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AddEmbed(transactionEmbed.Build()).AsEphemeral(true));
         }
+
+        #endregion Transactions
+
+        #region Bank
 
         [SlashCommand("bank", "Add or remove money/beer from a user.")]
         [RequireBankTeller]
@@ -163,17 +175,11 @@ namespace Fitz.Features.Bank.Commands
             }
             else if (bankAction == BankAction.Remove)
             {
-                await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent($"Remove action.{amount}"));
+                await bankService.DeductBeerFromUser(discordUser.Id, (int)amount, Reason.Donated);
+                await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent($"Remove {amount} beer from {discordUser.Username}").AsEphemeral(true));
             }
         }
 
-        public enum BankAction
-        {
-            [ChoiceName("Add")]
-            Add,
-
-            [ChoiceName("Remove")]
-            Remove
-        }
+        #endregion Bank
     }
 }

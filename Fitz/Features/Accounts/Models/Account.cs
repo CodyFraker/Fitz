@@ -70,5 +70,8 @@ namespace Fitz.Features.Accounts.Models
         /// </summary>
         [Column("subscribe_tickets")]
         public int SubscribeTickets { get; set; }
+
+        [Column("deactivated")]
+        public bool Deactivated { get; set; }
     }
 }

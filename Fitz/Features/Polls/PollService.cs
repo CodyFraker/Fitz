@@ -68,7 +68,8 @@ namespace Fitz.Features.Polls
                 }
                 else
                 {
-                    await this.bankService.DeclineUserPoll(pendingPoll.AccountId);
+                    // Stopped using this since we don't know how much beer an account has at the time of poll decline.
+                    //await this.bankService.DeclineUserPoll(pendingPoll.AccountId);
                 }
                 this.botLog.Information(LogConsoleSettings.PollLog, PollEmojis.InfoIcon, $"Poll {pendingPoll.Id} state was set to {evaluation}");
                 return new Result(true, $"Pending Poll #{pendingPoll.Id} approved.", pendingPoll);

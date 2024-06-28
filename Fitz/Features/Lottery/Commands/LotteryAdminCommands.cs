@@ -10,6 +10,7 @@ using Fitz.Variables;
 using Fitz.Variables.Emojis;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 
@@ -103,7 +104,7 @@ namespace Fitz.Features.Lottery.Commands
 
             if (ctx.Channel.IsPrivate)
             {
-                await ctx.RespondAsync(embed: this.lotteryService.WinnerEmbed(ctx.Client, lottery, winners));
+                await ctx.RespondAsync(embed: this.lotteryService.WinnerEmbed(ctx.Client, lottery, winners, winners.FirstOrDefault().Id));
             }
             else
             {
@@ -116,7 +117,7 @@ namespace Fitz.Features.Lottery.Commands
                 // DM The winner to let them know.
                 DiscordDmChannel userDMChannel = await member.CreateDmChannelAsync();
 
-                await userDMChannel.SendMessageAsync(embed: this.lotteryService.WinnerEmbed(ctx.Client, lottery, winners));
+                await userDMChannel.SendMessageAsync(embed: this.lotteryService.WinnerEmbed(ctx.Client, lottery, winners, winners.FirstOrDefault().Id));
             }
         }
 

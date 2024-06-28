@@ -579,13 +579,15 @@ namespace Fitz.Features.Lottery
 
         #region Embeds
 
-        public DiscordEmbed WinnerEmbed(DiscordClient dClient, Models.Lottery lottery, List<Account> winners)
+        public DiscordEmbed WinnerEmbed(DiscordClient dClient, Models.Lottery lottery, List<Account> winners, ulong userId)
         {
             string multiWinners = string.Empty;
             if (winners.Count() > 1)
             {
                 multiWinners = $"With a total of {winners.Count()} winner(s), you've won `{lottery.Pool / winners.Count()}`\n";
             }
+
+            Account winnerAccount = this.accountService.FindAccount(userId);
 
             DiscordEmbedBuilder lotteryEmbed = new()
             {
@@ -605,7 +607,7 @@ namespace Fitz.Features.Lottery
                 $"Total tickets: `{GetTotalTicketsForLottery(lottery).Data}`\n" +
                 $"Total Users: `{GetTotalLotteryParticipantsByLottery(lottery).Data}`\n" +
                 $"{multiWinners}" +
-                $"New beer balance: `BEER AMOUNT`",
+                $"New beer balance: `{winnerAccount.Beer}`",
             };
 
             return lotteryEmbed;

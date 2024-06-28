@@ -14,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace Fitz.Features.Lottery.Commands
 {
@@ -79,10 +80,14 @@ namespace Fitz.Features.Lottery.Commands
             // Check if user is trying to buy too many tickets
             if (tickets > settings.MaxTickets)
             {
+                DiscordButtonComponent cancelBtn = new(DiscordButtonStyle.Danger, $"lottery_cancel", "Cancel", false);
+                DiscordButtonComponent buyMaxTicketsBtn = new(DiscordButtonStyle.Success, $"lottery_max_tickets", "Buy Max Tickets", false);
+
+                await ctx.DeferAsync(true);
                 await ctx.EditResponseAsync(
                     new DiscordWebhookBuilder()
-                    .WithContent($"You can only buy up to {settings.MaxTickets} tickets at a time."));
-                return;
+                    .WithContent($"Do you wish to purchase the max amount of tickets.")
+                    .AddComponents(cancelBtn, buyMaxTicketsBtn));
             }
 
             int totalCost = (int)(tickets * settings.TicketCost);

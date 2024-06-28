@@ -1,6 +1,7 @@
 ﻿using DSharpPlus;
 using DSharpPlus.Entities;
 using Fitz.Core.Discord;
+using Fitz.Core.Models;
 using Fitz.Core.Services.Jobs;
 using Fitz.Core.Services.Settings;
 using Fitz.Features.Accounts;
@@ -13,9 +14,8 @@ using Fitz.Variables.Emojis;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using Fitz.Core.Models;
-using DSharpPlus.EventArgs;
 
 namespace Fitz.Features.Lottery
 {
@@ -131,6 +131,10 @@ namespace Fitz.Features.Lottery
                 try
                 {
                     IAsyncEnumerable<DiscordMessage> lotteryMessages = lotteryChannel.GetMessagesAsync();
+                    if (lotteryMessages.ToBlockingEnumerable().Count() == 0)
+                    {
+                        await lotteryChannel.SendMessageAsync(embed: lotteryEmbed.Build());
+                    }
                     await foreach (DiscordMessage message in lotteryMessages)
                     {
                         if (message.Author.Id == this.dClient.CurrentUser.Id)
@@ -264,7 +268,7 @@ namespace Fitz.Features.Lottery
                 // DM The winner to let them know.
                 DiscordDmChannel userDMChannel = await member.CreateDmChannelAsync();
 
-                await userDMChannel.SendMessageAsync(embed: this.lotteryService.WinnerEmbed(this.dClient, drawing, winners));
+                await userDMChannel.SendMessageAsync(embed: this.lotteryService.WinnerEmbed(this.dClient, drawing, winners, userId));
             }
         }
     }

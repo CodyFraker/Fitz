@@ -121,6 +121,27 @@ namespace Fitz.Features.Accounts
 
         #endregion Profile
 
+        #region Profile Lookup
+
+        [SlashCommand("lookup", "Checkout someone elses profile.")]
+        [RequireAccount]
+        public async Task ProfileLookup(InteractionContext ctx, [Option("User", "Whose profile do you want to see?")] DiscordUser user = null)
+        {
+            Account account = accountService.FindAccount(user.Id);
+            if (account != null)
+            {
+                await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
+                    new DiscordInteractionResponseBuilder().AddEmbed(accountEmbed(user, account)).AsEphemeral(true));
+            }
+            else
+            {
+                await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
+                    new DiscordInteractionResponseBuilder().WithContent($"Doesn't seem like they have an account.").AsEphemeral(true));
+            }
+        }
+
+        #endregion Profile Lookup
+
         #region Settings
 
         [SlashCommand("settings", "Change your account settings")]

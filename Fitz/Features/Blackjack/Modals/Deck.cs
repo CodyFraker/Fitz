@@ -6,15 +6,9 @@ using System.Security.Cryptography;
 
 namespace Fitz.Features.Blackjack.Modals
 {
-    // --------------------------------------------------------------------------------------------------------------------
-    // <copyright file="Deck.cs" company="Konstantin Tarkus">
-    //   Copyright © 2013 Konstantin Tarkus (hello@tarkus.me)
-    // </copyright>
-    // --------------------------------------------------------------------------------------------------------------------
-
     public class Deck
     {
-        private readonly List<Card> cards = new List<Card>(52);
+        public List<Card> cards = new List<Card>(52);
 
         public Deck()
         {

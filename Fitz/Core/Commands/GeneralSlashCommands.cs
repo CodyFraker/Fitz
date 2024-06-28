@@ -65,7 +65,7 @@ namespace Fitz.Core.Commands
             }
 
             await this.accountService.SetFavorabilityAsync(account, int.Parse(Math.Floor(newFavorability).ToString()));
-            await this.bankService.TransferToFitz(account.Id, int.Parse(amount.ToString()));
+            await this.bankService.TransferToFitz(account.Id, int.Parse(amount.ToString()), reason: Features.Bank.Models.Reason.Donated);
 
             await ctx.CreateResponseAsync(
                 DiscordInteractionResponseType.ChannelMessageWithSource,

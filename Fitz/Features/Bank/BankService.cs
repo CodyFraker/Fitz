@@ -84,6 +84,40 @@ namespace Fitz.Features.Bank
 
         #endregion Award Bonus Generic
 
+        #region Deduct Beer
+
+        public async Task<Result> DeductBeerFromUser(ulong userId, int amount, Reason reason)
+        {
+            try
+            {
+                using IServiceScope scope = scopeFactory.CreateScope();
+                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+                Account account = accountService.FindAccount(userId);
+                if (account == null)
+                {
+                    return new Result(false, $"{userId} did not have an account.", null);
+                }
+                if (account.Beer < amount)
+                {
+                    return new Result(false, $"{userId} did not have enough beer to deduct.", null);
+                }
+
+                account.Beer -= amount;
+                db.Update(account);
+                await db.SaveChangesAsync();
+                await LogTransactionAsync(account, account, amount, reason);
+
+                return new Result(true, $"Deducted {amount} beer from {account.Username}.", account);
+            }
+            catch (Exception ex)
+            {
+                return new Result(false, ex.Message, null);
+            }
+        }
+
+        #endregion Deduct Beer
+
         #region Award Happy Hour
 
         public async Task<Result> AwardHappyHour(ulong userId)
@@ -244,10 +278,7 @@ namespace Fitz.Features.Bank
                     return new Result(false, $"{userId} did not have an account.", null);
                 }
 
-                account.Beer -= settings.PollDeclinedPenalty;
-                db.Update(account);
-                await db.SaveChangesAsync();
-                await LogTransactionAsync(account, account, settings.PollDeclinedPenalty, Reason.PollDeclined);
+                await TransferToFitz(account.Id, settings.PollDeclinedPenalty, Reason.PollDeclined);
 
                 return new Result(true, $"Deducted poll declined bonus to {account.Username}.", account);
             }
@@ -275,10 +306,7 @@ namespace Fitz.Features.Bank
                     return new Result(false, $"{userId} did not have an account.", null);
                 }
 
-                account.Beer -= (settings.PollSubmittedPenalty + settings.PollDeclinedPenalty);
-                db.Update(account);
-                await db.SaveChangesAsync();
-                await LogTransactionAsync(account, account, (settings.PollSubmittedPenalty + settings.PollDeclinedPenalty), Reason.PollSubmitted);
+                await TransferToFitz(account.Id, (settings.PollSubmittedPenalty + settings.PollDeclinedPenalty), Reason.PollSubmitted);
 
                 return new Result(true, $"Deducted poll submitted penalty to {account.Username}.", account);
             }
@@ -292,49 +320,28 @@ namespace Fitz.Features.Bank
 
         #endregion Polls
 
-        #region Transactions
-
-        public List<Transaction> GetTransactions(int take)
-        {
-            using IServiceScope scope = scopeFactory.CreateScope();
-            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-
-            List<Transaction> transactions = db.Transactions.OrderByDescending(t => t.Timestamp).Take(take).ToList();
-            return transactions;
-        }
-
-        #endregion Transactions
-
         #region Lottery
 
-        public async Task PurchaseLotteryTicket(ulong userId, int amount)
-        {
-            using IServiceScope scope = scopeFactory.CreateScope();
-            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-
-            Account account = accountService.FindAccount(userId);
-            if (account == null)
-            {
-                Log.Error($"Account not found. {userId}");
-                return;
-            }
-
-            account.Beer -= amount;
-            db.Update(account);
-            await LogTransactionAsync(account, account, amount, Reason.Lotto);
-            await db.SaveChangesAsync();
-        }
+        #region Purchase Lottery Ticket
 
         public async Task PurchaseLotteryTicket(Account user, int amount)
         {
-            using IServiceScope scope = scopeFactory.CreateScope();
-            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+            try
+            {
+                using IServiceScope scope = scopeFactory.CreateScope();
+                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-            user.Beer -= amount;
-            db.Update(user);
-            await LogTransactionAsync(user, user, amount, Reason.Lotto);
-            await db.SaveChangesAsync();
+                await TransferToFitz(user.Id, amount, Reason.Lotto);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to purchase lottery ticket.");
+            }
         }
+
+        #endregion Purchase Lottery Ticket
+
+        #region Deposit Lottery Winnings
 
         public async Task DepositLotteryWinningsAsync(Account account, int amount)
         {
@@ -349,47 +356,46 @@ namespace Fitz.Features.Bank
             await LogTransactionAsync(account, account, amount, Reason.LottoWin);
         }
 
+        #endregion Deposit Lottery Winnings
+
         #endregion Lottery
 
-        public async Task<Result> TransferToFitz(ulong userId, int amount)
+        #region Transfer Beer
+
+        public async Task<Result> TransferToFitz(ulong userId, int amount, Reason reason)
         {
-            using IServiceScope scope = scopeFactory.CreateScope();
-            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-
-            Account account = accountService.FindAccount(userId);
-            if (account == null)
+            try
             {
-                return new Result(false, $"{userId} did not have an account.", null);
-            }
+                using IServiceScope scope = scopeFactory.CreateScope();
+                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-            if (account.Beer < amount)
+                Account account = accountService.FindAccount(userId);
+                if (account == null)
+                {
+                    return new Result(false, $"{userId} did not have an account.", null);
+                }
+
+                if (account.Beer < amount)
+                {
+                    return new Result(false, $"{userId} did not have enough beer to transfer.", null);
+                }
+                Account Fitz = accountService.FindAccount(Users.Fitz);
+
+                account.Beer -= amount;
+                Fitz.Beer += amount;
+                Fitz.LifetimeBeer += amount;
+
+                db.Update(account);
+                await db.SaveChangesAsync();
+                db.Update(Fitz);
+                await db.SaveChangesAsync();
+                await LogTransactionAsync(account, Fitz, amount, reason);
+                return new Result(true, $"Transferred {amount} beer to Fitz.", account);
+            }
+            catch (Exception ex)
             {
-                return new Result(false, $"{userId} did not have enough beer to transfer.", null);
+                return new Result(false, ex.Message, null);
             }
-            Account Fitz = accountService.FindAccount(Users.Fitz);
-
-            account.Beer -= amount;
-            Fitz.Beer += amount;
-            Fitz.LifetimeBeer += amount;
-
-            db.Update(account);
-            await db.SaveChangesAsync();
-            db.Update(Fitz);
-            await db.SaveChangesAsync();
-            await LogTransactionAsync(account, Fitz, amount, Reason.Donated);
-
-            return new Result(true, $"Transferred {amount} beer to Fitz.", account);
-        }
-
-        public async Task PurchaseRenameAsync(Account user, int amount)
-        {
-            using IServiceScope scope = scopeFactory.CreateScope();
-            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-
-            user.Beer -= amount;
-            db.Update(user);
-            await LogTransactionAsync(user, user, amount, Reason.Rename);
-            await db.SaveChangesAsync();
         }
 
         public async Task TransferBeer(ulong sender, ulong recipient, int amount)
@@ -429,6 +435,51 @@ namespace Fitz.Features.Bank
             await LogTransactionAsync(senderAccount, recipientAccount, amount, Reason.Donated);
         }
 
+        #endregion Transfer Beer
+
+        #region Renames
+
+        public async Task PurchaseRenameAsync(Account user, int amount)
+        {
+            try
+            {
+                using IServiceScope scope = scopeFactory.CreateScope();
+                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+                await TransferToFitz(user.Id, amount, Reason.Rename);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to purchase rename.");
+            }
+        }
+
+        public async Task PurchaseRenameAsync(ulong accountId, int amount)
+        {
+            try
+            {
+                using IServiceScope scope = scopeFactory.CreateScope();
+                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+                Account account = accountService.FindAccount(accountId);
+                if (account == null)
+                {
+                    Log.Error($"Account not found. {accountId}");
+                    return;
+                }
+
+                await this.PurchaseRenameAsync(account, amount);
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to purchase rename.");
+            }
+        }
+
+        #endregion Renames
+
+        #region Get Balances
+
         public int GetBalance(ulong userId)
         {
             Account account = accountService.FindAccount(userId);
@@ -441,6 +492,28 @@ namespace Fitz.Features.Bank
             return account.Beer;
         }
 
+        public List<Account> GetTopBeerBalances(int limit = 10)
+        {
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+            List<Account> accounts = db.Accounts.OrderByDescending(a => a.Beer).Take(limit).ToList();
+            return accounts;
+        }
+
+        #endregion Get Balances
+
+        #region Get Transactions
+
+        public List<Transaction> GetTransactions(int take)
+        {
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+            List<Transaction> transactions = db.Transactions.OrderByDescending(t => t.Timestamp).Take(take).ToList();
+            return transactions;
+        }
+
         public List<Transaction> GetTransactions(ulong userId)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
@@ -450,14 +523,9 @@ namespace Fitz.Features.Bank
             return transactions;
         }
 
-        public List<Account> GetTopBeerBalances(int limit = 10)
-        {
-            using IServiceScope scope = scopeFactory.CreateScope();
-            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+        #endregion Get Transactions
 
-            List<Account> accounts = db.Accounts.OrderByDescending(a => a.Beer).Take(limit).ToList();
-            return accounts;
-        }
+        #region Log Transaction
 
         private async Task LogTransactionAsync(Account sender, Account recipient, int amount, Reason reason)
         {
@@ -484,5 +552,7 @@ namespace Fitz.Features.Bank
                 Log.Error(ex, "Failed to log transaction.");
             }
         }
+
+        #endregion Log Transaction
     }
 }
