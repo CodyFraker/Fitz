@@ -6,6 +6,7 @@
     using Fitz.Features.Bank.Models;
     using Fitz.Features.Blackjack.Modals;
     using Fitz.Features.Polls.Models;
+    using Fitz.Features.Rename.Models;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
     using Newtonsoft.Json;
@@ -63,6 +64,10 @@
             modelBuilder.Entity<BlackjackGame>()
                 .Property(s => s.Status)
                 .HasConversion(new EnumToStringConverter<BlackjackGameStatus>());
+
+            modelBuilder.Entity<Renames>()
+                .Property(s => s.Status)
+                .HasConversion(new EnumToStringConverter<RenameStatus>());
 
             base.OnModelCreating(modelBuilder);
         }
