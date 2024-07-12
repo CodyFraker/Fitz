@@ -231,6 +231,8 @@ namespace Fitz.Features.Rename.Commands
                     renameRequest.Timestamp = DateTime.Now;
                     renameRequest.Status = RenameStatus.Active;
                     await renameService.RenameUserAsync(renameRequest);
+                    var renameStatus = ctx.Guild.GetMemberAsync(affectedUser.Id).Result.ModifyAsync(x => x.Nickname = newName);
+                    await ctx.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent("Renames bought out."));
                 }
                 // if the cancel button was pressed
                 else if (e.Id == $"rename_cancel_{unique_id}")

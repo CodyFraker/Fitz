@@ -1,5 +1,6 @@
 ﻿using DSharpPlus;
 using DSharpPlus.Entities;
+using DSharpPlus.ModalCommands;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Commands.Attributes;
 using Fitz.Core.Models;
@@ -9,17 +10,15 @@ using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Fitz.Features.Lottery.Models;
 using Fitz.Variables.Emojis;
-using QRCoder;
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
-using System.Xml;
 
 namespace Fitz.Features.Lottery.Commands
 {
     [SlashModuleLifespan(SlashModuleLifespan.Scoped)]
-    internal class LotterySlashCommands(DiscordClient dClient,
+    public class LotterySlashCommands(DiscordClient dClient,
         AccountService accountService,
         BankService bankService,
         LotteryService lotteryService,
@@ -35,39 +34,40 @@ namespace Fitz.Features.Lottery.Commands
 
         [SlashCommand("lottery", "Play stupid games. Win beer. Lose beer.")]
         [RequireAccount]
-        public async Task Lottery(InteractionContext ctx, [Option("Tickets", "How many tickets do you want?")] long tickets = 0)
+        public async Task Lottery(InteractionContext ctx)
         {
-            await ctx.DeferAsync(true);
-            // If no tickets are specified, send help embed.
-            if (tickets == 0)
+            int unique_id = 0;
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
             {
-                DiscordEmbedBuilder lotteryHelpEmbed = new DiscordEmbedBuilder
+                byte[] data = new byte[4];
+
+                for (int i = 0; i < 4; i++)
                 {
-                    Title = "Lottery Help",
-                    Description = "A single ticket will grant you a chance of 1-1001. You can purchase up to 36 tickets. None of them will be a duplicate ticket.\n" +
-                    "If no one wins, the fridge will roll over into the next lottery, increasing the total beer.\n" +
-                    "Favorability is factored when more than one person wins.\n" +
-                    "I also play the lottery. I have no limit on the amount of tickets I can have.",
-                    Color = new DiscordColor(52, 114, 53),
-                    Thumbnail = new DiscordEmbedBuilder.EmbedThumbnail
-                    {
-                        Url = DiscordEmoji.FromGuildEmote(ctx.Client, LotteryEmojis.Lottery).Url
-                    },
-                };
-
-                lotteryHelpEmbed.AddField($"Commands",
-                    $"`/lottery #` will buy a set amount of tickets. Providing 0 tickets will return this message again.\n" +
-                    $"\n" +
-                    $"`/lotteryinfo` will show you some basic information about the current drawing. The QR code will show you which tickets you have in this drawing.\n" +
-                    $"\n" +
-                    $"You can set your account to automatically play the lottery for by doing `/settings`.", false);
-
-                await ctx.EditResponseAsync(new DiscordWebhookBuilder()
-                                       .AddEmbed(lotteryHelpEmbed.Build()));
-                return;
+                    rng.GetBytes(data);
+                    unique_id = BitConverter.ToInt32(data, 0);
+                    unique_id = Math.Abs(unique_id);
+                }
             }
+            // Get settings for lottery
+            Settings settings = settingsService.GetSettings();
 
+            Models.Lottery lottery = lotteryService.GetCurrentLottery();
+
+            // Get account
             Account account = accountService.FindAccount(ctx.User.Id);
+
+            // Get user tickets
+            List<Ticket> userTickets = lotteryService.GetUserTickets(account).Data as List<Ticket>;
+            userTickets ??= new List<Ticket>();
+
+            DiscordButtonComponent cancelBtn = new(DiscordButtonStyle.Danger, $"lottery_cancel_{unique_id}", "Cancel", false);
+            DiscordButtonComponent helpBtn = new(DiscordButtonStyle.Secondary, $"lottery_help_{unique_id}", "Help", false);
+
+            bool userHasMaxTickets = userTickets.Count >= settings.MaxTickets;
+
+            DiscordButtonComponent buyMaxTicketsBtn = new(DiscordButtonStyle.Success, $"lottery_max_tickets_{unique_id}", "Buy Max Tickets", userHasMaxTickets);
+            DiscordButtonComponent buyXBtn = new(DiscordButtonStyle.Primary, $"lottery_buy_x_{unique_id}", "Buy X", userHasMaxTickets);
+
             if (account == null)
             {
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder()
@@ -75,7 +75,71 @@ namespace Fitz.Features.Lottery.Commands
                 return;
             }
 
+            await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
+                new DiscordInteractionResponseBuilder()
+                .WithContent("How many tickets would you like to purchase?")
+                .AddEmbed(this.lotteryService.LotteryCommandEmbed(ctx.Client, lottery, settings, account, userTickets))
+                .AddComponents(cancelBtn, helpBtn, buyXBtn, buyMaxTicketsBtn).AsEphemeral(true));
+
+            ctx.Client.ComponentInteractionCreated += async (sender, args) =>
+            {
+                if (args.Id == $"lottery_help_{unique_id}")
+                {
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder()
+                        .ClearEmbeds().AddEmbed(this.lotteryService.LotteryHelpEmbed(ctx.Client, lottery, settings)));
+                }
+                if (args.Id == $"lottery_cancel_{unique_id}")
+                {
+                    await ctx.DeleteResponseAsync();
+                }
+                if (args.Id == $"lottery_max_tickets_{unique_id}")
+                {
+                    await ctx.DeferAsync(true);
+                    var buyTicketsResult = await this.lotteryService.BuyTicketsForUser(account, settings.MaxTickets);
+                    if (!buyTicketsResult.Success)
+                    {
+                        await ctx.EditResponseAsync(new DiscordWebhookBuilder()
+                                                       .WithContent(buyTicketsResult.Message));
+                    }
+
+                    userTickets = lotteryService.GetUserTickets(account).Data as List<Ticket>;
+
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder()
+                        .AddEmbed(this.lotteryService.LotteryInfoEmbed(ctx.Client, lottery, (int)this.lotteryService.GetRemainingHoursUntilNextDrawing().Data, userTickets)));
+                }
+                if (args.Id == $"lottery_buy_x_{unique_id}")
+                {
+                    await ctx.DeleteResponseAsync();
+                    try
+                    {
+                        var modal = ModalBuilder.Create("buy_x_tickets")
+                            .WithTitle("Buy X Tickets")
+                            .AddComponents(new DiscordTextInputComponent("How many tickets would you like to purchase?", "tickets", "Number of tickets", required: true, style: DiscordTextInputStyle.Short, min_length: 1, max_length: 3));
+
+                        await args.Interaction.CreateResponseAsync(DiscordInteractionResponseType.Modal, modal);
+                    }
+                    catch (Exception ex)
+                    {
+                        await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
+                                                       new DiscordInteractionResponseBuilder()
+                                                                                  .WithContent("An error occurred while buying tickets. Please try again later."));
+                    }
+                }
+            };
+        }
+
+        [SlashCommand("buyTickets", "Play stupid games. Win beer. Lose beer.")]
+        [RequireAccount]
+        public async Task LotteryTickets(InteractionContext ctx, [Option("Tickets", "How many tickets do you want?")] long tickets)
+        {
             Settings settings = settingsService.GetSettings();
+            Account account = accountService.FindAccount(ctx.User.Id);
+            if (account == null)
+            {
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder()
+                    .WithContent("You need to run `/signup` before you can interact with the lottery."));
+                return;
+            }
 
             // Check if user is trying to buy too many tickets
             if (tickets > settings.MaxTickets)
@@ -131,20 +195,21 @@ namespace Fitz.Features.Lottery.Commands
             Models.Lottery lottery = lotteryService.GetCurrentLottery();
             int daysLeft = (int)this.lotteryService.GetRemainingHoursUntilNextDrawing().Data;
 
-            using var qrGenerator = new QRCodeGenerator();
-            using var qrCodeData = qrGenerator.CreateQrCode(ticketNumbers, QRCodeGenerator.ECCLevel.Q);
-            PngByteQRCode qrCodeImage = new(qrCodeData);
-            using MemoryStream ms = new(qrCodeImage.GetGraphic(5, false));
-            DiscordInteractionResponseBuilder responseBuilder = new();
-            responseBuilder.AddFile("qrCode.png", ms);
-            responseBuilder.AddEmbed(lotteryEmbed(account, lottery, daysLeft, userTickets)).AsEphemeral(true);
+            //using var qrGenerator = new QRCodeGenerator();
+            //using var qrCodeData = qrGenerator.CreateQrCode(ticketNumbers, QRCodeGenerator.ECCLevel.Q);
+            //PngByteQRCode qrCodeImage = new(qrCodeData);
+            //using MemoryStream ms = new(qrCodeImage.GetGraphic(5, false));
+            //DiscordInteractionResponseBuilder responseBuilder = new();
+            //responseBuilder.AddFile("qrCode.png", ms);
+            //responseBuilder.AddEmbed(lotteryEmbed(account, lottery, daysLeft, userTickets)).AsEphemeral(true);
 
-            DiscordWebhookBuilder webhookBuilder = new();
-            webhookBuilder.AddFile("qrCode.png", ms);
-            webhookBuilder.AddEmbed(lotteryEmbed(account, lottery, daysLeft, userTickets));
+            //DiscordWebhookBuilder webhookBuilder = new();
+            //webhookBuilder.AddFile("qrCode.png", ms);
+            //webhookBuilder.AddEmbed(lotteryEmbed(account, lottery, daysLeft, userTickets));
 
             //await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, responseBuilder);
-            await ctx.EditResponseAsync(webhookBuilder);
+
+            //await ctx.EditResponseAsync(webhookBuilder);
         }
 
         #endregion Lottery
@@ -155,27 +220,27 @@ namespace Fitz.Features.Lottery.Commands
         [RequireAccount]
         public async Task LotteryInfo(InteractionContext ctx)
         {
-            Models.Lottery drawing = lotteryService.GetCurrentLottery();
-            List<Ticket> userTickets = new();
-            Account account = accountService.FindAccount(ctx.User.Id);
-            int daysLeft = (int)this.lotteryService.GetRemainingHoursUntilNextDrawing().Data;
-            userTickets = lotteryService.GetUserTickets(accountService.FindAccount(ctx.User.Id)).Data as List<Ticket>;
-            string ticketNumbers = string.Empty;
-            foreach (var ticket in userTickets)
-            {
-                ticketNumbers += $"{ticket.Number}\n";
-            }
+            //Models.Lottery drawing = lotteryService.GetCurrentLottery();
+            //List<Ticket> userTickets = new();
+            //Account account = accountService.FindAccount(ctx.User.Id);
+            //int daysLeft = (int)this.lotteryService.GetRemainingHoursUntilNextDrawing().Data;
+            //userTickets = lotteryService.GetUserTickets(accountService.FindAccount(ctx.User.Id)).Data as List<Ticket>;
+            //string ticketNumbers = string.Empty;
+            //foreach (var ticket in userTickets)
+            //{
+            //    ticketNumbers += $"{ticket.Number}\n";
+            //}
 
-            using var qrGenerator = new QRCodeGenerator();
-            using var qrCodeData = qrGenerator.CreateQrCode(ticketNumbers, QRCodeGenerator.ECCLevel.Q);
-            PngByteQRCode qrCodeImage = new(qrCodeData);
+            //using var qrGenerator = new QRCodeGenerator();
+            //using var qrCodeData = qrGenerator.CreateQrCode(ticketNumbers, QRCodeGenerator.ECCLevel.Q);
+            //PngByteQRCode qrCodeImage = new(qrCodeData);
 
-            using MemoryStream ms = new MemoryStream(qrCodeImage.GetGraphic(5, false));
-            DiscordInteractionResponseBuilder responseBuilder = new();
-            responseBuilder.AddFile("qrCode.png", ms);
-            responseBuilder.AddEmbed(lotteryEmbed(account, drawing, daysLeft, userTickets)).AsEphemeral(true);
+            //using MemoryStream ms = new MemoryStream(qrCodeImage.GetGraphic(5, false));
+            //DiscordInteractionResponseBuilder responseBuilder = new();
+            //responseBuilder.AddFile("qrCode.png", ms);
+            //responseBuilder.AddEmbed(lotteryEmbed(account, drawing, daysLeft, userTickets)).AsEphemeral(true);
 
-            await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, responseBuilder);
+            //await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, responseBuilder);
         }
 
         #endregion Lottery Info
@@ -227,69 +292,5 @@ namespace Fitz.Features.Lottery.Commands
         }
 
         #endregion My Tickets
-
-        #region Embeds
-
-        private DiscordEmbed lotteryEmbed(Account account, Models.Lottery lottery, int daysLeft, List<Ticket> userTickets = null)
-        {
-            DiscordEmbedBuilder lotteryEmbed;
-            if (userTickets == null)
-            {
-                lotteryEmbed = new DiscordEmbedBuilder
-                {
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        IconUrl = DiscordEmoji.FromGuildEmote(this.dClient, LotteryEmojis.Lottery).Url,
-                        Text = $"Lottery #{lottery.Id} Time Left: {daysLeft} Hrs",
-                    },
-                    Color = new DiscordColor(52, 114, 53),
-                    //Thumbnail = new DiscordEmbedBuilder.EmbedThumbnail
-                    //{
-                    //    Url = DiscordEmoji.FromGuildEmote(ctx.Client, LotteryEmojis.Lottery).Url,
-                    //},
-                    Title = $"Current Lottery Information",
-                    Description = $"**Your Entries**: ```{userTickets.Count}```\n" +
-                $"Your tickets are stored in the QR code.\n" +
-                $"To see their values, run `/mytickets`"
-                };
-                //lotteryEmbed.AddField($"**{DiscordEmoji.FromName(this.dClient, ":beer:")}Fridge**", $"```{lottery.Pool}```", true);
-                //lotteryEmbed.AddField($"**{DiscordEmoji.FromGuildEmote(this.dClient, LotteryEmojis.User)}Participants**", $"```{await lotteryService.GetTotalLotteryParticipant()}```", true);
-                //lotteryEmbed.AddField($"**{DiscordEmoji.FromName(this.dClient, ":ticket:")}Entries**", $"```{await lotteryService.GetTotalTickets()}```", true);
-
-                //lotteryEmbed.AddField($"**Starts**", $"```{lottery.StartDate}```", false);
-                //lotteryEmbed.AddField($"**Ends**", $"```{lottery.EndDate}```", false);
-            }
-            else
-            {
-                lotteryEmbed = new DiscordEmbedBuilder
-                {
-                    Footer = new DiscordEmbedBuilder.EmbedFooter
-                    {
-                        IconUrl = DiscordEmoji.FromGuildEmote(this.dClient, LotteryEmojis.Ticket).Url,
-                        Text = $"Lottery #{lottery.Id} | Time Left: {daysLeft} Hrs",
-                    },
-                    Color = new DiscordColor(52, 114, 53),
-                    //Thumbnail = new DiscordEmbedBuilder.EmbedThumbnail
-                    //{
-                    //    Url = DiscordEmoji.FromGuildEmote(ctx.Client, LotteryEmojis.Lottery).Url,
-                    //},
-                    Title = $"Current Lottery Information",
-                    Description = $"**__Your Entries__**: ```ansi\n\u001b[1;37m{userTickets.Count}\u001b[0;0m\n```\n" +
-                    $"Your tickets are stored in the QR code.\n" +
-                    $"To see their values, run `/mytickets`"
-                };
-                lotteryEmbed.WithThumbnail(url: $"attachment://qrCode.png");
-                lotteryEmbed.AddField($"**{DiscordEmoji.FromName(this.dClient, ":beer:")}Fridge**", $"```ansi\n\u001b[0;36m{lottery.Pool}\u001b[0;0m\n```", true);
-                lotteryEmbed.AddField($"**{DiscordEmoji.FromGuildEmote(this.dClient, AccountEmojis.Users)}Participants**", $"```ansi\n\u001b[0;36m{(int)this.lotteryService.GetTotalLotteryParticipant().Data}\u001b[0;0m\n```", true);
-                lotteryEmbed.AddField($"**{DiscordEmoji.FromName(this.dClient, ":ticket:")}Entries**", $"```ansi\n\u001b[0;36m{(int)this.lotteryService.GetTotalTickets().Data}\u001b[0;0m\n```", true);
-
-                lotteryEmbed.AddField($"**Starts**", $"```ansi\n\u001b[1;33m{lottery.StartDate}\u001b[0;0m\n```", false);
-                lotteryEmbed.AddField($"**Ends**", $"```ansi\n\u001b[1;31m{lottery.EndDate}\u001b[0;0m\n```", false);
-            }
-
-            return lotteryEmbed.Build();
-        }
-
-        #endregion Embeds
     }
 }

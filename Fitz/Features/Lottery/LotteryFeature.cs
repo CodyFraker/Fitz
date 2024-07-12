@@ -9,7 +9,6 @@ using Fitz.Core.Services.Settings;
 using Fitz.Features.Accounts;
 using Fitz.Features.Bank;
 using Fitz.Features.Lottery.Commands;
-using System;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Lottery

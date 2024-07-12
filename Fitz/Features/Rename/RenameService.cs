@@ -81,6 +81,7 @@ namespace Fitz.Features.Rename
                 foreach (Renames rename in renames)
                 {
                     rename.Status = RenameStatus.BoughtOut;
+                    rename.Notified = true;
                     db.Renames.Update(rename);
                     await db.SaveChangesAsync();
                 }
@@ -93,15 +94,60 @@ namespace Fitz.Features.Rename
             }
         }
 
+        public async Task<Result> SetRenameStatus(int renameId, RenameStatus status)
+        {
+            try
+            {
+                using IServiceScope scope = scopeFactory.CreateScope();
+                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+                Renames rename = db.Renames.Find(renameId);
+                rename.Status = status;
+                db.Renames.Update(rename);
+                await db.SaveChangesAsync();
+
+                await this.SetUserNotified(rename);
+
+                this.botLog.Information(LogConsoleSettings.RenameLog, AccountEmojis.Edit, $"Rename {renameId} has been set to {status}");
+                return new Result(true, "Successfully updated rename status.", rename);
+            }
+            catch (Exception ex)
+            {
+                return new Result(false, ex.Message, null);
+            }
+        }
+
         #endregion Set Renames
 
         #region Get Renames
+
+        public List<Renames> GetAllRenames(RenameStatus? status)
+        {
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+            if (status == null)
+            {
+                return db.Renames.ToList();
+            }
+            else
+            {
+                return db.Renames.ToList().Where(x => x.Status == status).ToList();
+            }
+        }
 
         public List<Renames> GetRenamesByAccountId(ulong accountId)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-            return db.Renames.Where(x => x.AffectedUserId == accountId && x.Status != RenameStatus.Expired).ToList();
+            return db.Renames.Where(x => x.AffectedUserId == accountId && x.Status == RenameStatus.Pending || x.Status == RenameStatus.Active).ToList();
+        }
+
+        public Renames GetActiveRenameByAccountId(ulong accountId)
+        {
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+            return db.Renames.Where(x => x.AffectedUserId == accountId && x.Status == RenameStatus.Active).FirstOrDefault();
         }
 
         public List<Renames> GetExpiredRenames()
@@ -109,6 +155,20 @@ namespace Fitz.Features.Rename
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
             return db.Renames.Where(x => x.Expiration < DateTime.Now).ToList();
+        }
+
+        public List<Renames> GetPendingRenamesByAccountId(ulong accountId)
+        {
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+            return db.Renames.Where(x => x.AffectedUserId == accountId && x.Status == RenameStatus.Pending).ToList();
+        }
+
+        public List<Renames> GetPendingRenames()
+        {
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+            return db.Renames.Where(x => x.Status == RenameStatus.Pending).ToList();
         }
 
         public int GetTotalRenameRequestsByAccountId(ulong accountId)

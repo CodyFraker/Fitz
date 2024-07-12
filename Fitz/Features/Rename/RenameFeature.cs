@@ -6,19 +6,18 @@ using Fitz.Core.Services.Features;
 using Fitz.Core.Services.Jobs;
 using Fitz.Features.Accounts;
 using Fitz.Features.Rename.Commands;
+using Fitz.Features.Rename.Jobs;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Rename
 {
-    public class RenameFeature(DiscordClient dClient, JobManager jobManager, RenameService renameService, AccountService accountService) : Feature
+    public class RenameFeature(DiscordClient dClient, JobManager jobManager, RenameService renameService, AccountService accountService, BotLog botLog) : Feature
     {
-        private readonly DiscordClient dClient;
         private readonly SlashCommandsExtension slash = dClient.GetSlashCommands();
         private readonly CommandsNextExtension cNext = dClient.GetCommandsNext();
-        private readonly RenameJob renameJob = new RenameJob(dClient, renameService, accountService);
+        private readonly CheckForExpiredRenames renameJob = new CheckForExpiredRenames(dClient, renameService, accountService, botLog);
+        private readonly CheckForNicknames checkForNicknames = new CheckForNicknames(dClient, renameService, accountService, botLog);
         private readonly JobManager jobManager = jobManager;
-        private readonly RenameService renameService;
-        private readonly AccountService accountService;
 
         public override string Name => "User Renaming";
 
@@ -27,6 +26,7 @@ namespace Fitz.Features.Rename
         public override Task Disable()
         {
             this.jobManager.RemoveJob(this.renameJob);
+            this.jobManager.RemoveJob(this.checkForNicknames);
             this.cNext.UnregisterCommands<RenameAdminCommands>();
             return base.Disable();
         }
@@ -34,6 +34,7 @@ namespace Fitz.Features.Rename
         public override Task Enable()
         {
             this.jobManager.AddJob(this.renameJob);
+            this.jobManager.AddJob(this.checkForNicknames);
             this.slash.RegisterCommands<RenameSlashCommands>();
             this.cNext.RegisterCommands<RenameAdminCommands>();
             return base.Enable();

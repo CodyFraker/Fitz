@@ -2,9 +2,11 @@
 {
     public enum RenameStatus
     {
-        Pending = 0,
-        Active = 1,
-        Expired = 2,
-        BoughtOut = 3,
+        Unknown = 0,
+        Pending = 1,
+        Active = 2,
+        Expired = 3,
+        BoughtOut = 4,
+        Permanent = 5
     }
 }

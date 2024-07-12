@@ -65,17 +65,15 @@ namespace Fitz.Features.Polls
                 // Get the poll from the database.
                 Poll poll = this.pollService.GetPoll(reaction.Message.Id);
                 List<PollOptions> pollOptions = this.pollService.GetPollOptions(poll);
-                DiscordChannel pollChannel = await this.dClient.GetChannelAsync(Waterbear.Polls);
 
                 #region Pending Polls
 
-                if (reaction.Message.Channel.Id == Waterbear.PendingPolls)
+                if (poll.Status == PollStatus.Pending)
                 {
-                    // TODO: Check to see if poll was already approved.
                     List<DiscordMember> pollApprovers = reaction.Message.Channel.Users.Where(DiscordMember => !DiscordMember.IsBot).ToList();
-
                     IReadOnlyList<DiscordUser> approvalReactions = await reaction.Message.GetReactionsAsync(DiscordEmoji.FromGuildEmote(dClient, PollEmojis.Yes));
                     IReadOnlyList<DiscordUser> denyReactions = await reaction.Message.GetReactionsAsync(DiscordEmoji.FromGuildEmote(dClient, PollEmojis.No));
+                    DiscordChannel pollChannel = await this.dClient.GetChannelAsync(Waterbear.Polls);
 
                     // Approved
                     if (approvalReactions.Where(x => !x.IsBot).Count() >= 2)
@@ -146,7 +144,7 @@ namespace Fitz.Features.Polls
 
                 #region Poll Vote
 
-                if (reaction.Message.ChannelId == Waterbear.Polls)
+                if (reaction.Message.ChannelId == Waterbear.Polls && poll.Status == PollStatus.Approved)
                 {
                     // Check to see if we're adding a valid poll emoji.
                     if (pollOptions.Any((x) => x.EmojiId == reaction.Emoji.Id) || pollOptions.Any((x) => x.EmojiName == reaction.Emoji.Name))
@@ -195,7 +193,14 @@ namespace Fitz.Features.Polls
                                 }
                                 if (userOldOption.EmojiId == 0)
                                 {
-                                    await reaction.Message.DeleteReactionAsync(DiscordEmoji.FromUnicode(userOldOption.EmojiName), reaction.User);
+                                    try
+                                    {
+                                        await reaction.Message.DeleteReactionAsync(DiscordEmoji.FromUnicode(userOldOption.EmojiName), reaction.User);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        await reaction.Message.DeleteReactionAsync(DiscordEmoji.FromName(dClient, userOldOption.EmojiName), reaction.User);
+                                    }
                                 }
                                 else
                                 {

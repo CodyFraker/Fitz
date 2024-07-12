@@ -16,6 +16,7 @@ using Fitz.Features.Accounts.Commands;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Fitz.Features.Blackjack.Commands;
+using Fitz.Features.Lottery.Commands;
 using Fitz.Features.Polls.Polls;
 using Fitz.Variables;
 using Fitz.Variables.Channels;
@@ -105,6 +106,7 @@ namespace Fitz.Core.Discord
             this.slash.RegisterCommands<BlackjackSlashCommands>();
             this.modals.RegisterModals<SettingsModalComands>();
             this.modals.RegisterModals<PollModalCommands>();
+            this.modals.RegisterModals<LotteryModalCommands>();
             this.modals.RegisterModals<AccountModalCommands>();
 
             var playerOptions = new LavalinkPlayerOptions

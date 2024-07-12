@@ -324,7 +324,7 @@ namespace Fitz.Features.Bank
 
         #region Purchase Lottery Ticket
 
-        public async Task PurchaseLotteryTicket(Account user, int amount)
+        public async Task<Result> PurchaseLotteryTicket(Account user, int amount)
         {
             try
             {
@@ -332,10 +332,12 @@ namespace Fitz.Features.Bank
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
                 await TransferToFitz(user.Id, amount, Reason.Lotto);
+                return new Result(true, $"Purchased {amount} lottery ticket(s).", user);
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Failed to purchase lottery ticket.");
+                Log.Error(ex, $"Failed to purchase {amount} lottery ticket(s) for {user.Username} | {user.Id}");
+                return new Result(false, $"Failed to purchase {amount} tickets for {user.Username} | {user.Id}", null);
             }
         }
 

@@ -1,6 +1,5 @@
 ﻿using DSharpPlus;
 using DSharpPlus.Entities;
-using DSharpPlus.ModalCommands;
 using Fitz.Core.Contexts;
 using Fitz.Core.Discord;
 using Fitz.Core.Models;
