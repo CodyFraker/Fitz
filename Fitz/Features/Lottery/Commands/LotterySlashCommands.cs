@@ -94,7 +94,6 @@ namespace Fitz.Features.Lottery.Commands
                 }
                 if (args.Id == $"lottery_max_tickets_{unique_id}")
                 {
-                    await ctx.DeferAsync(true);
                     var buyTicketsResult = await this.lotteryService.BuyTicketsForUser(account, settings.MaxTickets);
                     if (!buyTicketsResult.Success)
                     {
