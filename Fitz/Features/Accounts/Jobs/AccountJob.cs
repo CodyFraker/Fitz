@@ -19,7 +19,7 @@ namespace Fitz.Features.Accounts.Jobs
 
         public ulong Emoji => ManageRoleEmojis.Warning;
 
-        public int Interval => 25;
+        public string Interval => CronInterval.Every30Minutes;
 
         public async Task Execute()
         {

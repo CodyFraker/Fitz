@@ -4,6 +4,7 @@ using Fitz.Core.Discord;
 using Fitz.Core.Services.Jobs;
 using Fitz.Features.Accounts;
 using Fitz.Features.Rename.Models;
+using Fitz.Variables;
 using Fitz.Variables.Emojis;
 using System;
 using System.Collections.Generic;
@@ -27,7 +28,7 @@ namespace Fitz.Features.Rename.Jobs
 
         public ulong Emoji => ManageRoleEmojis.Warning;
 
-        public int Interval => 25;
+        public string Interval => CronInterval.Every30Minutes;
 
         public async Task Execute()
         {
@@ -36,10 +37,12 @@ namespace Fitz.Features.Rename.Jobs
                 this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, "Checking for unset nicknames...");
                 DiscordGuild waterbear = await dClient.GetGuildAsync(Variables.Guilds.Waterbear);
                 IAsyncEnumerable<DiscordMember> members = waterbear.GetAllMembersAsync();
+                List<DiscordMember> discordMembers = new List<DiscordMember>();
                 await foreach (DiscordMember member in members)
                 {
+                    discordMembers.Add(member);
                     // If the member has a nickname, check to see if we have a record of it.
-                    if (member.Nickname != null)
+                    if (member.Nickname != null && member.Id != Users.Admin)
                     {
                         Renames rename = renameService.GetActiveRenameByAccountId(member.Id);
                         if (rename == null)
@@ -58,6 +61,10 @@ namespace Fitz.Features.Rename.Jobs
                     }
                 }
                 this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, "Finished checking for unset nicknames");
+            }
+            catch (DSharpPlus.Exceptions.UnauthorizedException)
+            {
+                Console.WriteLine("Cannot update admin username/nickname. This is not important.");
             }
             catch (Exception e)
             {

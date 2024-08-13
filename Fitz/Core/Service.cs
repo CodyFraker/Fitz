@@ -9,12 +9,10 @@ namespace Fitz.Core
     public class Service : IHostedService
     {
         private readonly FeatureManager featureManager;
-        private readonly JobManager jobManager;
 
-        public Service(FeatureManager featureManager, JobManager jobManager)
+        public Service(FeatureManager featureManager)
         {
             this.featureManager = featureManager;
-            this.jobManager = jobManager;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -22,8 +20,6 @@ namespace Fitz.Core
             await this.featureManager.InitializeAsync();
 
             await this.featureManager.Start();
-
-            this.jobManager.Start();
         }
 
         public Task StopAsync(CancellationToken cancellationToken)

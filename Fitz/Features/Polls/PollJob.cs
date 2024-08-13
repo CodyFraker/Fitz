@@ -2,8 +2,10 @@
 using DSharpPlus.Entities;
 using Fitz.Core.Discord;
 using Fitz.Core.Services.Jobs;
+using Fitz.Features.Polls.Jobs;
 using Fitz.Features.Polls.Models;
 using Fitz.Variables.Emojis;
+using Hangfire;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -18,7 +20,7 @@ namespace Fitz.Features.Polls
 
         public ulong Emoji => PollEmojis.InfoIcon;
 
-        public int Interval => 5;
+        public string Interval => CronInterval.Every15Minutes;
 
         public async Task Execute()
         {
@@ -32,6 +34,8 @@ namespace Fitz.Features.Polls
             // Check to see if any messages are not in the database
             await foreach (DiscordMessage message in pollChannelMessages)
             {
+                //BackgroundJob.Enqueue<CheckPollDbJob>(x => x.Execute(message));
+
                 // Retrive poll from database by message ID
                 Poll poll = this.PollService.GetPoll(message.Id);
 
@@ -39,8 +43,6 @@ namespace Fitz.Features.Polls
                 {
                     // If the poll is not in the database, delete the message
                     await message.DeleteAsync("Deleting message from poll channel. Message was not a valid poll.");
-
-                    // TODO: Determine if the message is supposed to be a poll that wasn't saved in the database.
                     return;
                 }
                 else
@@ -103,15 +105,15 @@ namespace Fitz.Features.Polls
                                 {
                                     if (userVote.PollId != poll.Id)
                                     {
-                                        //// Delete the reaction
-                                        //await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
+                                        // Delete the reaction
+                                        await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
                                     }
 
                                     // If the user's choice isn't in the pollOptions, we need to remove the reaction.
                                     if (!pollOptions.Any(x => x.EmojiName == pollReaction.Emoji.Name))
                                     {
-                                        //// Delete the reaction
-                                        //await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
+                                        // Delete the reaction
+                                        await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
                                     }
                                 }
                             }

@@ -2,6 +2,7 @@
 using Fitz.Core.Services.Features;
 using Fitz.Core.Services.Jobs;
 using Fitz.Features.Bank;
+using Hangfire;
 using System;
 using System.Threading.Tasks;
 
@@ -10,14 +11,12 @@ namespace Fitz.Features.HappyHour
     public class HappyHourFeature : Feature
     {
         private readonly DiscordClient dClient;
-        private readonly JobManager jobManager;
         private readonly HappyHourJob happyHourJob;
         private BankService bankService;
 
-        public HappyHourFeature(DiscordClient dClient, JobManager jobManager, BankService bankService)
+        public HappyHourFeature(DiscordClient dClient, BankService bankService)
         {
             this.dClient = dClient;
-            this.jobManager = jobManager;
             this.bankService = bankService;
             this.happyHourJob = new HappyHourJob(dClient, bankService);
         }
@@ -28,13 +27,13 @@ namespace Fitz.Features.HappyHour
 
         public override Task Disable()
         {
-            this.jobManager.RemoveJob(this.happyHourJob);
+            RecurringJob.RemoveIfExists("HappyHourJob");
             return base.Disable();
         }
 
         public override Task Enable()
         {
-            this.jobManager.AddJob(this.happyHourJob);
+            RecurringJob.AddOrUpdate("HappyHourJob", () => this.happyHourJob.Execute(), this.happyHourJob.Interval);
             return base.Enable();
         }
     }

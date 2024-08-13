@@ -16,13 +16,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Hangfire;
 
 namespace Fitz.Features.Polls
 {
-    public class PollFeature(DiscordClient dClient, BotLog botLog, AccountService accountService, BankService bankService, PollService pollService, JobManager jobManager) : Feature
+    public class PollFeature(DiscordClient dClient, BotLog botLog, AccountService accountService, BankService bankService, PollService pollService) : Feature
     {
         private readonly CommandsNextExtension cNext = dClient.GetCommandsNext();
-        private readonly JobManager jobManager = jobManager;
         private readonly SlashCommandsExtension slash = dClient.GetSlashCommands();
         private readonly AccountService accountService = accountService;
         private readonly PollService pollService = pollService;
@@ -37,15 +37,16 @@ namespace Fitz.Features.Polls
         public override Task Disable()
         {
             this.dClient.MessageReactionAdded -= this.OnReactionAddAsync;
-            this.jobManager.RemoveJob(this.pollJob);
             this.cNext.UnregisterCommands<PollSlashCommands>();
+            RecurringJob.RemoveIfExists("PollJob");
             return base.Disable();
         }
 
         public override Task Enable()
         {
             this.dClient.MessageReactionAdded += this.OnReactionAddAsync;
-            this.jobManager.AddJob(this.pollJob);
+            RecurringJob.AddOrUpdate("PollJob", () => this.pollJob.Execute(), this.pollJob.Interval);
+
             // TODO: Fix register of slash commands and add modal context here too
             //this.slash.RegisterCommands<PollSlashCommands>();
             return base.Enable();

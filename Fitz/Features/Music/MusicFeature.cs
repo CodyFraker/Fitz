@@ -2,6 +2,7 @@
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Services.Features;
 using Fitz.Features.Music.Commands;
+using Fitz.Variables;
 using Lavalink4NET;
 using Microsoft.Extensions.DependencyInjection;
 using System.Threading.Tasks;
@@ -33,7 +34,7 @@ namespace Fitz.Features.Music
 
         public override Task Enable()
         {
-            this.slash.RegisterCommands<MusicSlashCommands>();
+            this.slash.RegisterCommands<MusicSlashCommands>(Guilds.Waterbear);
 
             return base.Enable();
         }
