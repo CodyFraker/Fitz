@@ -196,12 +196,11 @@ namespace Fitz.Features.Rename.Commands
                         await renameStatus;
                         if (renameStatus.IsCompletedSuccessfully)
                         {
+                            renameRequest.OldName = affectedUser.Username;
                             renameRequest.Status = RenameStatus.Active;
                             await renameService.RenameUserAsync(renameRequest);
 
-                            string oldName = affectedUser.Username;
-
-                            await ctx.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent($"`{oldName}` has been renamed to `{newName}` for the next {days} day(s). It costed you {renameCost} beer."));
+                            await ctx.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent($"`{affectedUser.Username}` has been renamed to `{newName}` for the next {days} day(s). It costed you {renameCost} beer."));
                         }
                         else
                         {
@@ -219,7 +218,7 @@ namespace Fitz.Features.Rename.Commands
                     renameRequest.Expiration = renames[0].Expiration.Value.AddDays(days);
                     renameRequest.Status = RenameStatus.Pending;
                     renameRequest.Timestamp = DateTime.Now;
-
+                    renameRequest.OldName = affectedUser.Username;
                     await renameService.RenameUserAsync(renameRequest);
                     await ctx.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent($"Your rename request has been set to start after {renames[0].Expiration}EST."));
                 }
@@ -230,6 +229,7 @@ namespace Fitz.Features.Rename.Commands
                     renameRequest.Expiration = DateTime.Now.AddDays(days);
                     renameRequest.Timestamp = DateTime.Now;
                     renameRequest.Status = RenameStatus.Active;
+                    renameRequest.OldName = affectedUser.Username;
                     await renameService.RenameUserAsync(renameRequest);
                     var renameStatus = ctx.Guild.GetMemberAsync(affectedUser.Id).Result.ModifyAsync(x => x.Nickname = newName);
                     await ctx.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent("Renames bought out."));

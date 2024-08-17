@@ -7,17 +7,17 @@ using Fitz.Core.Services.Jobs;
 using Fitz.Features.Accounts;
 using Fitz.Features.Rename.Commands;
 using Fitz.Features.Rename.Jobs;
+using Hangfire;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Rename
 {
-    public class RenameFeature(DiscordClient dClient, JobManager jobManager, RenameService renameService, AccountService accountService, BotLog botLog) : Feature
+    public class RenameFeature(DiscordClient dClient, RenameService renameService, AccountService accountService, BotLog botLog) : Feature
     {
         private readonly SlashCommandsExtension slash = dClient.GetSlashCommands();
         private readonly CommandsNextExtension cNext = dClient.GetCommandsNext();
         private readonly CheckForExpiredRenames renameJob = new CheckForExpiredRenames(dClient, renameService, accountService, botLog);
         private readonly CheckForNicknames checkForNicknames = new CheckForNicknames(dClient, renameService, accountService, botLog);
-        private readonly JobManager jobManager = jobManager;
 
         public override string Name => "User Renaming";
 
@@ -25,18 +25,18 @@ namespace Fitz.Features.Rename
 
         public override Task Disable()
         {
-            this.jobManager.RemoveJob(this.renameJob);
-            this.jobManager.RemoveJob(this.checkForNicknames);
             this.cNext.UnregisterCommands<RenameAdminCommands>();
+            RecurringJob.RemoveIfExists("renameJob");
+            RecurringJob.RemoveIfExists("CheckForNicknames");
             return base.Disable();
         }
 
         public override Task Enable()
         {
-            this.jobManager.AddJob(this.renameJob);
-            this.jobManager.AddJob(this.checkForNicknames);
             this.slash.RegisterCommands<RenameSlashCommands>();
             this.cNext.RegisterCommands<RenameAdminCommands>();
+            RecurringJob.AddOrUpdate("renameJob", () => this.renameJob.Execute(), this.renameJob.Interval);
+            RecurringJob.AddOrUpdate("CheckForNicknames", () => this.checkForNicknames.Execute(), this.checkForNicknames.Interval);
             return base.Enable();
         }
     }

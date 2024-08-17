@@ -38,7 +38,7 @@ namespace Fitz.Features.Bank
 
         public override Task Enable()
         {
-            this.slash.RegisterCommands<BankSlashCommands>();
+            this.slash.RegisterCommands<BankSlashCommands>(Guilds.Waterbear);
             return base.Enable();
         }
     }

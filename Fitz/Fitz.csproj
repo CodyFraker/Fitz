@@ -14,6 +14,8 @@
     <PackageReference Include="DSharpPlus.CommandsNext" Version="5.0.0-nightly-02211" />
     <PackageReference Include="DSharpPlus.Interactivity" Version="5.0.0-nightly-02211" />
     <PackageReference Include="DSharpPlus.SlashCommands" Version="5.0.0-nightly-02211" />
+    <PackageReference Include="Hangfire" Version="1.8.14" />
+    <PackageReference Include="Hangfire.MySqlStorage" Version="2.0.3" />
     <PackageReference Include="Lavalink4NET.DSharpPlus" Version="4.0.19-beta.6" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
       <PrivateAssets>all</PrivateAssets>

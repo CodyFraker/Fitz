@@ -24,7 +24,7 @@ namespace Fitz.Features.Rename.Jobs
 
         public ulong Emoji => ManageRoleEmojis.Warning;
 
-        public int Interval => 5;
+        public string Interval => CronInterval.EveryHour;
 
         public async Task Execute()
         {
