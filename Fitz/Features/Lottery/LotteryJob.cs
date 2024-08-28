@@ -35,7 +35,7 @@ namespace Fitz.Features.Lottery
 
         public ulong Emoji => LotteryEmojis.Lottery;
 
-        public string Interval => CronInterval.Every5Minutes;
+        public int Interval => 1;
 
         public async Task Execute()
         {

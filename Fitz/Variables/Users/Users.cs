@@ -8,7 +8,6 @@
         public const ulong Spy = 104359875206725632;
         public const ulong Dodecuplet = 103967428408512512;
         public const ulong Fitz = 746797148263415989;
-        public const ulong Admin = 118550670994309122;
 
         public static void MockFakeStub()
         {

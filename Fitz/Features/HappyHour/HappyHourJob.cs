@@ -18,7 +18,7 @@ namespace Fitz.Features.HappyHour
 
         public ulong Emoji => PollEmojis.HotTake;
 
-        public string Interval => CronInterval.Every5Minutes;
+        public int Interval => 5;
 
         public async Task Execute()
         {

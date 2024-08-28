@@ -11,8 +11,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Extensions.Logging;
 using System;
-using Hangfire;
-using Hangfire.MySql;
 
 namespace Fitz.Core
 {
@@ -26,24 +24,9 @@ namespace Fitz.Core
                 DbContextOptions => DbContextOptions
                 .UseMySql(BotContext.ConnectionString, version))
                 .AddSingleton<BotLog>()
+                //.AddDbContextPool<BotContext>(options => options.UseMySql(BotContext.ConnectionString, version))
                 .AddSingleton<ActivityManager>()
-                .AddHangfire(config =>
-                config.UseSimpleAssemblyNameTypeSerializer()
-                .UseRecommendedSerializerSettings()
-                .UseStorage(
-                    new MySqlStorage(BotContext.ConnectionString,
-                    new MySqlStorageOptions
-                    {
-                        TransactionIsolationLevel = System.Transactions.IsolationLevel.ReadCommitted,
-                        QueuePollInterval = TimeSpan.FromSeconds(15),
-                        JobExpirationCheckInterval = TimeSpan.FromHours(1),
-                        CountersAggregateInterval = TimeSpan.FromMinutes(5),
-                        PrepareSchemaIfNecessary = true,
-                        DashboardJobListLimit = 50000,
-                        TransactionTimeout = TimeSpan.FromMinutes(1),
-                        TablesPrefix = "hangfire"
-                    })))
-                .AddHangfireServer()
+
 #pragma warning disable CA2000 // Dispose objects before losing scope
                 .AddSingleton(new DiscordClient(new DiscordConfiguration
                 {
@@ -58,7 +41,8 @@ namespace Fitz.Core
 #pragma warning restore CA2000 // Dispose objects before losing scope
                 .AddSingleton<FeatureManager>()
                 .AddSingleton<BankService>()
-                .AddSingleton<SettingsService>();
+                .AddSingleton<SettingsService>()
+                .AddSingleton<JobManager>();
         }
     }
 }
