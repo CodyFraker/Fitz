@@ -1,8 +1,9 @@
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/runtime:8.0 AS base
+FROM mcr.microsoft.com/dotnet/runtime:8.0 AS base
+ENV DOTNET_EnableWriteXorExecute=0
 USER app
 WORKDIR /app
 
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Fitz.csproj", "Fitz/"]
@@ -13,7 +14,7 @@ RUN dotnet build "./Fitz.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./Fitz.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./Fitz.csproj" -c $BUILD_CONFIGURATION -o /app/build /p:UseAppHost=false --no-build
 
 FROM base AS final
 WORKDIR /app
