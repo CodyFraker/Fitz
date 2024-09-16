@@ -1,4 +1,5 @@
 FROM mcr.microsoft.com/dotnet/runtime:8.0 AS base
+ENV DOTNET_EnableWriteXorExecute=0
 USER app
 WORKDIR /app
 
