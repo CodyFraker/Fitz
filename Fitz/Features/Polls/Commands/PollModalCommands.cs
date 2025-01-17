@@ -366,13 +366,13 @@ namespace Fitz.Features.Polls.Polls
                 new PollOptions
                 {
                     Answer = "Yes",
-                    EmojiName = DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.Yes).Name,
+                    EmojiName = $":{DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.Yes)}:",
                     EmojiId = DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.Yes).Id,
                 },
                 new PollOptions
                 {
                     Answer = "No",
-                    EmojiName = DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.No).Name,
+                    EmojiName = $":{DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.No).Name}:",
                     EmojiId = DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.No).Id,
                 },
             ];
@@ -594,8 +594,10 @@ namespace Fitz.Features.Polls.Polls
                             if (addPollOptionsResult.Success)
                             {
                                 // Send approval reactions
-                                await pollMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.Yes));
-                                await pollMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.No));
+                                await pollMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, "ani_yes"));
+                                await pollMessage.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, "ani_no"));
+                                //await pollMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.Yes));
+                                //await pollMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.No));
                             }
                             else
                             {

@@ -72,7 +72,7 @@ namespace Fitz.Features.Accounts
                 {
                     DiscordDmChannel dmChannel = await args.Member.CreateDmChannelAsync();
                     await dmChannel.SendMessageAsync("Hey, I'm Fitz. If you want to get the most out of the server, run `/signup`.");
-                    botlog.Information(LogConsoleSettings.AccountLog, $"Sent the welcome message to {args.Member.Username} via DM.");
+                    botlog.Information(LogConsoleSettings.AccountLog, $"New user joined the server. I sent {args.Member.Username} a welcome message via DM.");
                 }
                 catch (Exception e)
                 {

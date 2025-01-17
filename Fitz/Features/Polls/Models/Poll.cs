@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -54,5 +55,11 @@ namespace Fitz.Features.Polls.Models
         /// </summary>
         [Column("submitted_on")]
         public DateTime SubmittedOn { get; set; }
+
+        [NotMapped]
+        public PollOptions? Options { get; set; }
+
+        [NotMapped]
+        public List<Vote>? UserVotes { get; set; }
     }
 }

@@ -5,6 +5,7 @@ using Fitz.Core.Services.Jobs;
 using Fitz.Features.Polls.Models;
 using Fitz.Variables.Emojis;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -23,103 +24,154 @@ namespace Fitz.Features.Polls
         public async Task Execute()
         {
             this.botLog.Information(LogConsoleSettings.Jobs, PollEmojis.InfoIcon, $"Starting Poll Job...");
-            // Get poll channel
-            DiscordChannel PollChannel = await dClient.GetChannelAsync(Variables.Channels.Waterbear.Polls);
+            await ProcessPollChannel();
+            this.botLog.Information(LogConsoleSettings.Jobs, PollEmojis.InfoIcon, $"Finished Poll Job");
+        }
 
-            // Get all messages in the poll channel
-            IAsyncEnumerable<DiscordMessage> pollChannelMessages = PollChannel.GetMessagesAsync();
+        private async Task ProcessPollChannel()
+        {
+            DiscordChannel pollChannel = await dClient.GetChannelAsync(Variables.Channels.Waterbear.Polls);
+            IAsyncEnumerable<DiscordMessage> pollChannelMessages = pollChannel.GetMessagesAsync();
 
-            // Check to see if any messages are not in the database
             await foreach (DiscordMessage message in pollChannelMessages)
             {
-                // Retrive poll from database by message ID
-                Poll poll = this.PollService.GetPoll(message.Id);
+                await ProcessPollMessage(message);
+            }
+        }
 
-                if (poll == null)
+        private async Task ProcessPollMessage(DiscordMessage message)
+        {
+            Poll poll = this.PollService.GetPoll(message.Id);
+
+            if (poll == null)
+            {
+                await DeleteInvalidPollMessage(message);
+                return;
+            }
+
+            List<PollOptions> pollOptions = this.PollService.GetPollOptions(poll);
+            List<DiscordReaction> reactions = message.Reactions.ToList();
+
+            await AddMissingPollOptions(message, pollOptions, reactions);
+            await RemoveInvalidReactions(poll, message, pollOptions, reactions);
+            await ProcessUserVotes(message, poll, pollOptions);
+        }
+
+        private async Task DeleteInvalidPollMessage(DiscordMessage message)
+        {
+            await message.DeleteAsync("Deleting message from poll channel. Message was not a valid poll.");
+            // TODO: Determine if the message is supposed to be a poll that wasn't saved in the database.
+        }
+
+        private async Task AddMissingPollOptions(DiscordMessage message, List<PollOptions> pollOptions, List<DiscordReaction> reactions)
+        {
+            if (pollOptions.Count != reactions.Count)
+            {
+                foreach (PollOptions option in pollOptions)
                 {
-                    // If the poll is not in the database, delete the message
-                    await message.DeleteAsync("Deleting message from poll channel. Message was not a valid poll.");
-
-                    // TODO: Determine if the message is supposed to be a poll that wasn't saved in the database.
-                    return;
-                }
-                else
-                {
-                    // Retrieve all poll options from the database for this poll.
-                    List<PollOptions> pollOptions = this.PollService.GetPollOptions(poll);
-                    // Check to see if all poll options were added to the message
-                    if (message.Reactions == null || message.Reactions.Count == 0)
+                    if (!reactions.Any(x => x.Emoji.Name.Contains(option.EmojiName)))
                     {
-                        foreach (PollOptions option in pollOptions)
+                        if (option.EmojiId != 0 && option.EmojiId != null)
                         {
-                            if (!message.Reactions.Any(x => x.Emoji.Name.Contains(option.EmojiName)))
-                            {
-                                if (option.EmojiName.Contains(':'))
-                                {
-                                    await message.CreateReactionAsync(DiscordEmoji.FromName(dClient, option.EmojiName));
-                                }
-                                else
-                                {
-                                    await message.CreateReactionAsync(DiscordEmoji.FromName(dClient, $":{option.EmojiName}:"));
-                                }
-                            }
-                        }
-                    }
-
-                    // Iterate through each reaction on the poll.
-                    foreach (DiscordReaction pollReaction in message.Reactions)
-                    {
-                        // Check to see the poll option is in the database for this particular poll. If not, remove it.
-                        if (!pollOptions.Any(x => x.EmojiName.Contains(pollReaction.Emoji.Name)))
-                        {
-                            // Delete the reaction(s)
-                            //await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
+                            await message.CreateReactionAsync(DiscordEmoji.FromGuildEmote(dClient, option.EmojiId.Value));
                         }
                         else
                         {
-                            // Get all users who've reacted to this poll.
-                            foreach (DiscordUser user in await message.GetReactionsAsync(pollReaction.Emoji))
+                            await message.CreateReactionAsync(DiscordEmoji.FromName(dClient, $":{option.EmojiName}:"));
+                        }
+                    }
+                }
+            }
+        }
+
+        private async Task RemoveInvalidReactions(Poll poll, DiscordMessage message, List<PollOptions> pollOptions, List<DiscordReaction> reactions)
+        {
+            foreach (DiscordReaction pollReaction in message.Reactions)
+            {
+                if (!pollOptions.Any(x => x.EmojiName.Contains(pollReaction.Emoji.Name)))
+                {
+                    //await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
+                }
+                else
+                {
+                    foreach (DiscordUser user in await message.GetReactionsAsync(pollReaction.Emoji))
+                    {
+                        if (user == null)
+                        {
+                            return;
+                        }
+
+                        if (user.IsBot)
+                        {
+                            continue;
+                        }
+
+                        Vote userVote = this.PollService.GetVoteByUserOnPoll(poll, user.Id);
+
+                        if (userVote == null)
+                        {
+                            await this.PollService.AddVote(poll, pollOptions.Where(x => x.EmojiName == pollReaction.Emoji.Name).FirstOrDefault(), user.Id);
+                        }
+                        else
+                        {
+                            if (userVote.PollId != poll.Id)
                             {
-                                if (user == null)
-                                {
-                                    return;
-                                }
+                                //await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
+                            }
 
-                                if (user.IsBot)
-                                {
-                                    continue;
-                                }
-
-                                // Check to see if the user has voted on the poll
-                                Vote userVote = this.PollService.GetVoteByUserOnPoll(poll, user.Id);
-
-                                // User has added their vote to the poll but Fitz didn't see when it happened.
-                                if (userVote == null)
-                                {
-                                    // Add the vote to the database
-                                    await this.PollService.AddVote(poll, pollOptions.Where(x => x.EmojiName == pollReaction.Emoji.Name).FirstOrDefault(), user.Id);
-                                }
-                                else
-                                {
-                                    if (userVote.PollId != poll.Id)
-                                    {
-                                        //// Delete the reaction
-                                        //await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
-                                    }
-
-                                    // If the user's choice isn't in the pollOptions, we need to remove the reaction.
-                                    if (!pollOptions.Any(x => x.EmojiName == pollReaction.Emoji.Name))
-                                    {
-                                        //// Delete the reaction
-                                        //await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
-                                    }
-                                }
+                            if (!pollOptions.Any(x => x.EmojiName == pollReaction.Emoji.Name))
+                            {
+                                //await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
                             }
                         }
                     }
                 }
             }
-            this.botLog.Information(LogConsoleSettings.Jobs, PollEmojis.InfoIcon, $"Finished Poll Job");
+        }
+
+        private async Task ProcessUserVotes(DiscordMessage message, Poll poll, List<PollOptions> pollOptions)
+        {
+            foreach (DiscordReaction pollReaction in message.Reactions)
+            {
+                if (!pollOptions.Any(x => x.EmojiName.Contains(pollReaction.Emoji.Name)))
+                {
+                    //await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
+                }
+                else
+                {
+                    foreach (DiscordUser user in await message.GetReactionsAsync(pollReaction.Emoji))
+                    {
+                        if (user == null)
+                        {
+                            return;
+                        }
+
+                        if (user.IsBot)
+                        {
+                            continue;
+                        }
+
+                        Vote userVote = this.PollService.GetVoteByUserOnPoll(poll, user.Id);
+
+                        if (userVote == null)
+                        {
+                            await this.PollService.AddVote(poll, pollOptions.Where(x => x.EmojiName == pollReaction.Emoji.Name).FirstOrDefault(), user.Id);
+                        }
+                        else
+                        {
+                            if (userVote.PollId != poll.Id)
+                            {
+                                //await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
+                            }
+
+                            if (!pollOptions.Any(x => x.EmojiName == pollReaction.Emoji.Name))
+                            {
+                                //await message.DeleteReactionsEmojiAsync(pollReaction.Emoji);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

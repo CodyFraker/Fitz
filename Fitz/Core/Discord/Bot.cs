@@ -103,6 +103,7 @@ namespace Fitz.Core.Discord
             this.slash.RegisterCommands<SettingsCommands>();
             this.slash.RegisterCommands<HelpSlashCommands>();
             this.slash.RegisterCommands<PollSlashCommands>();
+            this.slash.RegisterCommands<LeaderboardSlashCommands>();
             this.slash.RegisterCommands<BlackjackSlashCommands>();
             this.modals.RegisterModals<SettingsModalComands>();
             this.modals.RegisterModals<PollModalCommands>();

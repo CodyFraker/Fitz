@@ -1,4 +1,5 @@
 ﻿using DSharpPlus;
+using DSharpPlus.CommandsNext.Converters;
 using DSharpPlus.Entities;
 using Fitz.Core.Contexts;
 using Fitz.Core.Discord;
@@ -85,30 +86,30 @@ namespace Fitz.Features.Polls
         #region GET
 
         /// <summary>
-        /// Return a poll from a Discord Message ID
+        /// Return a poll given the message ID.
         /// </summary>
         /// <param name="messageId">Discord Message ID</param>
-        /// <returns>Poll</returns>
-        public Poll GetPoll(ulong messageId)
+        /// <param name="includeOptions">Optional. Include poll options in response.</param>
+        /// <param name="includeUserVotes">Optional. Include user votes to the poll in the response.</param>
+        /// <returns>Poll Object</returns>
+        public Poll GetPoll(ulong messageId, bool includeOptions = true, bool includeUserVotes = true)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-            return db.Polls.Where((x) => x.MessageId == messageId).FirstOrDefault();
-        }
-
-        /// <summary>
-        /// Returns all votes that were made to a particular poll.
-        /// </summary>
-        /// <param name="messageId"></param>
-        /// <returns></returns>
-        public List<Vote> GetVotesOnPoll(ulong messageId)
-        {
-            using IServiceScope scope = scopeFactory.CreateScope();
-            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
             Poll poll = db.Polls.Where((x) => x.MessageId == messageId).FirstOrDefault();
-
-            return db.Votes.Where(v => v.PollId == poll.Id).ToList();
+            if (poll != null)
+            {
+                if (includeOptions == true)
+                {
+                    poll.Options = db.PollsOptions.Where((pollOptions) => pollOptions.PollId == poll.Id).FirstOrDefault();
+                }
+                if (includeUserVotes == true)
+                {
+                    poll.UserVotes = db.Votes.Where(v => v.PollId == poll.Id).ToList();
+                }
+            }
+            return null;
         }
 
         /// <summary>
@@ -221,6 +222,43 @@ namespace Fitz.Features.Polls
 
         #endregion Add Vote to Poll
 
+        #region Manage Pending Polls
+
+        public List<Poll> GetPendingPolls()
+        {
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+            return db.Polls.Where(p => p.Status == PollStatus.Pending).ToList();
+        }
+
+        public List<Poll> GetPendingPollsByUser(ulong accountId)
+        {
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+            return db.Polls.Where(p => p.AccountId == accountId && p.Status == PollStatus.Pending).ToList();
+        }
+
+        #endregion Manage Pending Polls
+
+        // Check if the poll options are valid.
+        public bool ArePollOptionsValid(List<PollOptions> pollOptions)
+        {
+            using IServiceScope scope = scopeFactory.CreateScope();
+            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+            foreach (PollOptions option in pollOptions)
+            {
+                if (!db.PollsOptions.Any(e => e.EmojiName == option.EmojiName))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         #region Update Polls and Votes
 
         public async Task UpdateVote(Vote vote, int newOptionId, Account account)
@@ -264,7 +302,7 @@ namespace Fitz.Features.Polls
             return db.Votes.Any(v => v.PollId == poll.Id && v.UserId == userId);
         }
 
-        public bool IsValidPollEmoji(Poll poll, DiscordEmoji emoji)
+        public bool IsValidPollVote(Poll poll, DiscordEmoji emoji)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
