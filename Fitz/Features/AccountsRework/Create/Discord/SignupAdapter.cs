@@ -1,58 +1,64 @@
-﻿using DSharpPlus.SlashCommands;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using DSharpPlus.Entities;
+using DSharpPlus.SlashCommands;
+using Fitz.Features.AccountsRework.Create.Domain;
 using System.Threading.Tasks;
+using Fitz.Features.AccountsRework.Create.Discord.Embeds;
+using Fitz.Features.AccountsRework.Create.Discord.Attributes;
 
-namespace Fitz.Features.AccountsRework.Create.Domain
+/******************************FOR KYLE********************************/
+/* This replaces Features/Accounts/Commands/AccountSlashCommands.cs   */
+/**********************************************************************/
+
+namespace Fitz.Features.AccountsRework.Create.Discord
 {
     [SlashModuleLifespan(SlashModuleLifespan.Scoped)]
-    public sealed class AccountSlashCommands : ApplicationCommandModule
+    public sealed class AccountSlashCommands(CreateAccountConductor createAccountConductor) : ApplicationCommandModule
     {
+        private readonly CreateAccountConductor createAccountConductor = createAccountConductor;
+
         [SlashCommand("signup", "Just sign this form.")]
+        [CreateAccountACL]
         public async Task Signup(InteractionContext ctx)
         {
-            Result accountCreationResult = await accountService.CreateAccountAsync(ctx.User);
-            if (accountCreationResult.Success)
+            var createAccountDto = new CreateAccountDto
             {
-                Account account = accountCreationResult.Data as Account;
-                await this.bankService.AwardAccountCreationBonusAsync(account);
+                Context = ctx,
+            };
 
-                await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
-                    new DiscordInteractionResponseBuilder()
-                    .AddEmbed(accountEmbed(ctx.User, account))
-                    .AsEphemeral(true));
+            var CreateAccountCommand = new AccountsMapper().MapCommandFromDto(createAccountDto);
+            var CreateAccountResponse = await createAccountConductor.CreateAccount(CreateAccountCommand);
 
-                // check to see if the user is in the Waterbear guild
-                if (ctx.Guild.Id == Guilds.Waterbear)
+            if (CreateAccountResponse.StatusCode != System.Net.HttpStatusCode.Created)
+            {
+                switch (CreateAccountResponse.StatusCode)
                 {
-                    // assign a new role to a user
-                    await ctx.Guild.GetMemberAsync(ctx.User.Id).Result.GrantRoleAsync(ctx.Guild.GetRole(Roles.Accounts));
-                    return;
-                }
-                else
-                {
-                    DiscordGuild guild = await ctx.Client.GetGuildAsync(Guilds.Waterbear);
-                    DiscordMember discordMember = await guild.GetMemberAsync(ctx.User.Id);
+                    case System.Net.HttpStatusCode.Conflict:
+                        await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
+                            new DiscordInteractionResponseBuilder()
+                            .AddEmbed(new CreateAccountConflictedEmbed().BuildEmbed(ctx.Client, ctx.User))
+                            .AsEphemeral(true));
+                        break;
 
-                    // check to see if the user is in the guild
-                    if (discordMember == null)
-                    {
-                        await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent($"You need to be in the Waterbear guild to get the Accounts role."));
-                        return;
-                    }
-                    else
-                    {
-                        await discordMember.GrantRoleAsync(guild.GetRole(Roles.Accounts));
-                        return;
-                    }
+                    case System.Net.HttpStatusCode.InternalServerError:
+                        await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
+                            new DiscordInteractionResponseBuilder()
+                            .AddEmbed(new CreateAccountFailureEmbed().BuildEmbed(ctx.Client, ctx.User))
+                            .AsEphemeral(true));
+                        break;
+
+                    default:
+                        await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
+                            new DiscordInteractionResponseBuilder()
+                            .AddEmbed(new CreateAccountFailureEmbed().BuildEmbed(ctx.Client, ctx.User))
+                            .AsEphemeral(true));
+                        break;
                 }
             }
-            else
-            {
-                await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent($"You already have an account.").AsEphemeral(true));
-            }
+
+            await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
+                new DiscordInteractionResponseBuilder()
+                .AddEmbed(new CreatedAccountSuccessEmbed().BuildEmbed(ctx.Client, ctx.User, CreateAccountResponse.Account))
+                .AsEphemeral(true));
         }
     }
 }

@@ -5,6 +5,6 @@ namespace Fitz.Core.Contexts
 {
     public partial class BotContext : DbContext
     {
-        public DbSet<Account> Accounts { get; set; }
+        public DbSet<Account> Accounts_Old { get; set; }
     }
 }

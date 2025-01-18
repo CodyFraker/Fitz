@@ -37,7 +37,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Features\AccountsRework\Create\Discord\" />
     <Folder Include="Features\AccountsRework\Update\Jobs\" />
     <Folder Include="Features\AccountsRework\Create\Persistance\" />
     <Folder Include="Features\AccountsRework\Update\Domain\" />
