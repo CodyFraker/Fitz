@@ -2,7 +2,7 @@
 using Fitz.Core.Discord;
 using Fitz.Core.Models;
 using Fitz.Core.Services.Settings;
-using Fitz.Features.Accounts;
+using Fitz.Features.Accounts.Commands;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Fitz.Features.Rename.Models;

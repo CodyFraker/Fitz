@@ -2,6 +2,7 @@
 using Fitz.Core.Models;
 using Fitz.Core.Services.Settings;
 using Fitz.Features.Accounts;
+using Fitz.Features.Accounts.Commands;
 using System.Threading.Tasks;
 
 namespace Fitz.Core.Commands.Help

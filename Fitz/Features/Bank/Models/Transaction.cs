@@ -1,29 +1,41 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Fitz.Features.Bank.Models
 {
-    [Table("trasnactions")]
+    [Table("Transactions")]
     public class Transaction
     {
         [Key]
-        [Column("id")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
-        [Column("sender")]
-        public ulong Sender { get; set; }
+        [Required]
+        public ulong SenderId { get; set; }
 
-        [Column("recipient")]
-        public ulong Recipient { get; set; }
+        [Required]
+        public ulong RecipientId { get; set; }
 
-        [Column("amount")]
+        [Required]
         public int Amount { get; set; }
 
-        [Column("reason")]
-        public Reason Reason { get; set; }
+        [Required]
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
-        [Column("timestamp")]
-        public DateTime Timestamp { get; set; }
+        [Required]
+        [MaxLength(255)]
+        public string Reason { get; set; }
+
+        public TransactionType Type { get; set; }
     }
-}
+
+    public enum TransactionType
+    {
+        Transfer = 0,
+        Reward = 1,
+        Purchase = 2,
+        Refund = 3,
+        System = 4
+    }
+} 

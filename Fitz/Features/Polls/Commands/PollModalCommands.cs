@@ -577,11 +577,11 @@ namespace Fitz.Features.Polls.Polls
                 {
                     AccountId = ctx.User.Id,
                     MessageId = pollMessage.Id,
-                    Question = question,
+                    Description = question,
                     Type = pollType,
                     Status = PollStatus.Pending,
                     EvaluatedOn = null,
-                    SubmittedOn = DateTime.UtcNow,
+                    CreatedOn = DateTime.UtcNow,
                 });
 
                 if (pendingPollResult.Success)

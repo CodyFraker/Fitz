@@ -1,5 +1,13 @@
 ﻿using Fitz.Core.Services;
-using Fitz.Features.Accounts;
+using Fitz.Features.Polls.Create.Discord;
+using Fitz.Features.Polls.Create.Domain;
+using Fitz.Features.Polls.Create.Persistance;
+using Fitz.Features.Polls.Update.Discord;
+using Fitz.Features.Polls.Update.Domain;
+using Fitz.Features.Polls.Update.Persistance;
+using Fitz.Features.Polls.Vote.Discord;
+using Fitz.Features.Polls.Vote.Domain;
+using Fitz.Features.Polls.Vote.Persistance;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -13,7 +21,26 @@ namespace Fitz.Features.Polls
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<PollService>();
+            // Register domain services
+            services.AddScoped<CreatePollService>();
+            services.AddScoped<UpdatePollService>();
+            services.AddScoped<VoteService>();
+
+            // Register repositories
+            services.AddScoped<CreatePollRepository>();
+            services.AddScoped<UpdatePollRepository>();
+            services.AddScoped<VoteRepository>();
+
+            // Register Discord adapters
+            services.AddScoped<CreatePollAdapter>();
+            services.AddScoped<UpdatePollAdapter>();
+            services.AddScoped<VoteAdapter>();
+
+            // Register the facade service
+            services.AddScoped<PollService>();
+
+            // Register the feature
+            services.AddSingleton<PollsFeature>();
         }
     }
 }

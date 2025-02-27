@@ -3,7 +3,7 @@ using DSharpPlus.ModalCommands;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Models;
 using Fitz.Core.Services.Settings;
-using Fitz.Features.Accounts;
+using Fitz.Features.Accounts.Commands;
 using Fitz.Features.Polls.Models;
 using Fitz.Variables;
 using System.Linq;

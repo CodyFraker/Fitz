@@ -15,6 +15,7 @@ namespace Fitz.Features.HappyHour
     {
         private readonly DiscordClient dClient = dClient;
         private readonly BankService bankService = bankService;
+        private const int HAPPY_HOUR_REWARD = 10; // Define the reward amount for happy hour
 
         public ulong Emoji => PollEmojis.HotTake;
 
@@ -41,7 +42,7 @@ namespace Fitz.Features.HappyHour
                         {
                             foreach (DiscordUser voiceChannelUser in voiceChannel.Users)
                             {
-                                var happyHourResult = await this.bankService.AwardHappyHour(voiceChannelUser.Id);
+                                await this.bankService.AwardHappyHour(voiceChannelUser.Id, HAPPY_HOUR_REWARD);
                             }
                         }
                     }

@@ -1,0 +1,192 @@
+@page
+@model Fitz.WebPortal.Pages.LotteryModel
+@{
+    ViewData["Title"] = "Lottery Management";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Lottery Management</h1>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createLotteryModal">
+            <i class="bi bi-plus-circle me-2"></i>Create New Lottery
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(TempData["SuccessMessage"]?.ToString()))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(TempData["ErrorMessage"]?.ToString()))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Current Lottery Card -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Current Lottery</h5>
+        </div>
+        <div class="card-body">
+            @if (Model.CurrentLottery != null)
+            {
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Lottery #@Model.CurrentLottery.Id</h4>
+                        <p><strong>Start Date:</strong> @Model.CurrentLottery.StartDate.ToString("MM/dd/yyyy HH:mm")</p>
+                        <p><strong>End Date:</strong> @Model.CurrentLottery.EndDate.ToString("MM/dd/yyyy HH:mm")</p>
+                        <p><strong>Time Remaining:</strong> @Model.TimeRemaining</p>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Current Pool</h5>
+                                <h2 class="display-4">@Model.CurrentLottery.Pool</h2>
+                                <p class="mb-0">Total Tickets: @Model.TotalTickets</p>
+                            </div>
+                        </div>
+                        <div class="mt-3 d-flex justify-content-end">
+                            <button type="button" class="btn btn-warning me-2" data-bs-toggle="modal" data-bs-target="#editPoolModal">
+                                <i class="bi bi-pencil me-1"></i>Edit Pool
+                            </button>
+                            <form method="post" onsubmit="return confirm('Are you sure you want to end this lottery and draw a winner?');">
+                                <button type="submit" class="btn btn-danger" asp-page-handler="EndLotteryAsync">
+                                    <i class="bi bi-trophy me-1"></i>End & Draw Winner
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <p>There is no active lottery. Create a new one to get started.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Lottery History -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Lottery History</h5>
+        </div>
+        <div class="card-body">
+            @if (Model.PastLotteries.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Pool</th>
+                                <th>Winner</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var lottery in Model.PastLotteries)
+                            {
+                                <tr>
+                                    <td>@lottery.Id</td>
+                                    <td>@lottery.StartDate.ToString("MM/dd/yyyy")</td>
+                                    <td>@lottery.EndDate.ToString("MM/dd/yyyy")</td>
+                                    <td>@lottery.Pool</td>
+                                    <td>
+                                        @if (lottery.WinningTicketId.HasValue)
+                                        {
+                                            var winner = Model.Winners.FirstOrDefault(w => w.TicketId == lottery.WinningTicketId.Value);
+                                            if (winner != null)
+                                            {
+                                                <span>@winner.Username (@winner.PrizeAmount)</span>
+                                            }
+                                            else
+                                            {
+                                                <span>Unknown</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No winner</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <a asp-page="./LotteryDetails" asp-route-id="@lottery.Id" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-eye"></i> Details
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">No past lotteries found.</div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Create Lottery Modal -->
+<div class="modal fade" id="createLotteryModal" tabindex="-1" aria-labelledby="createLotteryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createLotteryModalLabel">Create New Lottery</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="durationDays" class="form-label">Duration (days)</label>
+                        <input type="number" class="form-control" id="durationDays" name="durationDays" min="1" value="7" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="initialPool" class="form-label">Initial Pool</label>
+                        <input type="number" class="form-control" id="initialPool" name="initialPool" min="0" value="1000" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" asp-page-handler="CreateLotteryAsync">Create Lottery</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Pool Modal -->
+<div class="modal fade" id="editPoolModal" tabindex="-1" aria-labelledby="editPoolModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editPoolModalLabel">Edit Lottery Pool</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="newPoolAmount" class="form-label">New Pool Amount</label>
+                        <input type="number" class="form-control" id="newPoolAmount" name="newPoolAmount" 
+                               min="0" value="@(Model.CurrentLottery?.Pool ?? 0)" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" asp-page-handler="UpdatePoolAsync">Update Pool</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div> 

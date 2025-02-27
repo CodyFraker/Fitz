@@ -5,6 +5,8 @@ VisualStudioVersion = 17.4.33110.190
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fitz", "Fitz\Fitz.csproj", "{BCE210C5-6719-4272-B675-18A2F87AE31E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fitz.WebPortal", "Fitz.WebPortal\Fitz.WebPortal.csproj", "{AF05CC1B-FF77-4C82-9260-CF0580242D00}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{BCE210C5-6719-4272-B675-18A2F87AE31E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BCE210C5-6719-4272-B675-18A2F87AE31E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BCE210C5-6719-4272-B675-18A2F87AE31E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AF05CC1B-FF77-4C82-9260-CF0580242D00}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AF05CC1B-FF77-4C82-9260-CF0580242D00}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AF05CC1B-FF77-4C82-9260-CF0580242D00}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AF05CC1B-FF77-4C82-9260-CF0580242D00}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

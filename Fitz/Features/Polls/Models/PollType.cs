@@ -2,21 +2,39 @@
 
 namespace Fitz.Features.Polls.Models
 {
+    /// <summary>
+    /// Represents the type of poll
+    /// </summary>
     public enum PollType
     {
-        [ChoiceName("Number")]
+        /// <summary>
+        /// A standard poll with custom options
+        /// </summary>
+        Standard = 0,
+
+        /// <summary>
+        /// A poll with numeric options
+        /// </summary>
         Number = 1,
 
-        [ChoiceName("Yes Or No")]
-        YesOrNo = 2,
+        /// <summary>
+        /// A poll with color options
+        /// </summary>
+        Color = 2,
 
-        [ChoiceName("Color")]
-        Color = 3,
+        /// <summary>
+        /// A yes/no poll
+        /// </summary>
+        YesOrNo = 3,
 
-        [ChoiceName("This Or That")]
+        /// <summary>
+        /// A this-or-that poll with two options
+        /// </summary>
         ThisOrThat = 4,
 
-        [ChoiceName("Hot Take")]
-        HotTake = 5,
+        /// <summary>
+        /// A hot take poll with agree/disagree options
+        /// </summary>
+        HotTake = 5
     }
 }

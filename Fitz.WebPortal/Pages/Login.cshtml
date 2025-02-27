@@ -1,0 +1,25 @@
+@page
+@model Fitz.WebPortal.Pages.LoginModel
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card mt-5">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="text-center">Login with Discord</h2>
+                </div>
+                <div class="card-body text-center">
+                    <p class="lead">Click the button below to log in with your Discord account.</p>
+                    <form method="post">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-discord me-2"></i> Login with Discord
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

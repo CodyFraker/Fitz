@@ -4,9 +4,15 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Fitz</RootNamespace>
-    <StartupObject></StartupObject>
+    <StartupObject>Fitz.Program</StartupObject>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Features\AccountsRework\**" />
+    <EmbeddedResource Remove="Features\AccountsRework\**" />
+    <None Remove="Features\AccountsRework\**" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="dotenv.net" Version="3.1.2" />
@@ -14,13 +20,16 @@
     <PackageReference Include="DSharpPlus.CommandsNext" Version="5.0.0-nightly-02211" />
     <PackageReference Include="DSharpPlus.Interactivity" Version="5.0.0-nightly-02211" />
     <PackageReference Include="DSharpPlus.SlashCommands" Version="5.0.0-nightly-02211" />
+    <PackageReference Include="Lavalink4NET.Abstractions" Version="4.0.19-beta.6" />
     <PackageReference Include="Lavalink4NET.DSharpPlus" Version="4.0.19-beta.6" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.2" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.6" />
+    <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.2" />
     <PackageReference Include="QRCoder" Version="1.5.1" />
     <PackageReference Include="Serilog.Extensions.Hosting" Version="5.0.1" />
@@ -28,6 +37,7 @@
     <PackageReference Include="Serilog.Sinks.File" Version="4.1.0" />
     <PackageReference Include="ToMarkdownTable" Version="0.2.1-alpha0003" />
     <PackageReference Include="XeroxDev.DSharpPlus.ModalCommands" Version="2.0.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
   </ItemGroup>
 
   <ItemGroup>
@@ -37,11 +47,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Features\AccountsRework\Update\Jobs\" />
-    <Folder Include="Features\AccountsRework\Create\Persistance\" />
-    <Folder Include="Features\AccountsRework\Update\Domain\" />
-    <Folder Include="Features\AccountsRework\Update\Discord\" />
-    <Folder Include="Features\AccountsRework\Update\Persistance\" />
     <Folder Include="Features\Rename\Commands\Attributes\" />
   </ItemGroup>
 

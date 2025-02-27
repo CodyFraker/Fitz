@@ -1,45 +1,55 @@
-﻿using DSharpPlus;
-using DSharpPlus.CommandsNext;
+using DSharpPlus;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Services.Features;
-using Fitz.Features.Accounts;
-using Fitz.Features.Bank.Commands;
+using Fitz.Features.Bank.AddBalance.Discord;
+using Fitz.Features.Bank.GetBalance.Discord;
 using Fitz.Variables;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Bank
 {
-    public class UserBankFeature : Feature
+    public class BankFeature : Feature
     {
-        private readonly CommandsNextExtension cNext;
-        private readonly SlashCommandsExtension slash;
-        private readonly AccountService accountService;
-        private readonly BankService bankService;
-        private readonly DiscordClient dClient;
+        private readonly DiscordClient _client;
+        private readonly SlashCommandsExtension _slashCommands;
+        private readonly GetBalanceAdapter _getBalanceAdapter;
+        private readonly AddBalanceAdapter _addBalanceAdapter;
+        private readonly AdminBalanceAdapter _adminBalanceAdapter;
 
-        public UserBankFeature(DiscordClient dClient, AccountService accountService, BankService bankService)
+        public override string Name => "BankRework";
+        public override string Description => "Manage beer currency and transactions";
+
+        public BankFeature(
+            DiscordClient client,
+            GetBalanceAdapter getBalanceAdapter,
+            AddBalanceAdapter addBalanceAdapter,
+            AdminBalanceAdapter adminBalanceAdapter)
         {
-            this.dClient = dClient;
-            this.accountService = accountService;
-            this.bankService = bankService;
-            this.cNext = dClient.GetCommandsNext();
-            this.slash = dClient.GetSlashCommands();
-        }
-
-        public override string Name => "Bank";
-
-        public override string Description => "Follow the money, or beer.";
-
-        public override Task Disable()
-        {
-            //this.cNext.UnregisterCommands<BankSlashCommands>();
-            return base.Disable();
+            _client = client;
+            _slashCommands = client.GetSlashCommands();
+            _getBalanceAdapter = getBalanceAdapter;
+            _addBalanceAdapter = addBalanceAdapter;
+            _adminBalanceAdapter = adminBalanceAdapter;
         }
 
         public override Task Enable()
         {
-            this.slash.RegisterCommands<BankSlashCommands>();
-            return base.Enable();
+            // Register slash commands
+            _slashCommands.RegisterCommands<GetBalanceAdapter>(Guilds.Waterbear);
+            _slashCommands.RegisterCommands<AddBalanceAdapter>(Guilds.Waterbear);
+            _slashCommands.RegisterCommands<AdminBalanceAdapter>(Guilds.Waterbear);
+
+            return Task.CompletedTask;
+        }
+
+        public override Task Disable()
+        {
+            // Unregister slash commands
+            // _slashCommands.UnregisterCommands<GetBalanceAdapter>(Guilds.Waterbear);
+            // _slashCommands.UnregisterCommands<AddBalanceAdapter>(Guilds.Waterbear);
+            // _slashCommands.UnregisterCommands<AdminBalanceAdapter>(Guilds.Waterbear);
+
+            return Task.CompletedTask;
         }
     }
-}
+} 

@@ -55,6 +55,11 @@
         /// <summary>
         /// <see cref="Fitz.Variables.Channels.DodeDuke.RenameLog"/>
         /// </summary>
-        RenameLog = 10
+        RenameLog = 10,
+        
+        /// <summary>
+        /// <see cref="Fitz.Variables.Channels.DodeDuke.Transactions"/>
+        /// </summary>
+        BankLog = 11
     }
 }

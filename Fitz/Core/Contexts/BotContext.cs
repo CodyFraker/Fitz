@@ -47,7 +47,7 @@
 
             modelBuilder.Entity<Transaction>()
                 .Property(s => s.Reason)
-                .HasConversion(new EnumToStringConverter<Reason>());
+                .HasConversion(new EnumToStringConverter<TransactionReason>());
 
             modelBuilder.Entity<Poll>()
                 .Property(s => s.Type)

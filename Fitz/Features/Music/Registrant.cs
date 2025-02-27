@@ -1,14 +1,19 @@
 ﻿using Fitz.Core.Services;
+using Fitz.Features.Music.Play.Discord;
+using Fitz.Features.Music.Play.Domain;
+using Fitz.Features.Music.Stop.Discord;
+using Fitz.Features.Music.Stop.Domain;
 using Lavalink4NET.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 
 namespace Fitz.Features.Music
 {
-    internal class Registrant : IServiceRegistrant
+    public class Registrant : IServiceRegistrant
     {
         public void ConfigureServices(IServiceCollection services)
         {
+            // Register Lavalink services
             services.AddLavalink();
             services.ConfigureLavalink(config =>
             {
@@ -18,6 +23,20 @@ namespace Fitz.Features.Music
                 config.Passphrase = Environment.GetEnvironmentVariable("LAVALINK_PASS");
                 config.HttpClientName = "LavaLinkHttpClient";
             });
+
+            // Register domain services
+            services.AddScoped<PlayService>();
+            services.AddScoped<StopService>();
+
+            // Register Discord adapters
+            services.AddScoped<PlayAdapter>();
+            services.AddScoped<StopAdapter>();
+
+            // Register the facade service
+            services.AddScoped<MusicService>();
+
+            // Register the feature
+            services.AddSingleton<MusicFeature>();
         }
     }
 }

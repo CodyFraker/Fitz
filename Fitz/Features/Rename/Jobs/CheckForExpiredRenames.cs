@@ -3,7 +3,7 @@ using DSharpPlus.Entities;
 using DSharpPlus.Exceptions;
 using Fitz.Core.Discord;
 using Fitz.Core.Services.Jobs;
-using Fitz.Features.Accounts;
+using Fitz.Features.Accounts.Commands;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Rename.Models;
 using Fitz.Variables.Emojis;

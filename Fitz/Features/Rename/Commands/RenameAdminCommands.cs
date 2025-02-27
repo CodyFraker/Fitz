@@ -1,7 +1,7 @@
 ﻿using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
-using Fitz.Features.Accounts;
+using Fitz.Features.Accounts.Commands;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Rename.Models;
 using Fitz.Variables.Emojis;

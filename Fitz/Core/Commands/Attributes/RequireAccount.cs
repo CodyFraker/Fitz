@@ -1,5 +1,5 @@
 ﻿using DSharpPlus.SlashCommands;
-using Fitz.Features.Accounts;
+using Fitz.Features.Accounts.Commands;
 using Fitz.Features.Accounts.Models;
 using Microsoft.Extensions.DependencyInjection;
 using System.Threading.Tasks;

@@ -5,17 +5,20 @@ using Fitz.Core.Services.Jobs;
 using Fitz.Features.Polls.Models;
 using Fitz.Variables.Emojis;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
+using System;
+using Microsoft.Extensions.DependencyInjection;
+using Fitz.Features.Accounts.Commands;
+using Fitz.Features.Accounts.Models;
 
 namespace Fitz.Features.Polls
 {
-    public class PollJob(DiscordClient dClient, PollService pollService, BotLog botLog) : ITimedJob
+    public class PollJob(DiscordClient dClient, PollService pollService, IServiceScopeFactory scopeFactory) : ITimedJob
     {
         private readonly DiscordClient dClient = dClient;
         private readonly PollService PollService = pollService;
-        private readonly BotLog botLog = botLog;
+        private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
 
         public ulong Emoji => PollEmojis.InfoIcon;
 
@@ -23,9 +26,9 @@ namespace Fitz.Features.Polls
 
         public async Task Execute()
         {
-            this.botLog.Information(LogConsoleSettings.Jobs, PollEmojis.InfoIcon, $"Starting Poll Job...");
+            Console.WriteLine($"Starting Poll Job...");
             await ProcessPollChannel();
-            this.botLog.Information(LogConsoleSettings.Jobs, PollEmojis.InfoIcon, $"Finished Poll Job");
+            Console.WriteLine($"Finished Poll Job");
         }
 
         private async Task ProcessPollChannel()
@@ -106,11 +109,18 @@ namespace Fitz.Features.Polls
                             continue;
                         }
 
-                        Vote userVote = this.PollService.GetVoteByUserOnPoll(poll, user.Id);
+                        var userVote = this.PollService.GetVoteByUserOnPoll(poll, user.Id) as Fitz.Features.Polls.Models.Vote;
 
                         if (userVote == null)
                         {
-                            await this.PollService.AddVote(poll, pollOptions.Where(x => x.EmojiName == pollReaction.Emoji.Name).FirstOrDefault(), user.Id);
+                            // Need to get the account first
+                            using var scope = _scopeFactory.CreateScope();
+                            var accountService = scope.ServiceProvider.GetRequiredService<Fitz.Features.Accounts.Commands.AccountService>();
+                            var account = accountService.FindAccount(user.Id);
+                            if (account != null)
+                            {
+                                await this.PollService.AddVote(poll, pollOptions.Where(x => x.EmojiName == pollReaction.Emoji.Name).FirstOrDefault(), account);
+                            }
                         }
                         else
                         {
@@ -151,11 +161,18 @@ namespace Fitz.Features.Polls
                             continue;
                         }
 
-                        Vote userVote = this.PollService.GetVoteByUserOnPoll(poll, user.Id);
+                        var userVote = this.PollService.GetVoteByUserOnPoll(poll, user.Id) as Fitz.Features.Polls.Models.Vote;
 
                         if (userVote == null)
                         {
-                            await this.PollService.AddVote(poll, pollOptions.Where(x => x.EmojiName == pollReaction.Emoji.Name).FirstOrDefault(), user.Id);
+                            // Need to get the account first
+                            using var scope = _scopeFactory.CreateScope();
+                            var accountService = scope.ServiceProvider.GetRequiredService<Fitz.Features.Accounts.Commands.AccountService>();
+                            var account = accountService.FindAccount(user.Id);
+                            if (account != null)
+                            {
+                                await this.PollService.AddVote(poll, pollOptions.Where(x => x.EmojiName == pollReaction.Emoji.Name).FirstOrDefault(), account);
+                            }
                         }
                         else
                         {

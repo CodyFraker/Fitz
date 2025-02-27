@@ -9,6 +9,7 @@ using Fitz.Core.Contexts;
 using Fitz.Core.Discord;
 using Fitz.Core.Models;
 using Fitz.Features.Accounts;
+using Fitz.Features.Accounts.Commands;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Fitz.Features.Blackjack.Modals;
@@ -74,7 +75,7 @@ namespace Fitz.Features.Blackjack
 
         #region Add Player to Blackjack Game
 
-        public async Task<Result> AddPlayerToGameAsync(BlackjackGame game, Account account)
+        public async Task<Result> AddPlayerToGameAsync(BlackjackGame game, Fitz.Features.Accounts.Models.Account account)
         {
             try
             {
@@ -153,7 +154,7 @@ namespace Fitz.Features.Blackjack
             return game;
         }
 
-        public void Hit(BlackjackGame game, Account playerAccount)
+        public void Hit(BlackjackGame game, Fitz.Features.Accounts.Models.Account playerAccount)
         {
             BlackjackPlayers player = game.Players.FirstOrDefault(p => p.Account.Id == playerAccount.Id);
             var card = game.Deck.cards.FirstOrDefault();
@@ -166,12 +167,12 @@ namespace Fitz.Features.Blackjack
             }
         }
 
-        private void Stand(BlackjackGame game, Account playerAccount)
+        private void Stand(BlackjackGame game, Fitz.Features.Accounts.Models.Account playerAccount)
         {
             BlackjackPlayers player = game.Players.FirstOrDefault(p => p.Account.Id == playerAccount.Id);
         }
 
-        private bool PlayerHasBusted(BlackjackGame game, Account playerAccount)
+        private bool PlayerHasBusted(BlackjackGame game, Fitz.Features.Accounts.Models.Account playerAccount)
         {
             BlackjackPlayers player = game.Players.FirstOrDefault(p => p.Account.Id == playerAccount.Id);
 

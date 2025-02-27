@@ -16,7 +16,7 @@ using Fitz.Features.Accounts.Commands;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Fitz.Features.Blackjack.Commands;
-using Fitz.Features.Lottery.Commands;
+using Fitz.Features.Lottery.Create.Discord;
 using Fitz.Features.Polls.Polls;
 using Fitz.Variables;
 using Fitz.Variables.Channels;
@@ -27,6 +27,7 @@ using Lavalink4NET.Players.Queued;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System;
+using System.Net;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
 
@@ -107,8 +108,6 @@ namespace Fitz.Core.Discord
             this.slash.RegisterCommands<BlackjackSlashCommands>();
             this.modals.RegisterModals<SettingsModalComands>();
             this.modals.RegisterModals<PollModalCommands>();
-            this.modals.RegisterModals<LotteryModalCommands>();
-            this.modals.RegisterModals<AccountModalCommands>();
 
             var playerOptions = new LavalinkPlayerOptions
             {
@@ -267,11 +266,11 @@ namespace Fitz.Core.Discord
                                     AccountService accountService = args.Context.Services.GetService<AccountService>();
                                     var accountCreationResult = await accountService.CreateAccountAsync(args.Context.User);
 
-                                    if (accountCreationResult.Success == true)
+                                    if (accountCreationResult.StatusCode == HttpStatusCode.OK)
                                     {
                                         // Give user account creation beer
                                         BankService bankService = args.Context.Services.GetService<BankService>();
-                                        await bankService.AwardAccountCreationBonusAsync(accountCreationResult.Data as Account);
+                                        await bankService.AwardAccountCreationBonusAsync(accountCreationResult.Account);
 
                                         // Get account details from db.
                                         Account account = accountService.FindAccount(args.Context.User.Id);

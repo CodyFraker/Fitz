@@ -19,12 +19,12 @@ namespace Fitz.Core.Commands
         [SlashCommand("beer", "View the leaderboard of the richest users.")]
         public async Task beerLeaderboard(InteractionContext ctx)
         {
-            List<Account> accounts = bankService.GetTopBeerBalances();
+            var accounts = await bankService.GetTopBeerBalances();
 
             string topBalances = string.Empty;
-            foreach (var account in accounts)
+            foreach (var (UserId, Username, Balance) in accounts)
             {
-                topBalances += $"{account.Username} - {account.Beer}\n";
+                topBalances += $"{Username} - {Balance}\n";
             }
 
             DiscordEmbedBuilder lotteryEmbed = new()

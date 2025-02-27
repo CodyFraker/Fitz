@@ -1,0 +1,150 @@
+@page
+@model Fitz.WebPortal.Pages.DashboardModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="container">
+    <h1 class="mb-4">Dashboard</h1>
+    
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Total Accounts</h5>
+                            <h2 class="display-4">@Model.TotalAccounts</h2>
+                        </div>
+                        <i class="bi bi-people-fill display-4"></i>
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a href="/Accounts" class="text-white text-decoration-none">View Details</a>
+                    <i class="bi bi-arrow-right text-white"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Current Lottery Pool</h5>
+                            <h2 class="display-4">@Model.CurrentLotteryPool</h2>
+                        </div>
+                        <i class="bi bi-ticket-perforated-fill display-4"></i>
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a href="/Lottery" class="text-white text-decoration-none">View Details</a>
+                    <i class="bi bi-arrow-right text-white"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title">Total Transactions</h5>
+                            <h2 class="display-4">@Model.TotalTransactions</h2>
+                        </div>
+                        <i class="bi bi-currency-exchange display-4"></i>
+                    </div>
+                </div>
+                <div class="card-footer d-flex align-items-center justify-content-between">
+                    <a href="/Transactions" class="text-white text-decoration-none">View Details</a>
+                    <i class="bi bi-arrow-right text-white"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Recent Transactions</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.RecentTransactions.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>From</th>
+                                        <th>To</th>
+                                        <th>Amount</th>
+                                        <th>Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var transaction in Model.RecentTransactions)
+                                    {
+                                        <tr>
+                                            <td>@transaction.Timestamp.ToString("MM/dd/yyyy")</td>
+                                            <td>@transaction.SenderName</td>
+                                            <td>@transaction.RecipientName</td>
+                                            <td>@transaction.Amount</td>
+                                            <td>@transaction.Reason</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No recent transactions found.</p>
+                    }
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Top Beer Holders</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.TopAccounts.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Username</th>
+                                        <th>Beer</th>
+                                        <th>Lifetime Beer</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < Model.TopAccounts.Count; i++)
+                                    {
+                                        var account = Model.TopAccounts[i];
+                                        <tr>
+                                            <td>@(i + 1)</td>
+                                            <td>@account.Username</td>
+                                            <td>@account.Beer</td>
+                                            <td>@account.LifetimeBeer</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No accounts found.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

@@ -31,6 +31,38 @@ namespace Fitz.Core.Discord
                 LogConsoleSettings.Transactions => await this.dClient.GetChannelAsync(DodeDuke.Transactions),
                 LogConsoleSettings.PollLog => await this.dClient.GetChannelAsync(DodeDuke.PollLog),
                 LogConsoleSettings.RenameLog => await this.dClient.GetChannelAsync(DodeDuke.RenameLog),
+                LogConsoleSettings.BankLog => await this.dClient.GetChannelAsync(DodeDuke.Transactions),
+                _ => throw new NotImplementedException()
+            };
+            try
+            {
+                await channel.SendMessageAsync($"**[{DateTime.UtcNow}]** {DiscordEmoji.FromGuildEmote(this.dClient, emoji)} {message}");
+                Console.WriteLine($"**[{DateTime.UtcNow}]** {message}");
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, $"Error sending message to log channel\nMessage: {message}");
+            }
+        }
+
+        public async void Error(LogConsoleSettings consoleChannel, ulong emoji, string message)
+        {
+            Log.Error(message);
+            DiscordChannel channel = consoleChannel switch
+            {
+                LogConsoleSettings.None => throw new NotImplementedException(),
+                LogConsoleSettings.Commands => await this.dClient.GetChannelAsync(DodeDuke.Commands),
+                LogConsoleSettings.Jobs => await this.dClient.GetChannelAsync(DodeDuke.Jobs),
+                LogConsoleSettings.LotteryLog => await this.dClient.GetChannelAsync(DodeDuke.LotteryLog),
+                LogConsoleSettings.Console => throw new NotImplementedException(),
+                LogConsoleSettings.RoleEdits => throw new NotImplementedException(),
+                LogConsoleSettings.UserInfo => throw new NotImplementedException(),
+                LogConsoleSettings.AccountLog => await this.dClient.GetChannelAsync(DodeDuke.AccountLog),
+                LogConsoleSettings.Transactions => await this.dClient.GetChannelAsync(DodeDuke.Transactions),
+                LogConsoleSettings.PollLog => await this.dClient.GetChannelAsync(DodeDuke.PollLog),
+                LogConsoleSettings.RenameLog => await this.dClient.GetChannelAsync(DodeDuke.RenameLog),
+                LogConsoleSettings.BankLog => await this.dClient.GetChannelAsync(DodeDuke.Transactions),
+                _ => throw new NotImplementedException()
             };
             try
             {
@@ -46,7 +78,6 @@ namespace Fitz.Core.Discord
         public async void Error(string message)
         {
             Log.Error(message);
-            Console.WriteLine($"**[{DateTime.UtcNow}]** {message}");
             DiscordChannel logChannel = await this.dClient.GetChannelAsync(DodeDuke.Exceptions);
             await logChannel.SendMessageAsync(message);
         }

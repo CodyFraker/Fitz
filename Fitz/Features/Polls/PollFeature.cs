@@ -6,7 +6,7 @@ using DSharpPlus.SlashCommands;
 using Fitz.Core.Discord;
 using Fitz.Core.Services.Features;
 using Fitz.Core.Services.Jobs;
-using Fitz.Features.Accounts;
+using Fitz.Features.Accounts.Commands;
 using Fitz.Features.Bank;
 using Fitz.Features.Polls.Models;
 using Fitz.Features.Polls.Polls;
@@ -16,19 +16,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using VoteModel = Fitz.Features.Polls.Models.Vote;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Fitz.Features.Polls
 {
-    public class PollFeature(DiscordClient dClient, BotLog botLog, AccountService accountService, BankService bankService, PollService pollService, JobManager jobManager) : Feature
+    public class PollFeature(DiscordClient dClient, AccountService accountService, BankService bankService, PollService pollService, JobManager jobManager, IServiceScopeFactory scopeFactory) : Feature
     {
         private readonly CommandsNextExtension cNext = dClient.GetCommandsNext();
         private readonly JobManager jobManager = jobManager;
         private readonly SlashCommandsExtension slash = dClient.GetSlashCommands();
         private readonly AccountService accountService = accountService;
         private readonly PollService pollService = pollService;
-        private readonly PollJob pollJob = new PollJob(dClient, pollService, botLog);
-        private readonly BankService bankService = bankService;
+        private readonly PollJob pollJob = new PollJob(dClient, pollService, scopeFactory);
         private readonly DiscordClient dClient = dClient;
+        private readonly IServiceScopeFactory scopeFactory = scopeFactory;
 
         public override string Name => "Polls";
 
@@ -80,61 +82,91 @@ namespace Fitz.Features.Polls
 
         private async void ManagePendingPollsVote(Poll poll, MessageReactionAddEventArgs reaction)
         {
-            //// Get the poll options
-            //List<PollOptions> pollOptions = this.pollService.GetPollOptions(poll);
+            try
+            {
+                // Get the poll options
+                List<PollOptions> pollOptions = this.pollService.GetPollOptions(poll);
 
-            //// Check to see if we're adding a valid poll emoji.
-            //if (pollOptions.Any((x) => x.EmojiId == emoji.Id) || pollOptions.Any((x) => x.EmojiName == emoji.Name))
-            //{
-            //    PollOptions userOption = new();
-            //    if (emoji.Id == 0)
-            //    {
-            //        userOption = pollOptions.FirstOrDefault((x) => x.EmojiName == emoji.GetDiscordName());
-            //    }
-            //    else
-            //    {
-            //        userOption = pollOptions.FirstOrDefault((x) => x.EmojiId == emoji.Id);
-            //    }
+                // Get the emoji from the reaction
+                DiscordEmoji emoji = reaction.Emoji;
+                DiscordUser user = reaction.User;
+                DiscordMessage message = reaction.Message;
 
-            //    Vote vote = this.pollService.GetVoteByUserOnPoll(poll, user.Id);
-            //    if (vote == null)
-            //    {
-            //        // User has not provided a vote
-            //        // add beer to user account
-            //        await this.pollService.AddVote(poll, userOption, account);
-            //    }
-            //    else
-            //    {
-            //        // If user has voted but the choice has entered a null state, update their vote with whatever valid option they chose.
-            //        if (vote.Choice == null)
-            //        {
-            //            // Update the vote
-            //            await this.pollService.UpdateVote(vote, userOption.Id, account);
-            //            return;
-            //        }
-            //        else
-            //        {
-            //            // If the user has already voted, we need to remove their previous vote and update their vote with the new one.
-            //            // Remove their original reaction
-            //            PollOptions userOldOption = pollOptions.FirstOrDefault((x) => x.Id == vote.Choice.Value);
-            //            if (userOldOption == null)
-            //            {
-            //                return;
-            //            }
-            //            if (userOldOption.EmojiId == 0)
-            //            {
-            //                try
-            //                {
-            //                    await message.DeleteReactionAsync(DiscordEmoji.FromUnicode(userOldOption.EmojiName), user);
-            //                }
-            //                catch (Exception ex)
-            //                {
-            //                    await message.DeleteReactionAsync(DiscordEmoji.FromName(dClient, userOldOption.EmojiName), user);
-            //                }
-            //            }
-            //        }
-            //    }
-            //}
+                // Check to see if we're adding a valid poll emoji.
+                if (pollOptions.Any((x) => x.EmojiId == emoji.Id) || pollOptions.Any((x) => x.EmojiName == emoji.Name))
+                {
+                    PollOptions userOption = new();
+                    if (emoji.Id == 0)
+                    {
+                        userOption = pollOptions.FirstOrDefault((x) => x.EmojiName == emoji.GetDiscordName());
+                    }
+                    else
+                    {
+                        userOption = pollOptions.FirstOrDefault((x) => x.EmojiId == emoji.Id);
+                    }
+
+                    // Check to see if reaction.user has an account
+                    var account = this.accountService.FindAccount(user.Id);
+                    if (account == null)
+                    {
+                        // User had no account to award beer. Ignore.
+                        return;
+                    }
+
+                    // Use object to avoid namespace conflict
+                    object userVote = this.pollService.GetVoteByUserOnPoll(poll, user.Id);
+                    if (userVote == null)
+                    {
+                        // User has not provided a vote
+                        // add beer to user account
+                        await this.pollService.AddVote(poll, userOption, account);
+                    }
+                    else
+                    {
+                        // If user has voted but the choice has entered a null state, update their vote with whatever valid option they chose.
+                        var vote = userVote as Models.Vote;
+                        if (vote?.Choice == null)
+                        {
+                            // Update the vote
+                            await this.pollService.UpdateVote(userVote, userOption.Id, account);
+                            return;
+                        }
+                        else
+                        {
+                            // If the user has already voted, we need to remove their previous vote and update their vote with the new one.
+                            // Remove their original reaction
+                            PollOptions userOldOption = pollOptions.FirstOrDefault((x) => x.Id == vote.Choice);
+                            if (userOldOption == null)
+                            {
+                                return;
+                            }
+                            if (userOldOption.EmojiId == 0)
+                            {
+                                try
+                                {
+                                    await message.DeleteReactionAsync(DiscordEmoji.FromUnicode(userOldOption.EmojiName), user);
+                                }
+                                catch (Exception ex)
+                                {
+                                    await message.DeleteReactionAsync(DiscordEmoji.FromName(dClient, userOldOption.EmojiName), user);
+                                }
+                            }
+                            else
+                            {
+                                await message.DeleteReactionAsync(DiscordEmoji.FromGuildEmote(dClient, userOldOption.EmojiId.Value), user);
+                            }
+
+                            // Update the vote
+                            await this.pollService.UpdateVote(userVote, userOption.Id, account);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                Console.WriteLine($"Error in ManagePendingPollsVote: {ex.Message}");
+            }
         }
 
         private async void ManagePollChannelsVote(Poll poll, DiscordMessage message, DiscordUser user, DiscordEmoji emoji)
@@ -162,8 +194,8 @@ namespace Fitz.Features.Polls
                     // User had no account to award beer. Ignore.
                     return;
                 }
-                Vote vote = this.pollService.GetVoteByUserOnPoll(poll, user.Id);
-                if (vote == null)
+                object userVote = this.pollService.GetVoteByUserOnPoll(poll, user.Id);
+                if (userVote == null)
                 {
                     // User has not provided a vote
                     // add beer to user account
@@ -172,17 +204,18 @@ namespace Fitz.Features.Polls
                 else
                 {
                     // If user has voted but the choice has entered a null state, update their vote with whatever valid option they chose.
-                    if (vote.Choice == null)
+                    var vote = userVote as Models.Vote;
+                    if (vote?.Choice == null)
                     {
                         // Update the vote
-                        await this.pollService.UpdateVote(vote, userOption.Id, account);
+                        await this.pollService.UpdateVote(userVote, userOption.Id, account);
                         return;
                     }
                     else
                     {
                         // If the user has already voted, we need to remove their previous vote and update their vote with the new one.
                         // Remove their original reaction
-                        PollOptions userOldOption = pollOptions.FirstOrDefault((x) => x.Id == vote.Choice.Value);
+                        PollOptions userOldOption = pollOptions.FirstOrDefault((x) => x.Id == vote.Choice);
                         if (userOldOption == null)
                         {
                             return;
@@ -200,7 +233,11 @@ namespace Fitz.Features.Polls
                         }
                         else
                         {
+                            await message.DeleteReactionAsync(DiscordEmoji.FromGuildEmote(dClient, userOldOption.EmojiId.Value), user);
                         }
+
+                        // Update the vote
+                        await this.pollService.UpdateVote(userVote, userOption.Id, account);
                     }
                 }
             }
@@ -217,14 +254,14 @@ namespace Fitz.Features.Polls
             {
                 embedColor = new DiscordColor(34, 206, 131);
                 embedTitle = $"Poll #{poll.Id} was approved!";
-                description += $"Question: {poll.Question}\n";
+                description += $"Question: {poll.Description}\n";
                 description += $"When users react to your poll, you will obtain beer for their votes.\n";
             }
             if (poll.Status == PollStatus.Declined)
             {
                 embedColor = new DiscordColor(255, 95, 31);
                 embedTitle = $"Poll #{poll.Id} was denied...";
-                description += $"Question: {poll.Question}\n";
+                description += $"Question: {poll.Description}\n";
             }
 
             description += $"\n";
