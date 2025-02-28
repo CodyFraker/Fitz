@@ -1,0 +1,41 @@
+@using MudBlazor
+
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(App).Assembly">
+        <Found Context="routeData">
+            @{
+                var requireAuthentication = 
+                    !routeData.PageType.Equals(typeof(Fitz.WebPortal.Pages.Login)) && 
+                    !routeData.PageType.Equals(typeof(Fitz.WebPortal.Pages.DiscordAuth)) &&
+                    !routeData.PageType.Equals(typeof(Fitz.WebPortal.Pages.DiscordCallback));
+            }
+            
+            @if (requireAuthentication)
+            {
+                <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                    <NotAuthorized>
+                        <RedirectToLogin />
+                    </NotAuthorized>
+                </AuthorizeRouteView>
+            }
+            else
+            {
+                <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+            }
+            
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <PageTitle>Not found</PageTitle>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <MudContainer Class="mt-16 px-8" MaxWidth="MaxWidth.Medium">
+                    <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">404 - Page Not Found</MudText>
+                    <MudText Typo="Typo.body1" Align="Align.Center">The page you requested could not be found.</MudText>
+                    <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary" Class="mt-8 d-block mx-auto">Go Home</MudButton>
+                </MudContainer>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>
+
+@* MudBlazor providers are already in MainLayout.razor, so we don't need them here *@ 

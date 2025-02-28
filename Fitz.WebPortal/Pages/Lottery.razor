@@ -1,0 +1,208 @@
+@page "/lottery"
+@using Fitz.WebPortal.Data
+@using Microsoft.EntityFrameworkCore
+@using Fitz.Shared.Models
+@inject BotContext BotContext
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@attribute [Authorize]
+
+<PageTitle>Fitz Bot Portal - Lottery Management</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudGrid>
+        <MudItem xs="12" Class="d-flex justify-space-between align-center">
+            <MudText Typo="Typo.h3">Lottery Management</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" 
+                      OnClick="OpenCreateLotteryDialog">Create New Lottery</MudButton>
+        </MudItem>
+    </MudGrid>
+    
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4 mb-4">
+                <MudText Typo="Typo.h5" Class="mb-2">Current Lottery</MudText>
+                @if (_currentLottery != null)
+                {
+                    <MudText>Prize Pool: @_currentLottery.PrizePool beer</MudText>
+                    <MudText>Entries: @_currentLottery.Entries.Count</MudText>
+                    <MudText>Started: @_currentLottery.StartDate.ToString("g")</MudText>
+                    <MudText>Drawing Date: @_currentLottery.DrawDate.ToString("g")</MudText>
+                    <MudText>Status: @(_currentLottery.IsActive ? "Active" : "Inactive")</MudText>
+                    
+                    <MudButton Class="mt-2" Color="Color.Primary" OnClick="DrawLottery" 
+                              Disabled="@(!_currentLottery.IsActive || _currentLottery.DrawDate > DateTime.UtcNow)">
+                        Draw Winner
+                    </MudButton>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Info">No active lottery found.</MudAlert>
+                    <MudButton Class="mt-2" Color="Color.Primary" OnClick="OpenCreateLotteryDialog">
+                        Create New Lottery
+                    </MudButton>
+                }
+            </MudPaper>
+        </MudItem>
+        
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4 mb-4">
+                <MudText Typo="Typo.h5" Class="mb-2">Lottery Statistics</MudText>
+                <MudList>
+                    <MudListItem>
+                        <MudText>Total Lotteries: @_pastLotteries.Count</MudText>
+                    </MudListItem>
+                    <MudListItem>
+                        <MudText>Total Beer Awarded: @_totalBeerAwarded</MudText>
+                    </MudListItem>
+                    <MudListItem>
+                        <MudText>Total Entries: @_totalEntries</MudText>
+                    </MudListItem>
+                </MudList>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+    
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h5" Class="mb-2">Past Lotteries</MudText>
+        @if (_loading)
+        {
+            <div class="d-flex justify-center my-4">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else if (_pastLotteries.Count == 0)
+        {
+            <MudAlert Severity="Severity.Info">No past lotteries found.</MudAlert>
+        }
+        else
+        {
+            <MudTable Items="@_pastLotteries" Hover="true" Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>ID</MudTh>
+                    <MudTh>Prize Pool</MudTh>
+                    <MudTh>Entries</MudTh>
+                    <MudTh>Start Date</MudTh>
+                    <MudTh>Draw Date</MudTh>
+                    <MudTh>Winner</MudTh>
+                    <MudTh>Status</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="ID">@context.Id</MudTd>
+                    <MudTd DataLabel="Prize Pool">@context.PrizePool</MudTd>
+                    <MudTd DataLabel="Entries">@context.Entries.Count</MudTd>
+                    <MudTd DataLabel="Start Date">@context.StartDate.ToString("g")</MudTd>
+                    <MudTd DataLabel="Draw Date">@context.DrawDate.ToString("g")</MudTd>
+                    <MudTd DataLabel="Winner">
+                        @if (context.WinnerId.HasValue)
+                        {
+                            var winner = BotContext.Accounts.FirstOrDefault(a => a.Id == context.WinnerId.Value);
+                            @(winner?.Username ?? "Unknown")
+                        }
+                        else
+                        {
+                            <span>Not drawn</span>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip Color="@(context.IsActive ? Color.Success : Color.Default)" Size="Size.Small">
+                            @(context.IsActive ? "Active" : "Completed")
+                        </MudChip>
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="new int[] { 5, 10, 20 }" />
+                </PagerContent>
+            </MudTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private bool _loading = true;
+    private Fitz.WebPortal.Data.Lottery? _currentLottery;
+    private List<Fitz.WebPortal.Data.Lottery> _pastLotteries = new();
+    private int _totalBeerAwarded;
+    private int _totalEntries;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLotteryData();
+    }
+
+    private async Task LoadLotteryData()
+    {
+        _loading = true;
+        try
+        {
+            // Get current lottery
+            var currentLotteryShared = await BotContext.Lotteries
+                .Include(l => l.Entries)
+                .FirstOrDefaultAsync(l => l.IsActive);
+            
+            // Convert to WebPortal model
+            _currentLottery = currentLotteryShared?.ToWebPortalLottery();
+            
+            // Get past lotteries
+            var pastLotteriesShared = await BotContext.Lotteries
+                .Include(l => l.Entries)
+                .Where(l => !l.IsActive)
+                .OrderByDescending(l => l.DrawDate)
+                .ToListAsync();
+            
+            // Convert to WebPortal models
+            _pastLotteries = pastLotteriesShared.ToWebPortalLotteries();
+            
+            // Calculate statistics
+            _totalBeerAwarded = _pastLotteries.Sum(l => l.PrizePool);
+            _totalEntries = _pastLotteries.Sum(l => l.Entries.Count);
+            if (_currentLottery != null)
+            {
+                _totalEntries += _currentLottery.Entries.Count;
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading lottery data: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OpenCreateLotteryDialog()
+    {
+        var dialog = await DialogService.ShowAsync<CreateLotteryDialog>("Create New Lottery");
+        var result = await dialog.Result;
+        
+        if (!result.Canceled)
+        {
+            await LoadLotteryData();
+            Snackbar.Add("Lottery created successfully", Severity.Success);
+        }
+    }
+
+    private async Task DrawLottery()
+    {
+        if (_currentLottery == null || !_currentLottery.IsActive || _currentLottery.DrawDate > DateTime.UtcNow)
+        {
+            Snackbar.Add("Cannot draw lottery at this time", Severity.Warning);
+            return;
+        }
+        
+        var parameters = new DialogParameters
+        {
+            ["Lottery"] = _currentLottery
+        };
+        
+        var dialog = await DialogService.ShowAsync<DrawLotteryDialog>("Draw Lottery Winner", parameters);
+        var result = await dialog.Result;
+        
+        if (!result.Canceled)
+        {
+            await LoadLotteryData();
+            Snackbar.Add("Lottery winner drawn successfully", Severity.Success);
+        }
+    }
+} 

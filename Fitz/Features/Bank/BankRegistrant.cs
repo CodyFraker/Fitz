@@ -16,15 +16,22 @@ namespace Fitz.Features.Bank
             // Register repositories
             services.AddScoped<IGetBalanceRepository, GetBalanceRepository>();
             services.AddScoped<IAddBalanceRepository, AddBalanceRepository>();
+            services.AddScoped<Fitz.Features.Accounts.Domain.IAccountRepository, AddBalanceRepository>();
+            services.AddScoped<Fitz.Features.Bank.AddBalance.Domain.IAccountRepository, AddBalanceRepository>();
+            services.AddScoped<Fitz.Features.Bank.AddBalance.Domain.ITransactionRepository, AddBalanceRepository>();
             
             // Register services
             services.AddScoped<GetBalanceService>();
             services.AddScoped<AddBalanceService>();
+            services.AddSingleton<BankService>();
             
             // Register adapters
             services.AddScoped<GetBalanceAdapter>();
             services.AddScoped<AddBalanceAdapter>();
             services.AddScoped<AdminBalanceAdapter>();
+            
+            // Register feature
+            services.AddSingleton<BankFeature>();
         }
     }
 } 

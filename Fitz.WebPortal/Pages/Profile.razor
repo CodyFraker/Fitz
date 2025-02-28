@@ -1,0 +1,220 @@
+@page "/profile"
+@using Microsoft.AspNetCore.Components.Authorization
+@using Fitz.Shared.Models
+@using Fitz.WebPortal.Data
+@inject BotContext DbContext
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthStateProvider
+@attribute [Authorize]
+
+<PageTitle>Profile Settings - Fitz Bot</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="py-4">
+    <MudPaper Elevation="3" Class="pa-4 mb-4">
+        <MudText Typo="Typo.h4" Class="mb-4">Profile Settings</MudText>
+        
+        <AuthorizeView>
+            <Authorized>
+                @if (_isLoading)
+                {
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
+                }
+                else if (_account != null)
+                {
+                    <MudGrid>
+                        <MudItem xs="12" sm="4">
+                            <MudAvatar Color="Color.Primary" Style="width: 100px; height: 100px; font-size: 2.5rem;" Class="mx-auto">
+                                @(_account.Username?.Substring(0, 1).ToUpper() ?? "U")
+                            </MudAvatar>
+                            <MudText Typo="Typo.h6" Align="Align.Center" Class="mt-2">@_account.Username</MudText>
+                            <MudText Typo="Typo.body2" Align="Align.Center" Class="mud-text-secondary">ID: @_account.Id</MudText>
+                        </MudItem>
+                        
+                        <MudItem xs="12" sm="8">
+                            <MudCard Elevation="0">
+                                <MudCardContent>
+                                    <MudText Typo="Typo.h6" Class="mb-4">Account Information</MudText>
+                                    
+                                    <MudGrid>
+                                        <MudItem xs="6">
+                                            <MudText Typo="Typo.body2" Class="mud-text-secondary">Beer Balance</MudText>
+                                            <MudText Typo="Typo.body1">@_account.Beer</MudText>
+                                        </MudItem>
+                                        <MudItem xs="6">
+                                            <MudText Typo="Typo.body2" Class="mud-text-secondary">Lifetime Beer</MudText>
+                                            <MudText Typo="Typo.body1">@_account.LifetimeBeer</MudText>
+                                        </MudItem>
+                                        <MudItem xs="6">
+                                            <MudText Typo="Typo.body2" Class="mud-text-secondary">Safe Balance</MudText>
+                                            <MudText Typo="Typo.body1">@_account.SafeBalance</MudText>
+                                        </MudItem>
+                                        <MudItem xs="6">
+                                            <MudText Typo="Typo.body2" Class="mud-text-secondary">Favorability</MudText>
+                                            <MudText Typo="Typo.body1">@_account.Favorability</MudText>
+                                        </MudItem>
+                                    </MudGrid>
+                                </MudCardContent>
+                            </MudCard>
+                        </MudItem>
+                    </MudGrid>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Warning" Class="my-4">Account information not found.</MudAlert>
+                }
+            </Authorized>
+        </AuthorizeView>
+    </MudPaper>
+    
+    <MudPaper Elevation="3" Class="pa-4">
+        <MudText Typo="Typo.h5" Class="mb-4">User Preferences</MudText>
+        
+        <AuthorizeView>
+            <Authorized>
+                @if (_isLoading)
+                {
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
+                }
+                else if (_account != null)
+                {
+                    <MudList Clickable="false">
+                        <MudListItem>
+                            <div class="d-flex justify-space-between align-center">
+                                <div>
+                                    <MudText Typo="Typo.body1">Subscribe to Lottery</MudText>
+                                    <MudText Typo="Typo.caption" Class="mud-text-secondary">Automatically enter the lottery when a new one starts</MudText>
+                                </div>
+                                <MudSwitch Checked="@_account.SubscribeToLottery" Color="Color.Primary" 
+                                           CheckedChanged="@((bool value) => UpdateSubscription(value))" />
+                            </div>
+                        </MudListItem>
+                        
+                        <MudDivider />
+                        
+                        <MudListItem>
+                            <div class="d-flex flex-column">
+                                <div class="d-flex justify-space-between align-center">
+                                    <div>
+                                        <MudText Typo="Typo.body1">Lottery Tickets</MudText>
+                                        <MudText Typo="Typo.caption" Class="mud-text-secondary">Number of tickets to purchase when subscribing</MudText>
+                                    </div>
+                                    <MudText Typo="Typo.body1">@_account.SubscribeTickets</MudText>
+                                </div>
+                                <MudSlider Value="_account.SubscribeTickets" ValueChanged="@((int value) => UpdateTickets(value))" 
+                                           Min="1" Max="10" Step="1" Color="Color.Primary" />
+                            </div>
+                        </MudListItem>
+                        
+                        <MudDivider />
+                        
+                        <MudListItem>
+                            <div class="d-flex justify-space-between align-center">
+                                <div>
+                                    <MudText Typo="Typo.body1">Active Account</MudText>
+                                    <MudText Typo="Typo.caption" Class="mud-text-secondary">Deactivate your account to stop participating in bot activities</MudText>
+                                </div>
+                                <MudSwitch Checked="@(!_account.Deactivated)" Color="Color.Primary" 
+                                           CheckedChanged="@((bool value) => ToggleDeactivated(value))" />
+                            </div>
+                        </MudListItem>
+                    </MudList>
+                }
+            </Authorized>
+        </AuthorizeView>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private Fitz.Shared.Models.Account? _account;
+    private bool _isLoading = true;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserData();
+    }
+    
+    private async Task LoadUserData()
+    {
+        _isLoading = true;
+        
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                
+                if (!string.IsNullOrEmpty(userId) && ulong.TryParse(userId, out ulong discordId))
+                {
+                    _account = await DbContext.Accounts.FindAsync(discordId);
+                    
+                    if (_account == null)
+                    {
+                        Snackbar.Add("Your account was not found in the database.", Severity.Warning);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading user data: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+    
+    private async Task SavePreference(string propertyName)
+    {
+        try
+        {
+            if (_account != null)
+            {
+                // If we're toggling the Deactivated property, we need to invert the value
+                if (propertyName == nameof(_account.Deactivated))
+                {
+                    _account.Deactivated = !_account.Deactivated;
+                }
+                
+                DbContext.Accounts.Update(_account);
+                await DbContext.SaveChangesAsync();
+                
+                Snackbar.Add("Preference saved successfully.", Severity.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error saving preference: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ToggleDeactivated(bool value)
+    {
+        if (_account != null)
+        {
+            _account.Deactivated = !value;
+            await SavePreference(nameof(_account.Deactivated));
+        }
+    }
+
+    private async Task UpdateTickets(int value)
+    {
+        if (_account != null)
+        {
+            _account.SubscribeTickets = value;
+            await SavePreference(nameof(_account.SubscribeTickets));
+        }
+    }
+
+    private async Task UpdateSubscription(bool value)
+    {
+        if (_account != null)
+        {
+            _account.SubscribeToLottery = value;
+            await SavePreference(nameof(_account.SubscribeToLottery));
+        }
+    }
+} 

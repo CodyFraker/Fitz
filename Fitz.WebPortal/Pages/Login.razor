@@ -1,0 +1,81 @@
+@page "/login"
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Http
+@using System.Web
+@using Microsoft.AspNetCore.WebUtilities
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+@inject IHttpContextAccessor HttpContextAccessor
+
+<PageTitle>Login - Fitz Bot</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+    <MudPaper Elevation="3" Class="pa-8">
+        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-4">Welcome to Fitz Bot</MudText>
+        <MudText Typo="Typo.body1" Align="Align.Center" Class="mb-6">
+            Sign in with your Discord account to access the Fitz Bot Portal.
+        </MudText>
+        
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@_errorMessage</MudAlert>
+        }
+        
+        <div class="d-flex justify-center">
+            <MudButton OnClick="LoginWithDiscord" 
+                       Variant="Variant.Filled" 
+                       Color="Color.Secondary"
+                       Size="Size.Large"
+                       Style="background-color: #5865F2; color: white;"
+                       Class="px-8 py-3">
+                <MudIcon Icon="@Icons.Custom.Brands.Discord" Class="mr-2" />
+                Login with Discord
+            </MudButton>
+        </div>
+        
+        <MudText Typo="Typo.caption" Align="Align.Center" Class="mt-6 mud-text-secondary">
+            By logging in, you agree to allow Fitz Bot to access your Discord profile information.
+        </MudText>
+    </MudPaper>
+    
+    <MudText Typo="Typo.body2" Align="Align.Center" Class="mt-4 mud-text-secondary">
+        Fitz Bot is not affiliated with Discord Inc.
+    </MudText>
+</MudContainer>
+
+@code {
+    private string _returnUrl = string.Empty;
+    private string _errorMessage = string.Empty;
+    
+    protected override void OnInitialized()
+    {
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("returnUrl", out var returnUrl))
+        {
+            _returnUrl = returnUrl;
+        }
+        
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("error", out var error))
+        {
+            _errorMessage = HttpUtility.UrlDecode(error);
+            Snackbar.Add(_errorMessage, Severity.Error);
+        }
+    }
+    
+    private async Task LoginWithDiscord()
+    {
+        try
+        {
+            // Navigate to our signin-discord page which will handle the OAuth flow
+            var returnUrlParam = string.IsNullOrEmpty(_returnUrl) ? "" : $"?returnUrl={Uri.EscapeDataString(_returnUrl)}";
+            NavigationManager.NavigateTo($"/signin-discord{returnUrlParam}", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error initiating login: {ex.Message}";
+            Snackbar.Add(_errorMessage, Severity.Error);
+        }
+    }
+} 

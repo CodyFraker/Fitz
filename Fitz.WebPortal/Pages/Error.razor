@@ -1,0 +1,38 @@
+@page "/Error"
+
+<PageTitle>Error - Fitz Bot</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-16">
+    <MudPaper Elevation="3" Class="pa-8">
+        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-4">Error</MudText>
+        <MudText Typo="Typo.body1" Align="Align.Center" Class="mb-6">
+            An error has occurred. This application may no longer respond until reloaded.
+        </MudText>
+        
+        <MudAlert Severity="Severity.Error" Class="mb-4">
+            <MudText>@_errorMessage</MudText>
+        </MudAlert>
+        
+        <div class="d-flex justify-center">
+            <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large">
+                Return to Home
+            </MudButton>
+        </div>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Message { get; set; }
+    
+    private string _errorMessage = "An unexpected error occurred.";
+    
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrEmpty(Message))
+        {
+            _errorMessage = Message;
+        }
+    }
+} 

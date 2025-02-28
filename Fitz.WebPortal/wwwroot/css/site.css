@@ -1,31 +1,391 @@
-html {
-  font-size: 14px;
+html, body {
+  font-family: 'Roboto', sans-serif;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden;
 }
 
-@media (min-width: 768px) {
-  html {
-    font-size: 16px;
+/* Mobile-first styles */
+.mobile-bottom-nav-spacer {
+  height: 56px; /* Match the height of the bottom nav bar */
+}
+
+/* Adjust padding for mobile screens */
+@media (max-width: 768px) {
+  .mud-container {
+    padding-bottom: 56px; /* Space for bottom navigation */
+  }
+  
+  .mud-card {
+    margin-bottom: 12px;
+  }
+  
+  .mud-typography-h3 {
+    font-size: 1.5rem;
+  }
+  
+  .mud-typography-h4 {
+    font-size: 1.25rem;
+  }
+  
+  .mud-typography-h5 {
+    font-size: 1.1rem;
   }
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+/* Improve touch targets for mobile */
+@media (max-width: 768px) {
+  .mud-button, .mud-icon-button, .mud-nav-link {
+    min-height: 48px; /* Minimum touch target size */
+  }
+  
+  .mud-input {
+    margin-bottom: 16px;
+  }
 }
 
-html {
+/* Bottom navigation active indicator */
+.mud-bottom-navigation-active {
+  color: var(--mud-palette-primary);
+}
+
+/* Keep existing styles */
+#blazor-error-ui {
+  background-color: rgba(255, 0, 0, 0.1);
+  bottom: 0;
+  box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+  display: none;
+  left: 0;
+  padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+  position: fixed;
+  width: 100%;
+  z-index: 1000;
+}
+
+#blazor-error-ui .dismiss {
+  cursor: pointer;
+  position: absolute;
+  right: 0.75rem;
+  top: 0.5rem;
+}
+
+.loading-progress {
   position: relative;
-  min-height: 100%;
+  display: block;
+  width: 8rem;
+  height: 8rem;
+  margin: 20vh auto 1rem auto;
 }
 
-body {
-  margin-bottom: 60px;
+.loading-progress circle {
+  fill: none;
+  stroke: #e0e0e0;
+  stroke-width: 0.6rem;
+  transform-origin: 50% 50%;
+  transform: rotate(-90deg);
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
+.loading-progress circle:last-child {
+  stroke: var(--mud-palette-primary);
+  stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
+  transition: stroke-dasharray 0.05s ease-in-out;
 }
 
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+.loading-progress-text {
+  position: absolute;
+  text-align: center;
+  font-weight: bold;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-progress-text:after {
+  content: var(--blazor-load-percentage-text, "Loading");
+}
+
+/* Responsive table improvements */
+.mud-table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mud-table {
+  width: 100%;
+}
+
+/* Card improvements */
+.mud-card-content {
+  padding: 16px;
+}
+
+.mud-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Chart responsiveness */
+.mud-chart {
+  height: 300px;
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .mud-chart {
+    height: 200px;
+  }
+}
+
+/* Spacing improvements */
+.mud-grid {
+  margin-top: 16px;
+}
+
+/* Avatar styling */
+.mud-avatar {
+  margin-right: 8px;
+}
+
+/* Badge styling */
+.mud-badge {
+  margin-left: 8px;
+}
+
+/* Button improvements */
+.mud-button {
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+
+.mud-icon-button {
+  margin-right: 8px;
+}
+
+/* Form control spacing */
+.mud-input {
+  margin-bottom: 16px;
+}
+
+.mud-select {
+  margin-bottom: 16px;
+}
+
+.mud-checkbox {
+  margin-bottom: 16px;
+}
+
+.mud-radio {
+  margin-bottom: 16px;
+}
+
+.mud-switch {
+  margin-bottom: 16px;
+}
+
+.mud-slider {
+  margin-bottom: 16px;
+}
+
+/* Progress indicators */
+.mud-progress-circular {
+  margin: 16px;
+}
+
+.mud-progress-linear {
+  margin-bottom: 16px;
+}
+
+/* Notifications */
+.mud-alert {
+  margin-bottom: 16px;
+}
+
+.mud-snackbar {
+  margin-bottom: 16px;
+}
+
+/* Dialog improvements */
+.mud-dialog {
+  margin-bottom: 16px;
+}
+
+/* Navigation improvements */
+.mud-drawer {
+  margin-bottom: 16px;
+}
+
+.mud-appbar {
+  margin-bottom: 16px;
+}
+
+.mud-toolbar {
+  margin-bottom: 16px;
+}
+
+/* Tab improvements */
+.mud-tabs {
+  margin-bottom: 16px;
+}
+
+/* Panel improvements */
+.mud-expansion-panel {
+  margin-bottom: 16px;
+}
+
+.mud-paper {
+  margin-bottom: 16px;
+}
+
+.mud-divider {
+  margin-bottom: 16px;
+}
+
+/* List improvements */
+.mud-list {
+  margin-bottom: 16px;
+}
+
+.mud-list-item {
+  margin-bottom: 8px;
+}
+
+/* Ensure proper spacing in lists */
+.mud-list-item-icon,
+.mud-list-item-text,
+.mud-list-item-avatar,
+.mud-list-item-button,
+.mud-list-item-checkbox,
+.mud-list-item-radio,
+.mud-list-item-switch,
+.mud-list-item-slider,
+.mud-list-item-progress,
+.mud-list-item-alert,
+.mud-list-item-snackbar,
+.mud-list-item-dialog,
+.mud-list-item-drawer,
+.mud-list-item-appbar,
+.mud-list-item-toolbar,
+.mud-list-item-tabs,
+.mud-list-item-expansion-panel,
+.mud-list-item-paper,
+.mud-list-item-divider {
+  margin-right: 16px;
+}
+
+/* Fix for bottom navigation on mobile */
+@media (max-width: 768px) {
+  .pb-4 {
+    padding-bottom: 56px !important; /* Space for bottom navigation */
+  }
+  
+  /* Improve touch targets for mobile */
+  .mud-nav-link {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+}
+
+/* Custom styles for sidebar */
+.mud-nav-brand {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.mud-drawer-open .mud-nav-brand {
+  justify-content: center;
+}
+
+/* Custom animation for theme toggle */
+.theme-toggle-icon {
+  transition: transform 0.3s ease-in-out;
+}
+
+.theme-toggle-icon:hover {
+  transform: rotate(30deg);
+}
+
+/* Custom styles for active navigation items */
+.mud-nav-link.active {
+  font-weight: 500;
+  background-color: rgba(var(--mud-palette-primary-rgb), 0.1);
+}
+
+/* Discord button styling */
+.discord-button {
+  background-color: #5865F2 !important;
+  color: white !important;
+}
+
+.discord-button:hover {
+  background-color: #4752C4 !important;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 600px) {
+  .mud-container {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  
+  .mud-appbar.mud-appbar-dense {
+    height: 48px;
+  }
+  
+  .mud-appbar.mud-appbar-dense.mud-appbar-bottom {
+    height: 56px;
+  }
+}
+
+/* Responsive padding for main content */
+.mobile-pb {
+  padding-bottom: 56px;
+}
+
+/* Active navigation link */
+.mud-nav-link.active {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+/* Theme toggle icon */
+.theme-toggle-icon {
+  transition: transform 0.3s ease;
+}
+
+.theme-toggle-icon:hover {
+  transform: rotate(30deg);
+}
+
+/* Mobile navigation bar */
+.mud-appbar.mud-appbar-bottom {
+  position: fixed;
+  bottom: 0;
+  top: auto;
+  z-index: 1000;
+  height: 56px;
+}
+
+.mud-appbar.mud-appbar-bottom .mud-icon-button {
+  border-radius: 0;
+  flex: 1;
+  margin: 0;
+  height: 56px;
+}
+
+.mud-appbar.mud-appbar-bottom .mud-icon-button.active {
+  color: var(--mud-palette-primary-lighten);
+  border-top: 2px solid var(--mud-palette-primary);
+}
+
+/* Add padding to the bottom of the page on mobile to account for the bottom nav bar */
+@media (max-width: 768px) {
+  .mud-main-content {
+    padding-bottom: 56px !important;
+  }
 }

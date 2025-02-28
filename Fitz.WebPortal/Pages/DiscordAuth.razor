@@ -1,0 +1,79 @@
+@page "/signin-discord"
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Http
+@inject NavigationManager NavigationManager
+@inject IHttpContextAccessor HttpContextAccessor
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Authenticating - Fitz Bot</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16 text-center">
+    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+    <MudText Typo="Typo.h5" Class="mt-4">Authenticating with Discord...</MudText>
+    <MudText Typo="Typo.body2" Class="mt-2 mud-text-secondary">Please wait while we complete your login.</MudText>
+</MudContainer>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        try 
+        {
+            var httpContext = HttpContextAccessor.HttpContext;
+            
+            if (httpContext != null)
+            {
+                // Get the return URL if it exists
+                string returnUrl = "/";
+                if (httpContext.Request.Query.TryGetValue("returnUrl", out var returnUrlValues))
+                {
+                    returnUrl = returnUrlValues.FirstOrDefault() ?? "/";
+                }
+                
+                // Create authentication properties with the redirect URI
+                var properties = new AuthenticationProperties
+                {
+                    RedirectUri = returnUrl,
+                    Items =
+                    {
+                        { "scheme", "Discord" },
+                        { "returnUrl", returnUrl }
+                    }
+                };
+                
+                // Initiate the authentication challenge
+                await httpContext.ChallengeAsync("Discord", properties);
+            }
+            else
+            {
+                // If we can't get HttpContext, manually construct the Discord OAuth URL
+                var baseUrl = NavigationManager.BaseUri.TrimEnd('/');
+                
+                // Important: This must EXACTLY match what's registered in Discord Developer Portal
+                var callbackUrl = $"{baseUrl}/signin-discord-callback";
+                var encodedCallbackUrl = Uri.EscapeDataString(callbackUrl);
+                
+                var returnUrlParam = "";
+                if (httpContext?.Request.Query.TryGetValue("returnUrl", out var returnUrlValues) == true)
+                {
+                    returnUrlParam = $"&state={Uri.EscapeDataString(returnUrlValues.FirstOrDefault() ?? "/")}";
+                }
+                
+                var clientId = "1077680432147087400";
+                var discordAuthUrl = $"https://discord.com/api/oauth2/authorize?client_id={clientId}&redirect_uri={encodedCallbackUrl}&response_type=code&scope=identify%20guilds%20email%20guilds.join%20guilds.members.read{returnUrlParam}";
+                
+                // Use JS interop to navigate to avoid circuit issues
+                await JSRuntime.InvokeVoidAsync("window.location.href", discordAuthUrl);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log the exception
+            Console.WriteLine($"Error in Discord authentication: {ex.Message}");
+            
+            // Redirect to login with error
+            NavigationManager.NavigateTo($"/login?error={Uri.EscapeDataString(ex.Message)}", forceLoad: true);
+        }
+    }
+} 

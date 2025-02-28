@@ -25,11 +25,12 @@
         /// Pulls variables stored in the .env file.
         /// </summary>
         public static string ConnectionString =>
-            $"Host={Environment.GetEnvironmentVariable("DB_HOST")};"
-            + $"Port={Environment.GetEnvironmentVariable("DB_PORT")};"
-            + $"Username={Environment.GetEnvironmentVariable("DB_USER")};"
-            + $"Password={Environment.GetEnvironmentVariable("DB_PASS")};"
-            + $"Database={Environment.GetEnvironmentVariable("DB_NAME")};"
+            $"server={Environment.GetEnvironmentVariable("DB_HOST")};"
+            + $"port={Environment.GetEnvironmentVariable("DB_PORT")};"
+            + $"user={Environment.GetEnvironmentVariable("DB_USER")};"
+            + $"password={Environment.GetEnvironmentVariable("DB_PASS")};"
+            + $"database={Environment.GetEnvironmentVariable("DB_NAME")};"
+            + $"AllowPublicKeyRetrieval=True;"
             + $"SSL Mode=none;";
 
         public DbSet<Job> Jobs { get; set; }
@@ -44,10 +45,6 @@
             {
                 Formatting = Formatting.None,
             };
-
-            modelBuilder.Entity<Transaction>()
-                .Property(s => s.Reason)
-                .HasConversion(new EnumToStringConverter<TransactionReason>());
 
             modelBuilder.Entity<Poll>()
                 .Property(s => s.Type)

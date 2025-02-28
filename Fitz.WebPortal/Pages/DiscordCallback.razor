@@ -1,0 +1,64 @@
+@page "/signin-discord-callback"
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Http
+@inject NavigationManager NavigationManager
+@inject IHttpContextAccessor HttpContextAccessor
+@inject ISnackbar Snackbar
+
+<PageTitle>Completing Login - Fitz Bot</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-16 text-center">
+    <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+    <MudText Typo="Typo.h5" Class="mt-4">Completing your login...</MudText>
+    <MudText Typo="Typo.body2" Class="mt-2 mud-text-secondary">You will be redirected shortly.</MudText>
+</MudContainer>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var httpContext = HttpContextAccessor.HttpContext;
+        
+        if (httpContext != null)
+        {
+            try
+            {
+                // Get the authentication result
+                var result = await httpContext.AuthenticateAsync("Discord");
+                
+                if (result.Succeeded)
+                {
+                    // Get the return URL from the state parameter
+                    string returnUrl = "/";
+                    
+                    // Check for state parameter which may contain the return URL
+                    if (httpContext.Request.Query.TryGetValue("state", out var stateValues))
+                    {
+                        returnUrl = stateValues.FirstOrDefault() ?? "/";
+                    }
+                    
+                    // Sign in the user
+                    await httpContext.SignInAsync("Cookies", result.Principal, result.Properties);
+                    
+                    // Redirect to the return URL
+                    NavigationManager.NavigateTo(returnUrl, forceLoad: true);
+                }
+                else
+                {
+                    // If authentication failed, redirect to the login page with an error
+                    NavigationManager.NavigateTo("/login?error=Authentication+failed", forceLoad: true);
+                }
+            }
+            catch (Exception ex)
+            {
+                // If an exception occurred, redirect to the login page with an error
+                NavigationManager.NavigateTo($"/login?error={Uri.EscapeDataString(ex.Message)}", forceLoad: true);
+            }
+        }
+        else
+        {
+            // If we can't get the HttpContext, redirect to the login page
+            NavigationManager.NavigateTo("/login", forceLoad: true);
+        }
+    }
+} 

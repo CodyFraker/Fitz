@@ -1,0 +1,174 @@
+@page "/accounts"
+@using Fitz.WebPortal.Data
+@using Microsoft.EntityFrameworkCore
+@using System.Text
+@using Fitz.Shared.Models
+@inject BotContext BotContext
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+@attribute [Authorize]
+
+<PageTitle>Fitz Bot Portal - Accounts</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h3" Class="mb-4">User Accounts</MudText>
+    
+    <MudGrid>
+        <MudItem xs="12">
+            <MudPaper Class="pa-4">
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudTextField @bind-Value="_searchString" Label="Search by username" Adornment="Adornment.Start" 
+                                     AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+                    </MudItem>
+                    <MudItem xs="12" md="3">
+                        <MudSelect T="string" Label="Sort By" @bind-Value="_sortBy">
+                            <MudSelectItem Value="@("username")">Username</MudSelectItem>
+                            <MudSelectItem Value="@("beer")">Beer Balance</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" md="3">
+                        <MudSelect T="bool" Label="Sort Direction" @bind-Value="_sortDescending">
+                            <MudSelectItem Value="@(false)">Ascending</MudSelectItem>
+                            <MudSelectItem Value="@(true)">Descending</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
+                
+                @if (_loading)
+                {
+                    <div class="d-flex justify-center my-4">
+                        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                    </div>
+                }
+                else if (_accounts.Count == 0)
+                {
+                    <MudAlert Severity="Severity.Info" Class="my-4">No accounts found.</MudAlert>
+                }
+                else
+                {
+                    <MudTable Items="@_filteredAccounts" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" 
+                             LoadingProgressColor="Color.Primary" T="Fitz.WebPortal.Data.Account">
+                        <HeaderContent>
+                            <MudTh>ID</MudTh>
+                            <MudTh>Username</MudTh>
+                            <MudTh>Beer Balance</MudTh>
+                            <MudTh>Actions</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="ID">@context.Id</MudTd>
+                            <MudTd DataLabel="Username">@context.Username</MudTd>
+                            <MudTd DataLabel="Beer Balance">@context.Beer</MudTd>
+                            <MudTd>
+                                <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined">
+                                    <MudButton Color="Color.Primary" OnClick="@(() => OpenEditDialog(context))">Edit</MudButton>
+                                    <MudButton Color="Color.Secondary" OnClick="@(() => OpenTransactionDialog(context))">Add Beer</MudButton>
+                                </MudButtonGroup>
+                            </MudTd>
+                        </RowTemplate>
+                        <PagerContent>
+                            <MudTablePager PageSizeOptions="new int[] { 10, 20, 50, 100 }" />
+                        </PagerContent>
+                    </MudTable>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private List<Fitz.WebPortal.Data.Account> _accounts = new();
+    private List<Fitz.WebPortal.Data.Account> _filteredAccounts = new();
+    private bool _loading = true;
+    private string _searchString = "";
+    private string _sortBy = "username";
+    private bool _sortDescending = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAccounts();
+    }
+
+    private async Task LoadAccounts()
+    {
+        _loading = true;
+        try
+        {
+            var sharedAccounts = await BotContext.Accounts
+                .AsNoTracking()
+                .ToListAsync();
+                
+            _accounts = sharedAccounts.ToWebPortalAccounts().ToList();
+            
+            ApplyFiltering();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading accounts: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void ApplyFiltering()
+    {
+        _filteredAccounts = _accounts;
+        
+        // Apply search filter
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            _filteredAccounts = _filteredAccounts
+                .Where(a => a.Username?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) == true)
+                .ToList();
+        }
+        
+        // Apply sorting
+        _filteredAccounts = _sortBy switch
+        {
+            "username" => _sortDescending 
+                ? _filteredAccounts.OrderByDescending(a => a.Username).ToList() 
+                : _filteredAccounts.OrderBy(a => a.Username).ToList(),
+            "beer" => _sortDescending 
+                ? _filteredAccounts.OrderByDescending(a => a.Beer).ToList() 
+                : _filteredAccounts.OrderBy(a => a.Beer).ToList(),
+            _ => _filteredAccounts
+        };
+    }
+
+    private async Task OpenEditDialog(Fitz.WebPortal.Data.Account account)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Account"] = account
+        };
+
+        var dialog = await DialogService.ShowAsync<EditAccountDialog>("Edit Account", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadAccounts();
+            Snackbar.Add("Account updated successfully", Severity.Success);
+        }
+    }
+
+    private async Task OpenTransactionDialog(Fitz.WebPortal.Data.Account account)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Account"] = account
+        };
+
+        var dialog = await DialogService.ShowAsync<AddBeerDialog>("Add Beer", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadAccounts();
+            Snackbar.Add("Beer added successfully", Severity.Success);
+        }
+    }
+} 

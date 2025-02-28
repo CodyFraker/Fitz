@@ -1,0 +1,177 @@
+@page "/lottery/{id:int}"
+@using Fitz.WebPortal.Data
+@using Microsoft.EntityFrameworkCore
+@using Fitz.Shared.Models
+@inject BotContext BotContext
+@inject NavigationManager NavigationManager
+@attribute [Authorize]
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <MudText Typo="Typo.h3">Lottery #@Id Details</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" Href="/lottery">
+            Back to Lottery Management
+        </MudButton>
+    </div>
+
+    @if (_lottery == null)
+    {
+        <MudAlert Severity="Severity.Error">Lottery not found.</MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4 mb-4">
+                    <MudText Typo="Typo.h5" Class="mb-2">Lottery Information</MudText>
+                    <MudText><strong>Start Date:</strong> @_lottery.StartDate.ToString("g")</MudText>
+                    <MudText><strong>Draw Date:</strong> @_lottery.DrawDate.ToString("g")</MudText>
+                    <MudText><strong>Duration:</strong> @((_lottery.DrawDate - _lottery.StartDate).TotalDays.ToString("F1")) days</MudText>
+                    <MudText>
+                        <strong>Status:</strong> 
+                        @if (_lottery.IsActive)
+                        {
+                            <MudChip Color="Color.Success" Size="Size.Small">Active</MudChip>
+                        }
+                        else
+                        {
+                            <MudChip Color="Color.Default" Size="Size.Small">Ended</MudChip>
+                        }
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+            
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4 mb-4">
+                    <MudText Typo="Typo.h5" Class="mb-2">Prize Information</MudText>
+                    <div class="text-center mb-3">
+                        <MudText Typo="Typo.h2">@_lottery.PrizePool</MudText>
+                        <MudText Typo="Typo.body2">Total Prize Pool</MudText>
+                    </div>
+                    
+                    <MudText><strong>Total Entries:</strong> @_entries.Count</MudText>
+                    
+                    @if (_lottery.WinnerId.HasValue)
+                    {
+                        <MudAlert Severity="Severity.Success" Class="mt-3">
+                            <MudText Typo="Typo.h6">Winner</MudText>
+                            <MudText><strong>Username:</strong> @_winnerName</MudText>
+                            <MudText><strong>Prize Amount:</strong> @_lottery.PrizePool</MudText>
+                        </MudAlert>
+                    }
+                    else if (!_lottery.IsActive)
+                    {
+                        <MudAlert Severity="Severity.Warning" Class="mt-3">
+                            This lottery has ended but no winner was selected.
+                        </MudAlert>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h5" Class="mb-3">Lottery Entries</MudText>
+            
+            @if (_entries.Any())
+            {
+                <MudTable Items="@_entries" Hover="true" Striped="true">
+                    <HeaderContent>
+                        <MudTh>Entry ID</MudTh>
+                        <MudTh>User</MudTh>
+                        <MudTh>Entry Date</MudTh>
+                        <MudTh>Status</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Entry ID">@context.Id</MudTd>
+                        <MudTd DataLabel="User">@GetUsername(context.AccountId)</MudTd>
+                        <MudTd DataLabel="Entry Date">@context.EntryDate.ToString("g")</MudTd>
+                        <MudTd DataLabel="Status">
+                            @if (_lottery.WinnerId.HasValue && context.AccountId == _lottery.WinnerId.Value)
+                            {
+                                <MudChip Color="Color.Success" Size="Size.Small">Winner</MudChip>
+                            }
+                            else
+                            {
+                                <MudChip Color="Color.Default" Size="Size.Small">Regular</MudChip>
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager />
+                    </PagerContent>
+                </MudTable>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info">No entries were made for this lottery.</MudAlert>
+            }
+        </MudPaper>
+    }
+</MudContainer>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+    
+    private WebPortal.Data.Lottery? _lottery;
+    private List<WebPortal.Data.LotteryEntry> _entries = new();
+    private Dictionary<ulong, string> _usernames = new();
+    private string _winnerName = "No Winner";
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLotteryData();
+    }
+    
+    private async Task LoadLotteryData()
+    {
+        // Get the lottery by ID
+        var sharedLottery = await BotContext.Lotteries
+            .Include(l => l.Entries)
+            .FirstOrDefaultAsync(l => l.Id == Id);
+
+        if (sharedLottery == null)
+        {
+            return;
+        }
+
+        _lottery = sharedLottery.ToWebPortalLottery();
+
+        // Get all entries for this lottery
+        var sharedEntries = await BotContext.LotteryEntries
+            .Where(e => e.LotteryId == Id)
+            .ToListAsync();
+            
+        _entries = sharedEntries.ToWebPortalLotteryEntries();
+
+        // Get usernames for all entry holders
+        if (_entries.Any())
+        {
+            var userIds = _entries.Select(e => e.AccountId).Distinct().ToList();
+            var accounts = await BotContext.Accounts
+                .Where(a => userIds.Contains(a.Id))
+                .ToDictionaryAsync(a => a.Id, a => a.Username ?? $"User {a.Id}");
+
+            _usernames = accounts;
+
+            // Get winner username if there is a winner
+            if (_lottery.WinnerId.HasValue)
+            {
+                if (_usernames.TryGetValue(_lottery.WinnerId.Value, out var name))
+                {
+                    _winnerName = name;
+                }
+                else
+                {
+                    var winner = await BotContext.Accounts.FindAsync(_lottery.WinnerId.Value);
+                    _winnerName = winner?.Username ?? $"User {_lottery.WinnerId.Value}";
+                }
+            }
+        }
+    }
+    
+    private string GetUsername(ulong userId)
+    {
+        return _usernames.TryGetValue(userId, out var username) ? username : $"User {userId}";
+    }
+} 

@@ -1,0 +1,68 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using MudBlazor
+@using Microsoft.AspNetCore.Components.Routing
+@inject NavigationManager NavigationManager
+
+<div class="mud-nav-brand py-2 px-2 d-flex align-center">
+    <MudAvatar Color="Color.Primary" Size="Size.Large" Class="mr-3">F</MudAvatar>
+    <MudText Typo="Typo.h6">Fitz Bot</MudText>
+</div>
+
+<MudDivider Class="mb-2" />
+
+<MudNavMenu Dense="true" Class="py-2">
+    <MudText Typo="Typo.subtitle2" Class="px-4 mt-2 mb-1 mud-text-secondary">MAIN</MudText>
+    <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home" Class="@GetNavLinkClass("")">Home</MudNavLink>
+    
+    <AuthorizeView>
+        <Authorized>
+            <MudNavLink Href="/dashboard" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Dashboard" Class="@GetNavLinkClass("/dashboard")">Dashboard</MudNavLink>
+            
+            <MudText Typo="Typo.subtitle2" Class="px-4 mt-4 mb-1 mud-text-secondary">MANAGEMENT</MudText>
+            <MudNavLink Href="/accounts" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.People" Class="@GetNavLinkClass("/accounts")">Accounts</MudNavLink>
+            <MudNavLink Href="/lottery" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Casino" Class="@GetNavLinkClass("/lottery")">Lottery</MudNavLink>
+            
+            <MudNavGroup Title="Settings" Icon="@Icons.Material.Filled.Settings" Expanded="@IsSettingsExpanded()">
+                <MudNavLink Href="/profile" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Person" Class="@GetNavLinkClass("/profile")">Profile</MudNavLink>
+                <MudNavLink Href="/preferences" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Tune" Class="@GetNavLinkClass("/preferences")">Preferences</MudNavLink>
+            </MudNavGroup>
+            
+            <MudDivider Class="my-3" />
+            <MudNavLink Href="/logout" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Logout">Logout</MudNavLink>
+        </Authorized>
+        <NotAuthorized>
+            <MudNavLink Href="/login" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Login" Class="@GetNavLinkClass("/login")">Login</MudNavLink>
+        </NotAuthorized>
+    </AuthorizeView>
+    
+    <MudDivider Class="my-3" />
+    <MudText Typo="Typo.body2" Class="px-4 mud-text-disabled">Fitz Bot v1.0.0</MudText>
+</MudNavMenu>
+
+@code {
+    private string GetNavLinkClass(string href)
+    {
+        var currentUri = NavigationManager.Uri;
+        var relativePath = NavigationManager.ToBaseRelativePath(currentUri);
+        
+        if (string.IsNullOrEmpty(href) && string.IsNullOrEmpty(relativePath))
+        {
+            return "active";
+        }
+        
+        if (!string.IsNullOrEmpty(href) && relativePath.StartsWith(href.TrimStart('/')))
+        {
+            return "active";
+        }
+        
+        return string.Empty;
+    }
+    
+    private bool IsSettingsExpanded()
+    {
+        var currentUri = NavigationManager.Uri;
+        var relativePath = NavigationManager.ToBaseRelativePath(currentUri);
+        
+        return relativePath.StartsWith("profile") || relativePath.StartsWith("preferences");
+    }
+} 

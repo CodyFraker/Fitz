@@ -17,10 +17,8 @@ namespace Fitz.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.2")
+                .HasAnnotation("ProductVersion", "8.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
-
-            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
             modelBuilder.Entity("Fitz.Core.Models.Settings", b =>
                 {
@@ -28,8 +26,6 @@ namespace Fitz.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("AccountCreationBonusAmount")
                         .HasColumnType("int")
@@ -99,8 +95,6 @@ namespace Fitz.Migrations
                         .HasColumnType("int")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
                     b.Property<bool>("Enabled")
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("enabled");
@@ -121,8 +115,6 @@ namespace Fitz.Migrations
                         .HasColumnType("int")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
                     b.Property<DateTime>("LastExecution")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("last_execution");
@@ -142,8 +134,6 @@ namespace Fitz.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint unsigned")
                         .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<ulong>("Id"));
 
                     b.Property<int>("Beer")
                         .HasColumnType("int")
@@ -201,8 +191,6 @@ namespace Fitz.Migrations
                         .HasColumnType("int")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
                     b.Property<int>("Amount")
                         .HasColumnType("int")
                         .HasColumnName("amount");
@@ -235,8 +223,6 @@ namespace Fitz.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("DeckJson")
                         .HasColumnType("longtext")
@@ -284,8 +270,6 @@ namespace Fitz.Migrations
                         .HasColumnType("int")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
                     b.Property<int>("Bet")
                         .HasColumnType("int")
                         .HasColumnName("bet");
@@ -330,8 +314,6 @@ namespace Fitz.Migrations
                         .HasColumnType("int")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
                     b.Property<bool>("CurrentLottery")
                         .HasColumnType("tinyint(1)")
                         .HasColumnName("current");
@@ -364,8 +346,6 @@ namespace Fitz.Migrations
                         .HasColumnType("int")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
                     b.Property<ulong>("AccountId")
                         .HasColumnType("bigint unsigned")
                         .HasColumnName("account_id");
@@ -393,8 +373,6 @@ namespace Fitz.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<ulong>("AccountId")
                         .HasColumnType("bigint unsigned")
@@ -427,8 +405,6 @@ namespace Fitz.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<ulong>("AccountId")
                         .HasColumnType("bigint unsigned")
@@ -472,8 +448,6 @@ namespace Fitz.Migrations
                         .HasColumnType("int")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
                     b.Property<string>("Answer")
                         .HasColumnType("longtext")
                         .HasColumnName("answer");
@@ -502,8 +476,6 @@ namespace Fitz.Migrations
                         .HasColumnType("int")
                         .HasColumnName("id");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
-
                     b.Property<int?>("Choice")
                         .HasColumnType("int")
                         .HasColumnName("poll_option_id");
@@ -531,8 +503,6 @@ namespace Fitz.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasColumnName("id");
-
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<ulong>("AffectedUserId")
                         .HasColumnType("bigint unsigned")

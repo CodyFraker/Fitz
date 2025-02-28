@@ -1,0 +1,95 @@
+@using Fitz.WebPortal.Data
+@using Fitz.Shared.Models
+@inject BotContext BotContext
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" Model="@_account" @bind-IsValid="@_isValid">
+            <MudTextField @bind-Value="_account.Username" Label="Username" Required="true" RequiredError="Username is required" />
+            <MudNumericField @bind-Value="_account.Beer" Label="Beer" Min="0" />
+            <MudNumericField @bind-Value="_account.LifetimeBeer" Label="Lifetime Beer" Min="0" />
+            <MudNumericField @bind-Value="_account.SafeBalance" Label="Safe Balance" Min="0" />
+            <MudNumericField @bind-Value="_account.Favorability" Label="Favorability" />
+            <MudCheckBox @bind-Checked="_account.SubscribeToLottery" Label="Subscribe to Lottery" Color="Color.Primary" />
+            <MudNumericField @bind-Value="_account.SubscribeTickets" Label="Subscribe Tickets" Min="0" Disabled="@(!_account.SubscribeToLottery)" />
+            <MudCheckBox @bind-Checked="_account.Deactivated" Label="Deactivated" Color="Color.Error" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="@(!_isValid)">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public WebPortal.Data.Account? Account { get; set; }
+    
+    private WebPortal.Data.Account _account = new();
+    private MudForm _form = null!;
+    private bool _isValid;
+    
+    protected override void OnInitialized()
+    {
+        if (Account != null)
+        {
+            // Clone the account to avoid modifying the original until save
+            _account = new WebPortal.Data.Account
+            {
+                Id = Account.Id,
+                Username = Account.Username,
+                Beer = Account.Beer,
+                LifetimeBeer = Account.LifetimeBeer,
+                SafeBalance = Account.SafeBalance,
+                Favorability = Account.Favorability,
+                SubscribeToLottery = Account.SubscribeToLottery,
+                SubscribeTickets = Account.SubscribeTickets,
+                Deactivated = Account.Deactivated
+            };
+        }
+        else
+        {
+            // Initialize a new account
+            _account = new WebPortal.Data.Account();
+        }
+    }
+    
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    
+    private async Task Submit()
+    {
+        await _form.Validate();
+        
+        if (_isValid)
+        {
+            try
+            {
+                // Convert WebPortal.Data.Account to Fitz.Shared.Models.Account
+                var sharedAccount = _account.ToSharedAccount();
+                
+                if (Account == null)
+                {
+                    // Add new account
+                    await BotContext.Accounts.AddAsync(sharedAccount);
+                }
+                else
+                {
+                    // Update existing account
+                    BotContext.Accounts.Update(sharedAccount);
+                }
+                
+                await BotContext.SaveChangesAsync();
+                Snackbar.Add("Account saved successfully", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error saving account: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+} 

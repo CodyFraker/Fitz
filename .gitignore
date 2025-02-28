@@ -352,3 +352,9 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 Fitz/.env
+.env
+appsettings.json
+Fitz.WebPortal/appsettings.json
+Fitz.WebPortal/appsettings.Development.json
+Fitz.WebPortal/appsettings.json
+Fitz.WebPortal/appsettings.Development.json

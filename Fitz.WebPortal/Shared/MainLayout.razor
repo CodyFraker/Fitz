@@ -1,0 +1,186 @@
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+@inject Fitz.WebPortal.Shared.ScreenSizeService ScreenSizeService
+@implements IAsyncDisposable
+
+<MudThemeProvider Theme="_currentTheme" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1" Dense="true" Fixed="true" Color="Color.Primary">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+        <MudText Typo="Typo.h6" Class="ml-2">Fitz Bot</MudText>
+        <MudSpacer />
+        
+        <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" 
+                       Color="Color.Inherit" 
+                       OnClick="@ToggleTheme" 
+                       Class="theme-toggle-icon"
+                       Title="@(_isDarkMode ? "Switch to light theme" : "Switch to dark theme")" />
+        
+        <AuthorizeView>
+            <Authorized>
+                <MudMenu Icon="@Icons.Material.Filled.Person" Color="Color.Inherit" 
+                         AnchorOrigin="Origin.BottomRight"
+                         TransformOrigin="Origin.TopRight"
+                         Dense="true">
+                    <MudMenuItem Href="/Profile" Icon="@Icons.Material.Filled.AccountCircle">Profile</MudMenuItem>
+                    <MudMenuItem Href="/Logout" Icon="@Icons.Material.Filled.Logout">Logout</MudMenuItem>
+                </MudMenu>
+            </Authorized>
+            <NotAuthorized>
+                <MudButton Href="/Login" Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Small">Login</MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
+    </MudAppBar>
+    
+    <MudDrawer @bind-Open="_drawerOpen" Elevation="2" Variant="@_drawerVariant" ClipMode="DrawerClipMode.Always">
+        <NavMenu />
+    </MudDrawer>
+    
+    <MudMainContent Class="pt-16 px-2" Style="@(ScreenSizeService.IsSmallScreen ? "padding-bottom: 56px;" : "")">
+        <MudContainer MaxWidth="MaxWidth.Large" Class="py-4">
+            @Body
+        </MudContainer>
+        
+        @if (ScreenSizeService.IsSmallScreen)
+        {
+            <MudAppBar Bottom="true" Fixed="true" Elevation="1" Dense="true" Style="bottom: 0; top: auto;">
+                <MudStack Row="true" Justify="Justify.SpaceAround" AlignItems="AlignItems.Center" Class="w-100">
+                    <MudIconButton Icon="@Icons.Material.Filled.Home" Color="Color.Inherit" Href="/" 
+                                  Class="@GetActiveClass("/")" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Dashboard" Color="Color.Inherit" Href="/dashboard" 
+                                  Class="@GetActiveClass("/dashboard")" />
+                    <MudIconButton Icon="@Icons.Material.Filled.People" Color="Color.Inherit" Href="/accounts" 
+                                  Class="@GetActiveClass("/accounts")" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Casino" Color="Color.Inherit" Href="/lottery" 
+                                  Class="@GetActiveClass("/lottery")" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit" Href="/profile" 
+                                  Class="@GetActiveClass("/profile")" />
+                </MudStack>
+            </MudAppBar>
+        }
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private bool _isDarkMode = true;
+    private DrawerVariant _drawerVariant = DrawerVariant.Responsive;
+    private MudTheme _currentTheme = new MudTheme();
+    private bool _isInitialized = false;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        // Subscribe to screen size changes
+        ScreenSizeService.ScreenSizeChanged += OnScreenSizeChanged;
+        
+        // Configure themes
+        _currentTheme = _isDarkMode ? GetDarkTheme() : GetLightTheme();
+        
+        // Set initial drawer variant based on default screen size
+        UpdateDrawerBasedOnScreenSize();
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Initialize screen size service after rendering
+            // This avoids JavaScript interop during prerendering
+            await ScreenSizeService.InitializeAsync();
+            
+            // Update drawer based on actual screen size
+            UpdateDrawerBasedOnScreenSize();
+            
+            // Force a re-render to apply the updated screen size
+            StateHasChanged();
+            
+            _isInitialized = true;
+        }
+    }
+    
+    private void OnScreenSizeChanged(ScreenSize screenSize)
+    {
+        UpdateDrawerBasedOnScreenSize();
+        StateHasChanged();
+    }
+    
+    private void UpdateDrawerBasedOnScreenSize()
+    {
+        _drawerVariant = ScreenSizeService.IsSmallScreen ? DrawerVariant.Temporary : DrawerVariant.Responsive;
+        _drawerOpen = !ScreenSizeService.IsSmallScreen;
+    }
+    
+    private void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+    
+    private void ToggleTheme()
+    {
+        _isDarkMode = !_isDarkMode;
+        _currentTheme = _isDarkMode ? GetDarkTheme() : GetLightTheme();
+    }
+    
+    private string GetActiveClass(string href)
+    {
+        var currentUri = NavigationManager.Uri;
+        var relativePath = NavigationManager.ToBaseRelativePath(currentUri);
+        
+        if (string.IsNullOrEmpty(href) || href == "/")
+        {
+            return string.IsNullOrEmpty(relativePath) ? "active" : "";
+        }
+        
+        return relativePath.StartsWith(href.TrimStart('/')) ? "active" : "";
+    }
+    
+    private MudTheme GetDarkTheme()
+    {
+        return new MudTheme
+        {
+            Palette = new Palette
+            {
+                Primary = "#7E57C2",
+                Secondary = "#FF4081",
+                AppbarBackground = "#4527A0",
+                Background = "#303030",
+                DrawerBackground = "#212121",
+                DrawerText = "rgba(255,255,255, 0.80)",
+                Surface = "#424242",
+                TextPrimary = "rgba(255,255,255, 0.87)",
+                TextSecondary = "rgba(255,255,255, 0.60)"
+            }
+        };
+    }
+    
+    private MudTheme GetLightTheme()
+    {
+        return new MudTheme
+        {
+            Palette = new Palette
+            {
+                Primary = "#7E57C2",
+                Secondary = "#FF4081",
+                AppbarBackground = "#7E57C2",
+                Background = "#F5F5F5",
+                DrawerBackground = "#FFFFFF",
+                DrawerText = "rgba(0,0,0, 0.80)",
+                Surface = "#FFFFFF",
+                TextPrimary = "rgba(0,0,0, 0.87)",
+                TextSecondary = "rgba(0,0,0, 0.60)"
+            }
+        };
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        // Unsubscribe from screen size changes
+        ScreenSizeService.ScreenSizeChanged -= OnScreenSizeChanged;
+    }
+} 

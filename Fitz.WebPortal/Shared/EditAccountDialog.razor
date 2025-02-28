@@ -1,0 +1,87 @@
+@using Fitz.WebPortal.Data
+@using Microsoft.EntityFrameworkCore
+@using Fitz.Shared.Models
+@inject BotContext BotContext
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Edit Account</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (Account == null)
+        {
+            <MudAlert Severity="Severity.Error">No account data available</MudAlert>
+        }
+        else
+        {
+            <MudForm @ref="_form" @bind-IsValid="@_isValid">
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="Account.Username" Label="Username" Required="true" 
+                                     RequiredError="Username is required" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudNumericField @bind-Value="Account.Beer" Label="Beer Balance" Required="true" Min="0" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudSwitch @bind-Checked="Account.Deactivated" Label="Account Deactivated" Color="Color.Error" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudExpansionPanel>
+                            <TitleContent>
+                                <MudText>Lottery Settings</MudText>
+                            </TitleContent>
+                            <ChildContent>
+                                <MudGrid>
+                                    <MudItem xs="12">
+                                        <MudSwitch @bind-Checked="Account.SubscribeToLottery" Label="Subscribe to Lottery" Color="Color.Primary" />
+                                    </MudItem>
+                                    <MudItem xs="12">
+                                        <MudNumericField @bind-Value="Account.SubscribeTickets" Label="Subscription Tickets" 
+                                                       Min="1" Disabled="@(!Account.SubscribeToLottery)" />
+                                    </MudItem>
+                                </MudGrid>
+                            </ChildContent>
+                        </MudExpansionPanel>
+                    </MudItem>
+                </MudGrid>
+            </MudForm>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="@(!_isValid || Account == null)">Save Changes</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public Fitz.WebPortal.Data.Account? Account { get; set; }
+    
+    private MudForm _form = null!;
+    private bool _isValid;
+    
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    
+    private async Task Submit()
+    {
+        if (!_isValid || Account == null)
+            return;
+            
+        try
+        {
+            BotContext.Accounts.Update(Account);
+            await BotContext.SaveChangesAsync();
+            
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error updating account: {ex.Message}", Severity.Error);
+        }
+    }
+} 

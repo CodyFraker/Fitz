@@ -1,0 +1,181 @@
+@using Fitz.WebPortal.Data
+@using Microsoft.EntityFrameworkCore
+@using Fitz.Shared.Models
+@inject BotContext BotContext
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Person" Class="mr-2" />
+            Account Details: @Account.Username
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudPaper Class="pa-4 mb-4" Elevation="0">
+                    <MudText Typo="Typo.h6" Class="mb-2">Basic Information</MudText>
+                    <MudGrid>
+                        <MudItem xs="6">
+                            <MudText><strong>ID:</strong> @Account.Id</MudText>
+                            <MudText><strong>Username:</strong> @Account.Username</MudText>
+                            <MudText><strong>Status:</strong> @(Account.Deactivated ? "Inactive" : "Active")</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText><strong>Beer:</strong> @Account.Beer</MudText>
+                            <MudText><strong>Lifetime Beer:</strong> @Account.LifetimeBeer</MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            </MudItem>
+            
+            <MudItem xs="12">
+                <MudPaper Class="pa-4 mb-4" Elevation="0">
+                    <MudText Typo="Typo.h6" Class="mb-2">Additional Information</MudText>
+                    <MudGrid>
+                        <MudItem xs="6">
+                            <MudText><strong>Safe Balance:</strong> @Account.SafeBalance</MudText>
+                            <MudText><strong>Favorability:</strong> @Account.Favorability</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText><strong>Subscribed to Lottery:</strong> @(Account.SubscribeToLottery ? "Yes" : "No")</MudText>
+                            @if (Account.SubscribeToLottery)
+                            {
+                                <MudText><strong>Subscription Tickets:</strong> @Account.SubscribeTickets</MudText>
+                            }
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            </MudItem>
+            
+            <MudItem xs="12">
+                <MudPaper Class="pa-4" Elevation="0">
+                    <MudText Typo="Typo.h6" Class="mb-2">Recent Transactions</MudText>
+                    @if (_recentTransactions.Any())
+                    {
+                        <MudTable Items="@_recentTransactions" Hover="true" Striped="true" Dense="true">
+                            <HeaderContent>
+                                <MudTh>Date</MudTh>
+                                <MudTh>Type</MudTh>
+                                <MudTh>Amount</MudTh>
+                                <MudTh>Other Party</MudTh>
+                                <MudTh>Reason</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Date">@context.Timestamp.ToString("yyyy-MM-dd")</MudTd>
+                                <MudTd DataLabel="Type">
+                                    @if (context.SenderId == Account.Id)
+                                    {
+                                        <MudChip Color="Color.Error" Size="Size.Small">Sent</MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip Color="Color.Success" Size="Size.Small">Received</MudChip>
+                                    }
+                                </MudTd>
+                                <MudTd DataLabel="Amount">@context.Amount</MudTd>
+                                <MudTd DataLabel="Other Party">
+                                    @if (context.SenderId == Account.Id)
+                                    {
+                                        @GetUsername(context.RecipientId)
+                                    }
+                                    else
+                                    {
+                                        @GetUsername(context.SenderId)
+                                    }
+                                </MudTd>
+                                <MudTd DataLabel="Reason">@context.Reason</MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                    else
+                    {
+                        <MudText>No recent transactions found.</MudText>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Close">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public WebPortal.Data.Account Account { get; set; } = null!;
+    
+    private List<WebPortal.Data.Transaction> _recentTransactions = new();
+    private Dictionary<ulong, string> _usernameCache = new();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTransactions();
+        await CacheUsernames();
+    }
+    
+    private async Task LoadTransactions()
+    {
+        try
+        {
+            // Get transactions where this account is either sender or recipient
+            var sharedTransactions = await BotContext.Transactions
+                .Where(t => t.SenderId == Account.Id || t.RecipientId == Account.Id)
+                .OrderByDescending(t => t.Timestamp)
+                .Take(10)
+                .ToListAsync();
+                
+            _recentTransactions = sharedTransactions.ToWebPortalTransactions();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading transactions: {ex.Message}");
+            // Keep the list empty
+        }
+    }
+    
+    private async Task CacheUsernames()
+    {
+        try
+        {
+            // Get all unique user IDs from transactions
+            var userIds = _recentTransactions
+                .SelectMany(t => new[] { t.SenderId, t.RecipientId })
+                .Where(id => id != Account.Id && id != 0) // Exclude current account and system
+                .Distinct()
+                .ToList();
+                
+            if (userIds.Any())
+            {
+                var accounts = await BotContext.Accounts
+                    .Where(a => userIds.Contains(a.Id))
+                    .ToDictionaryAsync(a => a.Id, a => a.Username ?? "Unknown");
+                    
+                foreach (var account in accounts)
+                {
+                    _usernameCache[account.Key] = account.Value;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error caching usernames: {ex.Message}");
+        }
+    }
+    
+    private string GetUsername(ulong userId)
+    {
+        if (userId == 0)
+            return "System";
+            
+        if (userId == Account.Id)
+            return Account.Username ?? "Unknown";
+            
+        return _usernameCache.TryGetValue(userId, out var username) ? username : "Unknown";
+    }
+    
+    private void Close()
+    {
+        MudDialog.Close();
+    }
+} 

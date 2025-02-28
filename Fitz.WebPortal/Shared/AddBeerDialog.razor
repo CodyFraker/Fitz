@@ -1,0 +1,77 @@
+@using Fitz.WebPortal.Data
+@using Microsoft.EntityFrameworkCore
+@using Fitz.Shared.Models
+@inject BotContext BotContext
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Add Beer</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Class="mb-3">Add beer to @Account.Username's account</MudText>
+        <MudForm @ref="_form" @bind-IsValid="@_isValid">
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudNumericField @bind-Value="_amount" Label="Amount" Required="true" Min="1" 
+                                    RequiredError="Amount is required" HelperText="Enter the amount of beer to add" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_reason" Label="Reason" Required="true" 
+                                 RequiredError="Reason is required" HelperText="Enter the reason for adding beer" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="@(!_isValid)">Add Beer</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public Fitz.WebPortal.Data.Account Account { get; set; } = null!;
+    
+    private int _amount = 1;
+    private string _reason = "";
+    private MudForm _form = null!;
+    private bool _isValid;
+    
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    
+    private async Task Submit()
+    {
+        if (!_isValid)
+            return;
+            
+        try
+        {
+            // Update account beer balance
+            Account.Beer += _amount;
+            BotContext.Accounts.Update(Account);
+            
+            // Create transaction record
+            var transaction = new Fitz.WebPortal.Data.Transaction
+            {
+                SenderId = 0, // System transaction
+                RecipientId = Account.Id,
+                Amount = _amount,
+                Reason = _reason,
+                Timestamp = DateTime.UtcNow
+            };
+            
+            await BotContext.Transactions.AddAsync(transaction);
+            await BotContext.SaveChangesAsync();
+            
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error adding beer: {ex.Message}", Severity.Error);
+        }
+    }
+} 

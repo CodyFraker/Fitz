@@ -1,0 +1,93 @@
+@using Fitz.WebPortal.Data
+@using Microsoft.EntityFrameworkCore
+@inject BotContext BotContext
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.h6" Class="mb-3">Create New Lottery</MudText>
+        <MudForm @ref="_form" @bind-IsValid="@_isValid">
+            <MudNumericField @bind-Value="_prizePool" Label="Prize Pool (Beer)" Required="true" Min="10" 
+                            RequiredError="Prize pool is required" />
+            <MudDatePicker @bind-Date="_drawDate" Label="Drawing Date" Required="true" 
+                          RequiredError="Drawing date is required" DisablePast="true" />
+            <MudCheckBox @bind-Checked="_autoSubscribeEligible" Label="Auto-subscribe eligible accounts" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="@(!_isValid)">Create Lottery</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    
+    private int _prizePool = 100;
+    private DateTime? _drawDate = DateTime.UtcNow.AddDays(7);
+    private bool _autoSubscribeEligible = true;
+    private MudForm _form = null!;
+    private bool _isValid;
+    
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    
+    private async Task Submit()
+    {
+        await _form.Validate();
+        
+        if (_isValid && _drawDate.HasValue)
+        {
+            try
+            {
+                // Create new lottery
+                var lottery = new Lottery
+                {
+                    PrizePool = _prizePool,
+                    StartDate = DateTime.UtcNow,
+                    DrawDate = _drawDate.Value,
+                    IsActive = true
+                };
+                
+                await BotContext.Lotteries.AddAsync(lottery);
+                await BotContext.SaveChangesAsync();
+                
+                // Auto-subscribe eligible accounts if selected
+                if (_autoSubscribeEligible)
+                {
+                    var eligibleAccounts = await BotContext.Accounts
+                        .Where(a => a.IsActive && a.SubscribeToLottery)
+                        .ToListAsync();
+                        
+                    foreach (var account in eligibleAccounts)
+                    {
+                        var entry = new LotteryEntry
+                        {
+                            LotteryId = lottery.Id,
+                            AccountId = account.Id,
+                            EntryDate = DateTime.UtcNow
+                        };
+                        
+                        await BotContext.LotteryEntries.AddAsync(entry);
+                    }
+                    
+                    await BotContext.SaveChangesAsync();
+                    
+                    Snackbar.Add($"Created new lottery with {eligibleAccounts.Count} auto-subscribed entries", Severity.Success);
+                }
+                else
+                {
+                    Snackbar.Add("Created new lottery", Severity.Success);
+                }
+                
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error creating lottery: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+} 

@@ -1,0 +1,171 @@
+@using Fitz.WebPortal.Data
+@using Microsoft.EntityFrameworkCore
+@using Fitz.Shared.Models
+@inject BotContext BotContext
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Draw Lottery Winner</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (Lottery == null)
+        {
+            <MudAlert Severity="Severity.Error">No lottery data available</MudAlert>
+        }
+        else if (Lottery.Entries.Count == 0)
+        {
+            <MudAlert Severity="Severity.Warning">This lottery has no entries</MudAlert>
+        }
+        else
+        {
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudPaper Class="pa-4">
+                        <MudText Typo="Typo.h6">Lottery #@Lottery.Id</MudText>
+                        <MudText>Prize Pool: @Lottery.PrizePool beer</MudText>
+                        <MudText>Total Entries: @Lottery.Entries.Count</MudText>
+                        <MudText>Drawing Date: @Lottery.DrawDate.ToString("g")</MudText>
+                    </MudPaper>
+                </MudItem>
+                
+                @if (_winnerSelected)
+                {
+                    <MudItem xs="12" Class="mt-4">
+                        <MudPaper Class="pa-4 d-flex flex-column align-center">
+                            <MudText Typo="Typo.h5" Class="mb-2">Winner</MudText>
+                            <MudAvatar Color="Color.Success" Size="Size.Large" Class="mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" />
+                            </MudAvatar>
+                            <MudText Typo="Typo.h6">@_winnerUsername</MudText>
+                            <MudText>Prize: @Lottery.PrizePool beer</MudText>
+                        </MudPaper>
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        @if (!_winnerSelected && Lottery != null && Lottery.Entries.Count > 0)
+        {
+            <MudButton Color="Color.Primary" OnClick="DrawWinner">Draw Winner</MudButton>
+        }
+        else if (_winnerSelected)
+        {
+            <MudButton Color="Color.Success" OnClick="ConfirmWinner">Confirm Winner</MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public Fitz.WebPortal.Data.Lottery? Lottery { get; set; }
+    
+    private bool _winnerSelected = false;
+    private string _winnerUsername = string.Empty;
+    private Fitz.WebPortal.Data.Account? _winner;
+    private Fitz.WebPortal.Data.LotteryEntry? _winnerEntry;
+    
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    
+    private async Task DrawWinner()
+    {
+        if (Lottery == null || Lottery.Entries.Count == 0)
+            return;
+            
+        try
+        {
+            // Get all entries for this lottery
+            var entries = await BotContext.LotteryEntries
+                .Where(e => e.LotteryId == Lottery.Id)
+                .ToListAsync();
+                
+            if (entries.Count == 0)
+            {
+                Snackbar.Add("No entries found for this lottery", Severity.Warning);
+                return;
+            }
+            
+            // Randomly select a winner
+            var random = new Random();
+            var selectedEntry = entries[random.Next(entries.Count)];
+            _winnerEntry = new Fitz.WebPortal.Data.LotteryEntry
+            {
+                Id = selectedEntry.Id,
+                LotteryId = selectedEntry.LotteryId,
+                AccountId = selectedEntry.AccountId,
+                EntryDate = selectedEntry.EntryDate
+            };
+            
+            // Get winner account details
+            var winnerAccount = await BotContext.Accounts.FindAsync(_winnerEntry.AccountId);
+            if (winnerAccount != null)
+            {
+                _winner = new Fitz.WebPortal.Data.Account
+                {
+                    Id = winnerAccount.Id,
+                    Username = winnerAccount.Username,
+                    Beer = winnerAccount.Beer,
+                    LifetimeBeer = winnerAccount.LifetimeBeer,
+                    SafeBalance = winnerAccount.SafeBalance,
+                    Favorability = winnerAccount.Favorability,
+                    SubscribeToLottery = winnerAccount.SubscribeToLottery,
+                    SubscribeTickets = winnerAccount.SubscribeTickets,
+                    Deactivated = winnerAccount.Deactivated
+                };
+                
+                _winnerUsername = _winner.Username ?? $"User {_winner.Id}";
+                _winnerSelected = true;
+            }
+            else
+            {
+                Snackbar.Add("Error finding winner account", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error drawing winner: {ex.Message}", Severity.Error);
+        }
+    }
+    
+    private async Task ConfirmWinner()
+    {
+        if (Lottery == null || _winner == null || _winnerEntry == null)
+            return;
+            
+        try
+        {
+            // Update lottery in database
+            Lottery.WinnerId = _winner.Id;
+            Lottery.IsActive = false;
+            BotContext.Lotteries.Update(Lottery);
+            
+            // Add beer to winner's account
+            _winner.Beer += Lottery.PrizePool;
+            BotContext.Accounts.Update(_winner);
+            
+            // Create transaction record
+            var transaction = new Fitz.WebPortal.Data.Transaction
+            {
+                SenderId = 0, // System transaction
+                RecipientId = _winner.Id,
+                Amount = Lottery.PrizePool,
+                Reason = $"Lottery #{Lottery.Id} winner",
+                Timestamp = DateTime.UtcNow
+            };
+            
+            await BotContext.Transactions.AddAsync(transaction);
+            await BotContext.SaveChangesAsync();
+            
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error confirming winner: {ex.Message}", Severity.Error);
+        }
+    }
+} 

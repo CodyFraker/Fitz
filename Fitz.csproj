@@ -1,18 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <RootNamespace>Fitz</RootNamespace>
-    <StartupObject>Fitz.Program</StartupObject>
-    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Remove="Features\AccountsRework\**" />
-    <EmbeddedResource Remove="Features\AccountsRework\**" />
-    <None Remove="Features\AccountsRework\**" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="dotenv.net" Version="3.1.2" />
@@ -41,17 +34,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update=".env">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
+    <None Include="**\*.cs" />
+    <None Include="**\*.csproj" />
+    <None Include="**\*.json" />
+    <None Include="**\*.md" />
+    <None Include="**\*.xml" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Features\Rename\Commands\Attributes\" />
+    <ProjectReference Include="Fitz.Shared\Fitz.Shared.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Fitz.Shared\Fitz.Shared.csproj" />
-  </ItemGroup>
-
-</Project>
+</Project> 
