@@ -8,7 +8,7 @@ namespace Fitz.Features.Accounts.Models
 {
     // Main Account class definition moved from the root namespace
     [Table("accounts")]
-    public class AccountEntity
+    public class Account
     {
         /// <summary>
         /// Discord User ID
@@ -77,28 +77,4 @@ namespace Fitz.Features.Accounts.Models
         [Column("deactivated")]
         public bool Deactivated { get; set; }
     }
-    
-    // This file provides backward compatibility for the old namespace structure
-    // after the refactoring to a more domain-driven design approach.
-    
-    // Alias for the Account class - using a different name to avoid ambiguity
-    public class AccountModel : AccountEntity
-    {
-    }
-    
-    // For backward compatibility, we'll use the original Account name as a type alias
-    // This will help resolve ambiguity in existing code
-    public class Account : AccountModel
-    {
-    }
-    
-    // Alias for the CreateAccountModel
-    public class CreateAccountModel : Fitz.Features.Accounts.Create.Domain.CreateAccountModel
-    {
-    }
-    
-    // Alias for the UpdateAccountCommand
-    public class UpdateAccountCommand : Fitz.Features.Accounts.Update.Domain.UpdateAccountCommand
-    {
-    }
-} 
+}

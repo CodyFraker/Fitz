@@ -23,7 +23,7 @@ namespace Fitz.Features.Accounts.Update.Persistence
             {
                 using IServiceScope scope = _scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-                AccountEntity entity = await db.Accounts.FirstOrDefaultAsync(a => a.Id == id);
+                Account entity = await db.Accounts.FirstOrDefaultAsync(a => a.Id == id);
                 
                 if (entity == null)
                     return null;

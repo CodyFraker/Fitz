@@ -5,10 +5,6 @@ using System.Threading.Tasks;
 using Fitz.Features.Accounts.Create.Discord.Embeds;
 using Fitz.Features.Accounts.Create.Discord.Attributes;
 
-/******************************FOR KYLE********************************/
-/* This replaces Features/Accounts/Commands/AccountSlashCommands.cs   */
-/**********************************************************************/
-
 namespace Fitz.Features.Accounts.Create.Discord
 {
     [SlashModuleLifespan(SlashModuleLifespan.Scoped)]

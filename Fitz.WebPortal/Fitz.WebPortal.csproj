@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Fitz.Shared\Fitz.Shared.csproj" />
+    <ProjectReference Include="..\Fitz\Fitz.csproj" />
   </ItemGroup>
 
 </Project>

@@ -34,7 +34,7 @@ namespace Fitz.Features.Accounts.Create.Domain
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
                 // Convert CreateAccountModel to AccountEntity
-                AccountEntity accountEntity = new AccountEntity
+                Account accountEntity = new Account
                 {
                     Id = createAccountModel.Id,
                     Username = createAccountModel.Username,
