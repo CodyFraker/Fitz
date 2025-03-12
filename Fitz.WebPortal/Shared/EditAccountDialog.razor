@@ -1,7 +1,7 @@
 @using Fitz.WebPortal.Data
 @using Microsoft.EntityFrameworkCore
-@using Fitz.Shared.Models
-@inject BotContext BotContext
+@using Fitz.Features.Accounts.Models
+@inject WebPortalContext Context
 @inject ISnackbar Snackbar
 
 <MudDialog>
@@ -18,32 +18,21 @@
             <MudForm @ref="_form" @bind-IsValid="@_isValid">
                 <MudGrid>
                     <MudItem xs="12">
-                        <MudTextField @bind-Value="Account.Username" Label="Username" Required="true" 
+                        <MudTextField @bind-Value="_account.Username" Label="Username" Required="true" 
                                      RequiredError="Username is required" />
                     </MudItem>
                     <MudItem xs="12" md="6">
-                        <MudNumericField @bind-Value="Account.Beer" Label="Beer Balance" Required="true" Min="0" />
+                        <MudNumericField T="int" @bind-Value="_account.Beer" Label="Beer" Required="true" Min="0" />
                     </MudItem>
                     <MudItem xs="12" md="6">
-                        <MudSwitch @bind-Checked="Account.Deactivated" Label="Account Deactivated" Color="Color.Error" />
+                        <MudSwitch @bind-Checked="@_isActive" Label="Active" />
                     </MudItem>
-                    <MudItem xs="12">
-                        <MudExpansionPanel>
-                            <TitleContent>
-                                <MudText>Lottery Settings</MudText>
-                            </TitleContent>
-                            <ChildContent>
-                                <MudGrid>
-                                    <MudItem xs="12">
-                                        <MudSwitch @bind-Checked="Account.SubscribeToLottery" Label="Subscribe to Lottery" Color="Color.Primary" />
-                                    </MudItem>
-                                    <MudItem xs="12">
-                                        <MudNumericField @bind-Value="Account.SubscribeTickets" Label="Subscription Tickets" 
-                                                       Min="1" Disabled="@(!Account.SubscribeToLottery)" />
-                                    </MudItem>
-                                </MudGrid>
-                            </ChildContent>
-                        </MudExpansionPanel>
+                    <MudItem xs="12" md="6">
+                        <MudSwitch @bind-Checked="_account.subscribeToLottery" Label="Subscribe to Lottery" />
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudNumericField T="int" @bind-Value="_account.SubscribeTickets" Label="Subscription Tickets" 
+                                       Disabled="@(!_account.subscribeToLottery)" Min="1" Max="10" />
                     </MudItem>
                 </MudGrid>
             </MudForm>
@@ -51,16 +40,27 @@
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="@(!_isValid || Account == null)">Save Changes</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="@(!_isValid)">Save Changes</MudButton>
     </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
-    [Parameter] public Fitz.WebPortal.Data.Account? Account { get; set; }
+    [Parameter] public Fitz.WebPortal.Data.Account Account { get; set; } = null!;
     
     private MudForm _form = null!;
     private bool _isValid;
+    private bool _isActive;
+    private Fitz.WebPortal.Data.Account _account = new();
+    
+    protected override void OnInitialized()
+    {
+        if (Account != null)
+        {
+            _account = Account;
+            _isActive = !_account.Deactivated;
+        }
+    }
     
     private void Cancel()
     {
@@ -74,10 +74,27 @@
             
         try
         {
-            BotContext.Accounts.Update(Account);
-            await BotContext.SaveChangesAsync();
+            await _form.Validate();
+            if (!_isValid)
+            {
+                return;
+            }
+
+            // Check if username already exists (excluding current account)
+            var existingAccount = await Context.Accounts
+                .FirstOrDefaultAsync(a => a.Username == _account.Username && a.Id != _account.Id);
+
+            if (existingAccount != null)
+            {
+                Snackbar.Add("An account with this username already exists.", Severity.Error);
+                return;
+            }
+
+            _account.Deactivated = !_isActive;
+            Context.Accounts.Update(_account);
+            await Context.SaveChangesAsync();
             
-            MudDialog.Close(DialogResult.Ok(true));
+            MudDialog.Close(DialogResult.Ok(_account));
         }
         catch (Exception ex)
         {

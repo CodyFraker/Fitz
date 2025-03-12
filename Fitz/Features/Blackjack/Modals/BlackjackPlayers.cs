@@ -1,13 +1,20 @@
-﻿using Fitz.Features.Accounts.Models;
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
+using AccountModel = Fitz.Features.Accounts.Models.Account;
 
 namespace Fitz.Features.Blackjack.Modals
 {
     [Table("blackjack_players")]
     public sealed class BlackjackPlayers
     {
+        public BlackjackPlayers()
+        {
+            Hand = new Hand();
+        }
+
         [Key]
         [Column("id")]
         public int Id { get; set; }
@@ -34,10 +41,25 @@ namespace Fitz.Features.Blackjack.Modals
         public bool IsBusted { get; set; }
 
         [NotMapped]
-        public Account Account { get; set; }
+        public AccountModel Account { get; set; }
 
         [Column("cards_json")]
-        public string? CardsJson { get; set; }
+        public string? CardsJson 
+        { 
+            get => Hand != null ? JsonSerializer.Serialize(Hand.Cards) : null;
+            set
+            {
+                if (value != null)
+                {
+                    Hand = new Hand(IsDealer);
+                    var cards = JsonSerializer.Deserialize<List<Card>>(value);
+                    foreach (var card in cards)
+                    {
+                        Hand.AddCard(card);
+                    }
+                }
+            }
+        }
 
         [NotMapped]
         public Hand Hand { get; set; }

@@ -12,10 +12,11 @@ using Microsoft.AspNetCore.Components.Server;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using System;
-using Fitz.Shared.Data;
-using Fitz.Shared.Models;
+using Fitz.Features.Accounts.Models;
+using Fitz.Features.Lottery.Models;
 using System.Security.Claims;
 using Fitz.WebPortal.Shared;
+using Fitz.Core.Contexts;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,19 +43,9 @@ builder.Services.AddMudServices(config =>
 builder.Services.AddScoped<ScreenSizeService>();
 
 // Add database context
-builder.Services.AddDbContext<Fitz.Shared.Data.BotContext>(options =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    var serverVersion = ServerVersion.AutoDetect(connectionString);
-    options.UseMySql(connectionString, serverVersion);
-});
-
-// Register the WebPortal BotContext as a scoped service
-builder.Services.AddScoped<Fitz.WebPortal.Data.BotContext>(provider => 
-{
-    var options = provider.GetRequiredService<DbContextOptions<Fitz.Shared.Data.BotContext>>();
-    return new Fitz.WebPortal.Data.BotContext(options);
-});
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<WebPortalContext>(options =>
+    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
 // Add authentication services
 builder.Services.AddAuthentication(options =>
@@ -189,7 +180,7 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     try
     {
-        var context = services.GetRequiredService<Fitz.Shared.Data.BotContext>();
+        var context = services.GetRequiredService<WebPortalContext>();
         
         // First check if the database exists and create it if it doesn't
         bool created = context.Database.EnsureCreated();
@@ -202,114 +193,70 @@ using (var scope = app.Services.CreateScope())
             var accountCount = context.Accounts.Count();
             Console.WriteLine($"Accounts table exists with {accountCount} records.");
             
-            // Check if transactions table exists by querying it
-            var transactionCount = context.Transactions.Count();
-            Console.WriteLine($"Transactions table exists with {transactionCount} records.");
+            // Create tables manually using raw SQL if needed
+            context.Database.ExecuteSqlRaw(@"
+                -- Create accounts table if it doesn't exist
+                CREATE TABLE IF NOT EXISTS `accounts` (
+                    `id` bigint unsigned NOT NULL,
+                    `username` longtext CHARACTER SET utf8mb4 NULL,
+                    `beer` int NOT NULL DEFAULT 0,
+                    `lifetime_beer` int NOT NULL DEFAULT 0,
+                    `safe_balance` int NOT NULL DEFAULT 0,
+                    `favorability` int NOT NULL DEFAULT 0,
+                    `created_date` datetime(6) NOT NULL,
+                    `last_seen` datetime(6) NOT NULL,
+                    `last_active` datetime(6) NOT NULL,
+                    `lottery_subscribe` tinyint(1) NOT NULL DEFAULT 0,
+                    `subscribe_tickets` int NOT NULL DEFAULT 1,
+                    `deactivated` tinyint(1) NOT NULL DEFAULT 0,
+                    CONSTRAINT `PK_accounts` PRIMARY KEY (`id`)
+                ) CHARACTER SET=utf8mb4;
+
+                -- Create transactions table if it doesn't exist
+                CREATE TABLE IF NOT EXISTS `transactions` (
+                    `Id` int NOT NULL AUTO_INCREMENT,
+                    `SenderId` bigint unsigned NOT NULL,
+                    `RecipientId` bigint unsigned NOT NULL,
+                    `Amount` int NOT NULL,
+                    `Reason` longtext CHARACTER SET utf8mb4 NOT NULL,
+                    `Timestamp` datetime(6) NOT NULL,
+                    CONSTRAINT `PK_transactions` PRIMARY KEY (`Id`)
+                ) CHARACTER SET=utf8mb4;
+
+                -- Create lotteries table if it doesn't exist
+                CREATE TABLE IF NOT EXISTS `Lotteries` (
+                    `Id` int NOT NULL AUTO_INCREMENT,
+                    `StartDate` datetime(6) NOT NULL,
+                    `EndDate` datetime(6) NOT NULL,
+                    `Pool` int NOT NULL,
+                    `CurrentLottery` tinyint(1) NOT NULL,
+                    `WinningTicketId` int NULL,
+                    CONSTRAINT `PK_Lotteries` PRIMARY KEY (`Id`)
+                ) CHARACTER SET=utf8mb4;
+
+                -- Create lottery tickets table if it doesn't exist
+                CREATE TABLE IF NOT EXISTS `LotteryTickets` (
+                    `Id` int NOT NULL AUTO_INCREMENT,
+                    `LotteryId` int NOT NULL,
+                    `UserId` bigint unsigned NOT NULL,
+                    `PurchaseDate` datetime(6) NOT NULL,
+                    `TicketNumber` int NOT NULL,
+                    `IsWinner` tinyint(1) NOT NULL DEFAULT 0,
+                    CONSTRAINT `PK_LotteryTickets` PRIMARY KEY (`Id`),
+                    CONSTRAINT `FK_LotteryTickets_Lotteries_LotteryId` FOREIGN KEY (`LotteryId`) REFERENCES `Lotteries` (`Id`) ON DELETE CASCADE
+                ) CHARACTER SET=utf8mb4;
+            ");
             
-            // Check if lotteries table exists by querying it
-            var lotteryCount = context.Lotteries.Count();
-            Console.WriteLine($"Lotteries table exists with {lotteryCount} records.");
-            
-            // Check if lottery entries table exists by querying it
-            var entryCount = context.LotteryEntries.Count();
-            Console.WriteLine($"Lottery entries table exists with {entryCount} records.");
+            Console.WriteLine("Successfully created/verified tables using SQL script.");
         }
-        catch (Exception tableEx)
+        catch (Exception ex)
         {
-            Console.WriteLine($"Error verifying tables: {tableEx.Message}");
-            Console.WriteLine("Attempting to run SQL script to create missing tables...");
-            
-            try
-            {
-                // Create tables manually using raw SQL
-                context.Database.ExecuteSqlRaw(@"
-                    -- Create accounts table if it doesn't exist
-                    CREATE TABLE IF NOT EXISTS `accounts` (
-                        `Id` bigint unsigned NOT NULL,
-                        `Username` longtext CHARACTER SET utf8mb4 NULL,
-                        `Beer` int NOT NULL DEFAULT 0,
-                        `LifetimeBeer` int NOT NULL DEFAULT 0,
-                        `SafeBalance` int NOT NULL DEFAULT 0,
-                        `Favorability` int NOT NULL DEFAULT 0,
-                        `CreatedDate` datetime(6) NOT NULL,
-                        `LastSeenDate` datetime(6) NOT NULL,
-                        `LastActivityDate` datetime(6) NOT NULL,
-                        `SubscribeToLottery` tinyint(1) NOT NULL DEFAULT 0,
-                        `SubscribeTickets` int NOT NULL DEFAULT 1,
-                        `Deactivated` tinyint(1) NOT NULL DEFAULT 0,
-                        CONSTRAINT `PK_accounts` PRIMARY KEY (`Id`)
-                    ) CHARACTER SET=utf8mb4;
-
-                    -- Create transactions table if it doesn't exist
-                    CREATE TABLE IF NOT EXISTS `transactions` (
-                        `Id` int NOT NULL AUTO_INCREMENT,
-                        `SenderId` bigint unsigned NOT NULL,
-                        `RecipientId` bigint unsigned NOT NULL,
-                        `Amount` int NOT NULL,
-                        `Reason` longtext CHARACTER SET utf8mb4 NOT NULL,
-                        `Timestamp` datetime(6) NOT NULL,
-                        CONSTRAINT `PK_transactions` PRIMARY KEY (`Id`)
-                    ) CHARACTER SET=utf8mb4;
-
-                    -- Create lotteries table if it doesn't exist
-                    CREATE TABLE IF NOT EXISTS `lotteries` (
-                        `Id` int NOT NULL AUTO_INCREMENT,
-                        `PrizePool` int NOT NULL,
-                        `StartDate` datetime(6) NOT NULL,
-                        `DrawDate` datetime(6) NOT NULL,
-                        `IsActive` tinyint(1) NOT NULL,
-                        `WinnerId` bigint unsigned NULL,
-                        CONSTRAINT `PK_lotteries` PRIMARY KEY (`Id`)
-                    ) CHARACTER SET=utf8mb4;
-
-                    -- Create lottery_entries table if it doesn't exist
-                    CREATE TABLE IF NOT EXISTS `lottery_entries` (
-                        `Id` int NOT NULL AUTO_INCREMENT,
-                        `LotteryId` int NOT NULL,
-                        `AccountId` bigint unsigned NOT NULL,
-                        `EntryDate` datetime(6) NOT NULL,
-                        CONSTRAINT `PK_lottery_entries` PRIMARY KEY (`Id`),
-                        CONSTRAINT `FK_lottery_entries_lotteries_LotteryId` FOREIGN KEY (`LotteryId`) REFERENCES `lotteries` (`Id`) ON DELETE CASCADE
-                    ) CHARACTER SET=utf8mb4;
-
-                    -- Create EF migrations history table if it doesn't exist
-                    CREATE TABLE IF NOT EXISTS `__EFMigrationsHistory` (
-                        `MigrationId` varchar(150) CHARACTER SET utf8mb4 NOT NULL,
-                        `ProductVersion` varchar(32) CHARACTER SET utf8mb4 NOT NULL,
-                        CONSTRAINT `PK___EFMigrationsHistory` PRIMARY KEY (`MigrationId`)
-                    ) CHARACTER SET=utf8mb4;
-
-                    -- Insert the migration record to prevent future migration attempts
-                    INSERT IGNORE INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
-                    VALUES ('20250228010252_InitialCreate', '8.0.0');
-                ");
-                
-                Console.WriteLine("Successfully created missing tables using SQL script.");
-                
-                // Seed initial lottery if needed
-                if (!context.Lotteries.Any())
-                {
-                    context.Lotteries.Add(new Fitz.Shared.Models.Lottery
-                    {
-                        PrizePool = 100,
-                        StartDate = DateTime.UtcNow,
-                        DrawDate = DateTime.UtcNow.AddDays(7),
-                        IsActive = true
-                    });
-                    context.SaveChanges();
-                    Console.WriteLine("Created initial lottery.");
-                }
-            }
-            catch (Exception sqlEx)
-            {
-                Console.WriteLine($"Error creating tables with SQL: {sqlEx.Message}");
-            }
+            Console.WriteLine($"Error verifying tables: {ex.Message}");
         }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"An error occurred while initializing the database: {ex.Message}");
-        Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        Console.WriteLine($"Error initializing database: {ex.Message}");
     }
 }
 

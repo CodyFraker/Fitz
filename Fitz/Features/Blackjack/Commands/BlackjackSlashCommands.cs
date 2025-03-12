@@ -10,6 +10,8 @@ using Fitz.Features.Blackjack.Modals;
 using Fitz.Variables.Emojis;
 using System.Linq;
 using System.Threading.Tasks;
+using AccountModel = Fitz.Features.Accounts.Models.Account;
+using System.Text;
 
 namespace Fitz.Features.Blackjack.Commands
 {
@@ -41,48 +43,169 @@ namespace Fitz.Features.Blackjack.Commands
             if (args.Id == "blackjack_join")
             {
                 BlackjackGame game = this.blackJackService.GetBlackjackGame(args.Message.Id);
+                if (game == null)
+                {
+                    await args.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, 
+                        new DiscordInteractionResponseBuilder().WithContent("Game not found.").AsEphemeral(true));
+                    return;
+                }
 
                 DiscordMessage gameMessage = await this.dClient.GetChannelAsync(args.Channel.Id).Result.GetMessageAsync(game.MessageId);
 
-                if (game.Players.Contains(game.Players.Find(x => x.UserId == args.User.Id)))
+                if (game.Players.Any(x => x.UserId == args.User.Id))
                 {
-                    await args.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("You are already in the game.").AsEphemeral(true));
+                    await args.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, 
+                        new DiscordInteractionResponseBuilder().WithContent("You are already in the game.").AsEphemeral(true));
                     return;
                 }
-                else
+
+                AccountModel newPlayer = accountService.FindAccount(args.User.Id);
+                if (newPlayer == null)
                 {
-                    Account newPlayer = accountService.FindAccount(args.User.Id);
-                    var addPlayerResult = await this.blackJackService.AddPlayerToGameAsync(game, newPlayer);
-
-                    if (addPlayerResult.Success)
-                    {
-                        game = (BlackjackGame)addPlayerResult.Data;
-                    }
-
-                    DiscordButtonComponent joinBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "blackjack_join", "Join", false);
-                    DiscordButtonComponent startBtn = new DiscordButtonComponent(DiscordButtonStyle.Primary, "blackjack_start", "Start", false);
-
-                    await gameMessage.ModifyAsync(new DiscordMessageBuilder()
-                        .ClearEmbeds()
-                        .WithContent($"{newPlayer.Username} has joined the game.")
-                        .AddComponents(joinBtn, startBtn)
-                        .AddEmbed(blackJackEmbed(game)));
+                    await args.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, 
+                        new DiscordInteractionResponseBuilder().WithContent("You need an account to play.").AsEphemeral(true));
+                    return;
                 }
+
+                int bet = 0;
+                switch (game.Type)
+                {
+                    case GameType.Normal:
+                        bet = 12;
+                        break;
+                    case GameType.HighStakes:
+                        bet = 36;
+                        break;
+                    case GameType.AllOrNothing:
+                        var balance = await bankService.GetBalanceAsync(newPlayer.Id);
+                        bet = balance;
+                        break;
+                }
+
+                var addPlayerResult = await this.blackJackService.AddPlayerToGameAsync(game, newPlayer, bet);
+                if (!addPlayerResult.Success)
+                {
+                    await args.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, 
+                        new DiscordInteractionResponseBuilder().WithContent(addPlayerResult.Message).AsEphemeral(true));
+                    return;
+                }
+
+                game = (BlackjackGame)addPlayerResult.Data;
+
+                DiscordButtonComponent joinBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "blackjack_join", "Join", false);
+                DiscordButtonComponent startBtn = new DiscordButtonComponent(DiscordButtonStyle.Primary, "blackjack_start", "Start", false);
+                DiscordButtonComponent hitBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "blackjack_hit", "Hit", true);
+                DiscordButtonComponent standBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "blackjack_stand", "Stand", true);
+
+                await gameMessage.ModifyAsync(new DiscordMessageBuilder()
+                    .WithContent($"{newPlayer.Username} has joined the game.")
+                    .AddComponents(joinBtn, startBtn)
+                    .AddEmbed(blackJackEmbed(game)));
+
+                await args.Interaction.CreateResponseAsync(DiscordInteractionResponseType.DeferredMessageUpdate);
             }
-            if (args.Id == "blackjack_start")
+            else if (args.Id == "blackjack_start")
             {
                 BlackjackGame game = this.blackJackService.GetBlackjackGame(args.Message.Id);
+                if (game == null)
+                {
+                    await args.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, 
+                        new DiscordInteractionResponseBuilder().WithContent("Game not found.").AsEphemeral(true));
+                    return;
+                }
+
+                if (game.Players.Count < 2)
+                {
+                    await args.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, 
+                        new DiscordInteractionResponseBuilder().WithContent("Need at least one player to start.").AsEphemeral(true));
+                    return;
+                }
 
                 DiscordMessage gameMessage = await this.dClient.GetChannelAsync(args.Channel.Id).Result.GetMessageAsync(game.MessageId);
                 game = this.blackJackService.Deal(game);
 
+                DiscordButtonComponent hitBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "blackjack_hit", "Hit", false);
+                DiscordButtonComponent standBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "blackjack_stand", "Stand", false);
+
                 await gameMessage.ModifyAsync(new DiscordMessageBuilder()
-                    .ClearEmbeds()
-                    .WithContent($"Cards have been delt.")
+                    .WithContent("Cards have been dealt.")
+                    .AddComponents(hitBtn, standBtn)
                     .AddEmbed(InProgressBlackjackEmbed(game)));
+
+                await args.Interaction.CreateResponseAsync(DiscordInteractionResponseType.DeferredMessageUpdate);
             }
-            // Send a bad request to trick discord into thinking there was an interaction made to the message.
-            await args.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("").AsEphemeral(true));
+            else if (args.Id == "blackjack_hit")
+            {
+                BlackjackGame game = this.blackJackService.GetBlackjackGame(args.Message.Id);
+                if (game == null)
+                {
+                    await args.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, 
+                        new DiscordInteractionResponseBuilder().WithContent("Game not found.").AsEphemeral(true));
+                    return;
+                }
+
+                AccountModel player = accountService.FindAccount(args.User.Id);
+                var hitResult = await this.blackJackService.Hit(game, player);
+                if (!hitResult.Success)
+                {
+                    await args.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, 
+                        new DiscordInteractionResponseBuilder().WithContent(hitResult.Message).AsEphemeral(true));
+                    return;
+                }
+
+                game = (BlackjackGame)hitResult.Data;
+                DiscordMessage gameMessage = await this.dClient.GetChannelAsync(args.Channel.Id).Result.GetMessageAsync(game.MessageId);
+
+                DiscordButtonComponent hitBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "blackjack_hit", "Hit", false);
+                DiscordButtonComponent standBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "blackjack_stand", "Stand", false);
+
+                var messageBuilder = new DiscordMessageBuilder()
+                    .AddEmbed(InProgressBlackjackEmbed(game));
+
+                if (game.Status != BlackjackGameStatus.Ended)
+                {
+                    messageBuilder.AddComponents(hitBtn, standBtn);
+                }
+
+                await gameMessage.ModifyAsync(messageBuilder);
+                await args.Interaction.CreateResponseAsync(DiscordInteractionResponseType.DeferredMessageUpdate);
+            }
+            else if (args.Id == "blackjack_stand")
+            {
+                BlackjackGame game = this.blackJackService.GetBlackjackGame(args.Message.Id);
+                if (game == null)
+                {
+                    await args.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, 
+                        new DiscordInteractionResponseBuilder().WithContent("Game not found.").AsEphemeral(true));
+                    return;
+                }
+
+                AccountModel player = accountService.FindAccount(args.User.Id);
+                var standResult = await this.blackJackService.Stand(game, player);
+                if (!standResult.Success)
+                {
+                    await args.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, 
+                        new DiscordInteractionResponseBuilder().WithContent(standResult.Message).AsEphemeral(true));
+                    return;
+                }
+
+                game = (BlackjackGame)standResult.Data;
+                DiscordMessage gameMessage = await this.dClient.GetChannelAsync(args.Channel.Id).Result.GetMessageAsync(game.MessageId);
+
+                DiscordButtonComponent hitBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "blackjack_hit", "Hit", false);
+                DiscordButtonComponent standBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "blackjack_stand", "Stand", false);
+
+                var messageBuilder = new DiscordMessageBuilder()
+                    .AddEmbed(InProgressBlackjackEmbed(game));
+
+                if (game.Status != BlackjackGameStatus.Ended)
+                {
+                    messageBuilder.AddComponents(hitBtn, standBtn);
+                }
+
+                await gameMessage.ModifyAsync(messageBuilder);
+                await args.Interaction.CreateResponseAsync(DiscordInteractionResponseType.DeferredMessageUpdate);
+            }
         }
 
         #region Command
@@ -96,53 +219,67 @@ namespace Fitz.Features.Blackjack.Commands
             DiscordButtonComponent highstakesBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "highstakes", "High Stakes", false);
             DiscordButtonComponent allOrNothingBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, "allOrNothing", "All or Nothing", false);
 
-            //await ctx.DeferAsync(true);
             await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
                 new DiscordInteractionResponseBuilder()
                 .AddEmbed(PreGameBlackjackEmbed())
-                .AddComponents(noStakes, normalBtn, highstakesBtn, allOrNothingBtn).AsEphemeral(true));
+                .AddComponents(noStakes, normalBtn, highstakesBtn, allOrNothingBtn)
+                .AsEphemeral(true));
 
             ctx.Client.ComponentInteractionCreated += async (sender, args) =>
             {
-                if (args.User.IsBot)
+                if (args.User.IsBot || args.User.Id != ctx.User.Id)
                 {
                     return;
                 }
 
                 DiscordButtonComponent joinBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "blackjack_join", "Join", false);
-                DiscordButtonComponent startBtn = new DiscordButtonComponent(DiscordButtonStyle.Primary, "blackjack_Start", "Start", false);
+                DiscordButtonComponent startBtn = new DiscordButtonComponent(DiscordButtonStyle.Primary, "blackjack_start", "Start", false);
+
+                GameType gameType = GameType.NoStakes;
+                string gameTypeStr = "No Stakes";
 
                 if (args.Id == "noStakes")
                 {
-                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Starting No Stakes Blackjack Game..."));
-
-                    DiscordMessage blackJackmessage = await ctx.Channel.SendMessageAsync(new DiscordMessageBuilder().WithContent("Starting blackjack!"));
-
-                    var startGameResult = await this.blackJackService.StartNewBlackjackGameAsync(GameType.NoStakes, blackJackmessage);
-
-                    if (!startGameResult.Success)
-                    {
-                        await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Failed to create new blackjack instance."));
-                        return;
-                    }
-                    else
-                    {
-                        BlackjackGame game = (BlackjackGame)startGameResult.Data;
-
-                        await blackJackmessage.ModifyAsync(new DiscordMessageBuilder()
-                            .AddEmbed(blackJackEmbed(game))
-                            .AddComponents(joinBtn, startBtn));
-                    }
+                    gameType = GameType.NoStakes;
+                    gameTypeStr = "No Stakes";
                 }
-                if (args.Id == "normal")
+                else if (args.Id == "normal")
                 {
+                    gameType = GameType.Normal;
+                    gameTypeStr = "Normal";
                 }
-                if (args.Id == "highstakes")
+                else if (args.Id == "highstakes")
                 {
+                    gameType = GameType.HighStakes;
+                    gameTypeStr = "High Stakes";
                 }
-                if (args.Id == "allOrNothing")
+                else if (args.Id == "allOrNothing")
                 {
+                    gameType = GameType.AllOrNothing;
+                    gameTypeStr = "All or Nothing";
                 }
+                else
+                {
+                    return;
+                }
+
+                await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent($"Starting {gameTypeStr} Blackjack Game..."));
+
+                DiscordMessage blackJackmessage = await ctx.Channel.SendMessageAsync(new DiscordMessageBuilder().WithContent("Starting blackjack!"));
+
+                var startGameResult = await this.blackJackService.StartNewBlackjackGameAsync(gameType, blackJackmessage);
+
+                if (!startGameResult.Success)
+                {
+                    await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent($"Failed to create new blackjack instance: {startGameResult.Message}"));
+                    return;
+                }
+
+                BlackjackGame game = (BlackjackGame)startGameResult.Data;
+
+                await blackJackmessage.ModifyAsync(new DiscordMessageBuilder()
+                    .AddEmbed(blackJackEmbed(game))
+                    .AddComponents(joinBtn, startBtn));
             };
         }
 
@@ -156,8 +293,8 @@ namespace Fitz.Features.Blackjack.Commands
             {
                 Footer = new DiscordEmbedBuilder.EmbedFooter
                 {
-                    //IconUrl = DiscordEmoji.FromGuildEmote(dClient, LotteryEmojis.Lottery).Url,
-                    Text = $"Blackjack #1 | Last Winner: Fitz",
+                    IconUrl = DiscordEmoji.FromGuildEmote(dClient, BlackjackEmojis.Cards).Url,
+                    Text = $"Blackjack | Choose your game type",
                 },
                 Color = new DiscordColor(52, 114, 53),
                 Title = $"What kind of blackjack are you feeling?",
@@ -177,18 +314,20 @@ namespace Fitz.Features.Blackjack.Commands
             {
                 Footer = new DiscordEmbedBuilder.EmbedFooter
                 {
-                    //IconUrl = DiscordEmoji.FromGuildEmote(dClient, LotteryEmojis.Lottery).Url,
-                    Text = $"Blackjack #1 | Last Winner: Fitz",
+                    IconUrl = DiscordEmoji.FromGuildEmote(dClient, BlackjackEmojis.Cards).Url,
+                    Text = $"Blackjack | Waiting for players",
                 },
                 Color = new DiscordColor(52, 114, 53),
                 Title = $"Starting new blackjack game",
-                Description = $"Waiting for others to join..\n",
+                Description = $"Game Type: {game.Type}\n" +
+                            (game.Type != GameType.NoStakes ? $"Bet Amount: {GetBetAmount(game.Type)}\n" : "") +
+                            $"Waiting for others to join..",
             };
 
             string playerNames = string.Empty;
             if (game.Players != null && game.Players.Count > 0)
             {
-                foreach (BlackjackPlayers player in game.Players)
+                foreach (BlackjackPlayers player in game.Players.Where(p => !p.IsDealer))
                 {
                     playerNames += $"{player.Account.Username} |{DiscordEmoji.FromGuildEmote(dClient, PollEmojis.Yes)}\n";
                 }
@@ -204,116 +343,108 @@ namespace Fitz.Features.Blackjack.Commands
 
         private DiscordEmbed InProgressBlackjackEmbed(BlackjackGame game)
         {
-            BlackjackPlayers dealer = game.Players.FirstOrDefault(x => x.IsDealer == true);
+            BlackjackPlayers dealer = game.Players.FirstOrDefault(x => x.IsDealer);
             DiscordEmbedBuilder embed = new DiscordEmbedBuilder
             {
                 Footer = new DiscordEmbedBuilder.EmbedFooter
                 {
                     IconUrl = DiscordEmoji.FromGuildEmote(dClient, BlackjackEmojis.Cards).Url,
-                    Text = $"Blackjack #1 | Last Winner: ???",
+                    Text = game.Status == BlackjackGameStatus.Ended ? "Blackjack | Game Over" : "Blackjack | In Progress",
                 },
                 Color = new DiscordColor(52, 114, 53),
                 Title = $"Blackjack",
-                Description = $"Dealer: {game.Dealer.Username}\n" +
-                $"Beer Pool: 128\n",
+                Description = $"Game Type: {game.Type}\n" +
+                            (game.Type != GameType.NoStakes ? $"Bet Amount: {GetBetAmount(game.Type)}\n" : "") +
+                            $"Dealer: {game.Dealer.Username}\n",
             };
 
-            string dealerHand = string.Empty;
+            // Show dealer's hand
+            string dealerHand = FormatHand(dealer.Hand);
+            string dealerTitle = game.Status == BlackjackGameStatus.Ended ? 
+                $"Dealer's Hand: {dealer.Hand.TotalValue}" : 
+                $"Dealer's Hand: {dealer.Hand.FaceValue}";
+            embed.AddField(dealerTitle, dealerHand);
 
-            foreach (Card card in dealer.Hand.Cards)
+            // Show each player's hand
+            foreach (BlackjackPlayers player in game.Players.Where(p => !p.IsDealer))
             {
-                switch (card.Suite)
-                {
-                    case Suite.Spades:
-                        dealerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":spades:")}\n";
-                        break;
+                string playerHand = FormatHand(player.Hand);
+                string fieldTitle;
 
-                    case Suite.Diamond:
-                        dealerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":diamonds:")}\n";
-                        break;
-
-                    case Suite.Club:
-                        dealerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":clubs:")}\n";
-                        break;
-
-                    case Suite.Heart:
-                        dealerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":heart:")}\n";
-                        break;
-                }
-            }
-
-            //if (game.LastState == GameState.DealerWon)
-            //{
-            //    embed.AddField($"{DiscordEmoji.FromName(dClient, ":house:")}Dealer Hand: {game.Dealer.Hand.TotalValue}{DiscordEmoji.FromName(dClient, ":star:")}", dealerHand);
-            //}
-            //else
-            //{
-            //    if (game.LastState == GameState.PlayerWon)
-            //    {
-            //        embed.AddField($"{DiscordEmoji.FromName(dClient, ":house:")}~~Dealer Hand: {game.Dealer.Hand.TotalValue}~~", dealerHand);
-            //    }
-            //    else
-            //    {
-            //        embed.AddField($"{DiscordEmoji.FromName(dClient, ":house:")}Dealer Hand: {game.Dealer.Hand.TotalValue}", dealerHand);
-            //    }
-            //}
-
-            foreach (BlackjackPlayers player in game.Players)
-            {
-                string playerHand = string.Empty;
-                foreach (Card card in player.Hand.Cards)
-                {
-                    switch (card.Suite)
-                    {
-                        case Suite.Spades:
-                            playerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":spades:")}\n";
-                            break;
-
-                        case Suite.Diamond:
-                            playerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":diamonds:")}\n";
-                            break;
-
-                        case Suite.Club:
-                            playerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":clubs:")}\n";
-                            break;
-
-                        case Suite.Heart:
-                            playerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":heart:")}\n";
-                            break;
-                    }
-                }
                 if (player.IsBusted)
                 {
-                    embed.AddField($"~~{player.Account.Username}'s Hand: {player.Hand.TotalValue}~~{DiscordEmoji.FromName(dClient, ":x:")}", playerHand);
+                    fieldTitle = $"~~{player.Account.Username}'s Hand: {player.Hand.TotalValue}~~ BUST";
+                }
+                else if (game.Status == BlackjackGameStatus.Ended)
+                {
+                    fieldTitle = player.IsWinner ? 
+                        $"{player.Account.Username}'s Hand: {player.Hand.TotalValue} WINNER!" :
+                        $"{player.Account.Username}'s Hand: {player.Hand.TotalValue}";
                 }
                 else
                 {
-                    if (player.HasTurn)
-                    {
-                        embed.AddField($"{DiscordEmoji.FromName(dClient, ":arrow_right:")}{player.Account.Username}'s Hand: {player.Hand.TotalValue}", playerHand);
-                    }
-                    else
-                    {
-                        if (!player.IsBusted)
-                        {
-                            embed.AddField($"{player.Account.Username}'s Hand: {player.Hand.TotalValue}{DiscordEmoji.FromName(dClient, ":star:")}", playerHand);
-                        }
-                        else
-                        {
-                            embed.AddField($"{player.Account.Username}'s Hand: {player.Hand.TotalValue}", playerHand);
-                        }
-                    }
+                    fieldTitle = player.HasTurn ?
+                        $"➡️ {player.Account.Username}'s Hand: {player.Hand.TotalValue}" :
+                        $"{player.Account.Username}'s Hand: {player.Hand.TotalValue}";
                 }
+
+                embed.AddField(fieldTitle, playerHand);
             }
 
             return embed.Build();
         }
 
-        #endregion Embeds
+        private string FormatHand(Hand hand)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (Card card in hand.Cards)
+            {
+                if (!card.IsFaceUp && !hand.IsDealer)
+                {
+                    sb.AppendLine("🎴");
+                    continue;
+                }
 
-        //private bool isPlayerInGame(ulong id)
-        //{
-        //    return Players.Exists(x => x.Account.Id == id);
-        //}
+                string cardStr = card.IsFaceUp ? GetCardString(card) : "🎴";
+                sb.AppendLine(cardStr);
+            }
+            return sb.ToString();
+        }
+
+        private string GetCardString(Card card)
+        {
+            string rankStr = card.Rank switch
+            {
+                Rank.Ace => "A",
+                Rank.Jack => "J",
+                Rank.Queen => "Q",
+                Rank.King => "K",
+                _ => ((int)card.Rank).ToString()
+            };
+
+            string suitEmoji = card.Suite switch
+            {
+                Suite.Spades => "♠️",
+                Suite.Heart => "♥️",
+                Suite.Diamond => "♦️",
+                Suite.Club => "♣️",
+                _ => "?"
+            };
+
+            return $"{rankStr}{suitEmoji}";
+        }
+
+        private int GetBetAmount(GameType type)
+        {
+            return type switch
+            {
+                GameType.Normal => 12,
+                GameType.HighStakes => 36,
+                GameType.AllOrNothing => 0, // This will be calculated per player
+                _ => 0
+            };
+        }
+
+        #endregion Embeds
     }
 }

@@ -2,9 +2,9 @@
 {
     public enum GameType
     {
-        Normal = 0,
-        Highstakes = 1,
-        AllorNothing = 2,
-        NoStakes = 3,
+        NoStakes = 0,
+        Normal = 1,
+        HighStakes = 2,
+        AllOrNothing = 3
     }
 }

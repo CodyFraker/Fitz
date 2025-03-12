@@ -41,8 +41,4 @@
     <None Include="**\*.xml" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="Fitz.Shared\Fitz.Shared.csproj" />
-  </ItemGroup>
-
 </Project> 

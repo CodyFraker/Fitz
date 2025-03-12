@@ -51,7 +51,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Fitz.Shared\Fitz.Shared.csproj" />
+    <None Include="**\*.cs" />
+    <None Include="**\*.csproj" />
+    <None Include="**\*.json" />
+    <None Include="**\*.md" />
+    <None Include="**\*.xml" />
   </ItemGroup>
 
 </Project>

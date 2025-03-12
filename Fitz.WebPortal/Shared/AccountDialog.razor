@@ -1,95 +1,75 @@
 @using Fitz.WebPortal.Data
-@using Fitz.Shared.Models
+@using Microsoft.EntityFrameworkCore
+@using Fitz.Features.Accounts.Models
 @inject BotContext BotContext
 @inject ISnackbar Snackbar
 
 <MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Create Account</MudText>
+    </TitleContent>
     <DialogContent>
-        <MudForm @ref="_form" Model="@_account" @bind-IsValid="@_isValid">
-            <MudTextField @bind-Value="_account.Username" Label="Username" Required="true" RequiredError="Username is required" />
-            <MudNumericField @bind-Value="_account.Beer" Label="Beer" Min="0" />
-            <MudNumericField @bind-Value="_account.LifetimeBeer" Label="Lifetime Beer" Min="0" />
-            <MudNumericField @bind-Value="_account.SafeBalance" Label="Safe Balance" Min="0" />
-            <MudNumericField @bind-Value="_account.Favorability" Label="Favorability" />
-            <MudCheckBox @bind-Checked="_account.SubscribeToLottery" Label="Subscribe to Lottery" Color="Color.Primary" />
-            <MudNumericField @bind-Value="_account.SubscribeTickets" Label="Subscribe Tickets" Min="0" Disabled="@(!_account.SubscribeToLottery)" />
-            <MudCheckBox @bind-Checked="_account.Deactivated" Label="Deactivated" Color="Color.Error" />
+        <MudForm @ref="_form" @bind-IsValid="@_isValid">
+            <MudTextField @bind-Value="_account.Username" Label="Username" Required="true" />
+            <MudNumericField T="int" @bind-Value="_account.Beer" Label="Initial Beer" Required="true" Min="0" />
+            <MudCheckBox @bind-Checked="_account.Deactivated" Label="Inactive" />
+            <MudCheckBox @bind-Checked="_account.subscribeToLottery" Label="Subscribe to Lottery" />
+            <MudNumericField T="int" @bind-Value="_account.SubscribeTickets" Label="Subscription Tickets" 
+                           Disabled="@(!_account.subscribeToLottery)" Min="1" Max="10" />
         </MudForm>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="@(!_isValid)">Save</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="@(!_isValid)">Create</MudButton>
     </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
-    [Parameter] public WebPortal.Data.Account? Account { get; set; }
-    
-    private WebPortal.Data.Account _account = new();
+
     private MudForm _form = null!;
     private bool _isValid;
-    
-    protected override void OnInitialized()
+    private Fitz.WebPortal.Data.Account _account = new()
     {
-        if (Account != null)
-        {
-            // Clone the account to avoid modifying the original until save
-            _account = new WebPortal.Data.Account
-            {
-                Id = Account.Id,
-                Username = Account.Username,
-                Beer = Account.Beer,
-                LifetimeBeer = Account.LifetimeBeer,
-                SafeBalance = Account.SafeBalance,
-                Favorability = Account.Favorability,
-                SubscribeToLottery = Account.SubscribeToLottery,
-                SubscribeTickets = Account.SubscribeTickets,
-                Deactivated = Account.Deactivated
-            };
-        }
-        else
-        {
-            // Initialize a new account
-            _account = new WebPortal.Data.Account();
-        }
-    }
-    
+        Beer = 0,
+        Deactivated = false,
+        subscribeToLottery = false,
+        SubscribeTickets = 1
+    };
+
     private void Cancel()
     {
         MudDialog.Cancel();
     }
-    
+
     private async Task Submit()
     {
-        await _form.Validate();
-        
-        if (_isValid)
+        try
         {
-            try
+            await _form.Validate();
+            if (!_isValid)
             {
-                // Convert WebPortal.Data.Account to Fitz.Shared.Models.Account
-                var sharedAccount = _account.ToSharedAccount();
-                
-                if (Account == null)
-                {
-                    // Add new account
-                    await BotContext.Accounts.AddAsync(sharedAccount);
-                }
-                else
-                {
-                    // Update existing account
-                    BotContext.Accounts.Update(sharedAccount);
-                }
-                
-                await BotContext.SaveChangesAsync();
-                Snackbar.Add("Account saved successfully", Severity.Success);
-                MudDialog.Close(DialogResult.Ok(true));
+                return;
             }
-            catch (Exception ex)
+
+            // Check if username already exists
+            var existingAccount = await BotContext.Accounts
+                .FirstOrDefaultAsync(a => a.Username == _account.Username);
+
+            if (existingAccount != null)
             {
-                Snackbar.Add($"Error saving account: {ex.Message}", Severity.Error);
+                Snackbar.Add("An account with this username already exists.", Severity.Error);
+                return;
             }
+
+            BotContext.Accounts.Add(_account);
+            await BotContext.SaveChangesAsync();
+
+            MudDialog.Close(DialogResult.Ok(_account));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error creating account: {ex.Message}", Severity.Error);
         }
     }
 } 

@@ -1,6 +1,7 @@
 @using Fitz.WebPortal.Data
 @using Microsoft.EntityFrameworkCore
-@using Fitz.Shared.Models
+@using Fitz.Features.Accounts.Models
+@using Fitz.Features.Lottery.Models
 @inject BotContext BotContext
 @inject ISnackbar Snackbar
 
@@ -12,35 +13,35 @@
         <MudForm @ref="_form" @bind-IsValid="@_isValid">
             <MudGrid>
                 <MudItem xs="12">
-                    <MudNumericField @bind-Value="_prizePool" Label="Prize Pool (Beer)" Required="true" Min="10" 
-                                    RequiredError="Prize pool is required" HelperText="Minimum prize pool is 10 beer" />
+                    <MudNumericField T="int" @bind-Value="_lottery.Pool" Label="Prize Pool (beer)" Required="true" Min="1" />
                 </MudItem>
                 <MudItem xs="12">
-                    <MudDatePicker @bind-Date="_drawDate" Label="Drawing Date" Required="true" 
-                                  RequiredError="Drawing date is required" DisablePast="true" 
-                                  HelperText="Select a future date for the lottery drawing" />
+                    <MudDatePicker Date="_lottery.StartDate" DateChanged="date => _lottery.StartDate = date ?? DateTime.Today" Label="Start Date" Required="true" DateFormat="yyyy-MM-dd" />
                 </MudItem>
                 <MudItem xs="12">
-                    <MudCheckBox @bind-Checked="_autoSubscribeEligible" Label="Auto-subscribe eligible accounts" 
-                                HelperText="Automatically add accounts with lottery subscription enabled" />
+                    <MudDatePicker Date="_lottery.EndDate" DateChanged="date => _lottery.EndDate = date ?? DateTime.Today.AddDays(7)" Label="End Date" Required="true" DateFormat="yyyy-MM-dd" />
                 </MudItem>
             </MudGrid>
         </MudForm>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="@(!_isValid)">Create Lottery</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="@(!_isValid)">Create</MudButton>
     </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
     
-    private int _prizePool = 100;
-    private DateTime? _drawDate = DateTime.UtcNow.AddDays(7);
-    private bool _autoSubscribeEligible = true;
     private MudForm _form = null!;
     private bool _isValid;
+    private Fitz.WebPortal.Data.Lottery _lottery = new()
+    {
+        StartDate = DateTime.Today,
+        EndDate = DateTime.Today.AddDays(7),
+        Pool = 10,
+        CurrentLottery = true
+    };
     
     private void Cancel()
     {
@@ -49,50 +50,37 @@
     
     private async Task Submit()
     {
-        if (!_isValid || !_drawDate.HasValue)
-            return;
-            
         try
         {
-            // Create new lottery
-            var lottery = new Fitz.WebPortal.Data.Lottery
+            await _form.Validate();
+            if (!_isValid)
             {
-                PrizePool = _prizePool,
-                StartDate = DateTime.UtcNow,
-                DrawDate = _drawDate.Value,
-                IsActive = true
-            };
-            
-            await BotContext.Lotteries.AddAsync(lottery);
-            await BotContext.SaveChangesAsync();
-            
-            // Auto-subscribe eligible accounts if enabled
-            if (_autoSubscribeEligible)
-            {
-                var eligibleAccounts = await BotContext.Accounts
-                    .Where(a => a.SubscribeToLottery && !a.Deactivated)
-                    .ToListAsync();
-                    
-                foreach (var account in eligibleAccounts)
-                {
-                    // Create lottery entries based on subscription tickets
-                    for (int i = 0; i < account.SubscribeTickets; i++)
-                    {
-                        var entry = new Fitz.WebPortal.Data.LotteryEntry
-                        {
-                            LotteryId = lottery.Id,
-                            AccountId = account.Id,
-                            EntryDate = DateTime.UtcNow
-                        };
-                        
-                        await BotContext.LotteryEntries.AddAsync(entry);
-                    }
-                }
-                
-                await BotContext.SaveChangesAsync();
+                return;
             }
-            
-            MudDialog.Close(DialogResult.Ok(true));
+
+            if (_lottery.EndDate <= _lottery.StartDate)
+            {
+                Snackbar.Add("End date must be after start date", Severity.Error);
+                return;
+            }
+
+            if (_lottery.StartDate < DateTime.Today)
+            {
+                Snackbar.Add("Start date cannot be in the past", Severity.Error);
+                return;
+            }
+
+            // Set all other lotteries to not current
+            var existingLotteries = await BotContext.Lotteries.Where(l => l.CurrentLottery).ToListAsync();
+            foreach (var lottery in existingLotteries)
+            {
+                lottery.CurrentLottery = false;
+            }
+
+            BotContext.Lotteries.Add(_lottery);
+            await BotContext.SaveChangesAsync();
+
+            MudDialog.Close(DialogResult.Ok(_lottery));
         }
         catch (Exception ex)
         {

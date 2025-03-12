@@ -1,7 +1,8 @@
 @using Fitz.WebPortal.Data
 @using Microsoft.EntityFrameworkCore
-@using Fitz.Shared.Models
-@inject BotContext BotContext
+@using Fitz.Features.Accounts.Models
+@using Fitz.Features.Lottery.Models
+@inject WebPortalContext Context
 @inject ISnackbar Snackbar
 
 <MudDialog>
@@ -9,23 +10,23 @@
         <MudText Typo="Typo.h6">Draw Lottery Winner</MudText>
     </TitleContent>
     <DialogContent>
-        @if (Lottery == null)
+        @if (_lottery == null)
         {
             <MudAlert Severity="Severity.Error">No lottery data available</MudAlert>
         }
-        else if (Lottery.Entries.Count == 0)
+        else if (_lottery.Tickets == null || !_lottery.Tickets.Any())
         {
-            <MudAlert Severity="Severity.Warning">This lottery has no entries</MudAlert>
+            <MudAlert Severity="Severity.Warning">This lottery has no tickets</MudAlert>
         }
         else
         {
             <MudGrid>
                 <MudItem xs="12">
                     <MudPaper Class="pa-4">
-                        <MudText Typo="Typo.h6">Lottery #@Lottery.Id</MudText>
-                        <MudText>Prize Pool: @Lottery.PrizePool beer</MudText>
-                        <MudText>Total Entries: @Lottery.Entries.Count</MudText>
-                        <MudText>Drawing Date: @Lottery.DrawDate.ToString("g")</MudText>
+                        <MudText Typo="Typo.h6">Lottery #@_lottery.Id</MudText>
+                        <MudText>Prize Pool: @_lottery.Pool beer</MudText>
+                        <MudText>Total Tickets: @_lottery.Tickets.Count</MudText>
+                        <MudText>End Date: @_lottery.EndDate.ToString("g")</MudText>
                     </MudPaper>
                 </MudItem>
                 
@@ -38,7 +39,8 @@
                                 <MudIcon Icon="@Icons.Material.Filled.EmojiEvents" />
                             </MudAvatar>
                             <MudText Typo="Typo.h6">@_winnerUsername</MudText>
-                            <MudText>Prize: @Lottery.PrizePool beer</MudText>
+                            <MudText>Prize: @_lottery.Pool beer</MudText>
+                            <MudText>Winning Ticket: #@_winningTicket?.TicketNumber</MudText>
                         </MudPaper>
                     </MudItem>
                 }
@@ -47,25 +49,57 @@
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancel</MudButton>
-        @if (!_winnerSelected && Lottery != null && Lottery.Entries.Count > 0)
-        {
-            <MudButton Color="Color.Primary" OnClick="DrawWinner">Draw Winner</MudButton>
-        }
-        else if (_winnerSelected)
-        {
-            <MudButton Color="Color.Success" OnClick="ConfirmWinner">Confirm Winner</MudButton>
-        }
+        <MudButton Color="Color.Primary" OnClick="DrawWinner" 
+                  Disabled="@(_lottery?.Tickets == null || !_lottery.Tickets.Any() || _winnerSelected)">
+            Draw Winner
+        </MudButton>
     </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
-    [Parameter] public Fitz.WebPortal.Data.Lottery? Lottery { get; set; }
+    [Parameter] public int LotteryId { get; set; }
     
-    private bool _winnerSelected = false;
-    private string _winnerUsername = string.Empty;
-    private Fitz.WebPortal.Data.Account? _winner;
-    private Fitz.WebPortal.Data.LotteryEntry? _winnerEntry;
+    private Fitz.Features.Lottery.Models.Lottery _lottery;
+    private bool _winnerSelected;
+    private string _winnerUsername = "";
+    private Fitz.Features.Lottery.Models.Ticket _winningTicket;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLotteryData();
+    }
+    
+    private async Task LoadLotteryData()
+    {
+        try
+        {
+            _lottery = await Context.Lotteries
+                .Include(l => l.Tickets)
+                .FirstOrDefaultAsync(l => l.Id == LotteryId);
+
+            if (_lottery == null)
+            {
+                Snackbar.Add("Failed to load lottery data.", Severity.Error);
+                return;
+            }
+
+            if (_lottery.WinningTicketId.HasValue)
+            {
+                _winningTicket = _lottery.Tickets.FirstOrDefault(t => t.Id == _lottery.WinningTicketId);
+                if (_winningTicket != null)
+                {
+                    var winner = await Context.Accounts.FirstOrDefaultAsync(a => a.Id == _winningTicket.UserId);
+                    _winnerUsername = winner?.Username ?? $"User {_winningTicket.UserId}";
+                    _winnerSelected = true;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading lottery data: {ex.Message}", Severity.Error);
+        }
+    }
     
     private void Cancel()
     {
@@ -74,98 +108,37 @@
     
     private async Task DrawWinner()
     {
-        if (Lottery == null || Lottery.Entries.Count == 0)
-            return;
-            
         try
         {
-            // Get all entries for this lottery
-            var entries = await BotContext.LotteryEntries
-                .Where(e => e.LotteryId == Lottery.Id)
-                .ToListAsync();
-                
-            if (entries.Count == 0)
+            if (_lottery?.Tickets == null || !_lottery.Tickets.Any())
             {
-                Snackbar.Add("No entries found for this lottery", Severity.Warning);
+                Snackbar.Add("No tickets available to draw from.", Severity.Warning);
                 return;
             }
-            
-            // Randomly select a winner
+
+            // Randomly select a winning ticket
             var random = new Random();
-            var selectedEntry = entries[random.Next(entries.Count)];
-            _winnerEntry = new Fitz.WebPortal.Data.LotteryEntry
-            {
-                Id = selectedEntry.Id,
-                LotteryId = selectedEntry.LotteryId,
-                AccountId = selectedEntry.AccountId,
-                EntryDate = selectedEntry.EntryDate
-            };
-            
-            // Get winner account details
-            var winnerAccount = await BotContext.Accounts.FindAsync(_winnerEntry.AccountId);
-            if (winnerAccount != null)
-            {
-                _winner = new Fitz.WebPortal.Data.Account
-                {
-                    Id = winnerAccount.Id,
-                    Username = winnerAccount.Username,
-                    Beer = winnerAccount.Beer,
-                    LifetimeBeer = winnerAccount.LifetimeBeer,
-                    SafeBalance = winnerAccount.SafeBalance,
-                    Favorability = winnerAccount.Favorability,
-                    SubscribeToLottery = winnerAccount.SubscribeToLottery,
-                    SubscribeTickets = winnerAccount.SubscribeTickets,
-                    Deactivated = winnerAccount.Deactivated
-                };
-                
-                _winnerUsername = _winner.Username ?? $"User {_winner.Id}";
-                _winnerSelected = true;
-            }
-            else
-            {
-                Snackbar.Add("Error finding winner account", Severity.Error);
-            }
+            var tickets = _lottery.Tickets.ToList();
+            _winningTicket = tickets[random.Next(tickets.Count)];
+
+            // Update the lottery with the winning ticket
+            _lottery.WinningTicketId = _winningTicket.Id;
+            _lottery.CurrentLottery = false;
+            _winningTicket.IsWinner = true;
+
+            // Get the winner's username
+            var winner = await Context.Accounts.FirstOrDefaultAsync(a => a.Id == _winningTicket.UserId);
+            _winnerUsername = winner?.Username ?? $"User {_winningTicket.UserId}";
+
+            // Save changes
+            await Context.SaveChangesAsync();
+
+            _winnerSelected = true;
+            StateHasChanged();
         }
         catch (Exception ex)
         {
             Snackbar.Add($"Error drawing winner: {ex.Message}", Severity.Error);
-        }
-    }
-    
-    private async Task ConfirmWinner()
-    {
-        if (Lottery == null || _winner == null || _winnerEntry == null)
-            return;
-            
-        try
-        {
-            // Update lottery in database
-            Lottery.WinnerId = _winner.Id;
-            Lottery.IsActive = false;
-            BotContext.Lotteries.Update(Lottery);
-            
-            // Add beer to winner's account
-            _winner.Beer += Lottery.PrizePool;
-            BotContext.Accounts.Update(_winner);
-            
-            // Create transaction record
-            var transaction = new Fitz.WebPortal.Data.Transaction
-            {
-                SenderId = 0, // System transaction
-                RecipientId = _winner.Id,
-                Amount = Lottery.PrizePool,
-                Reason = $"Lottery #{Lottery.Id} winner",
-                Timestamp = DateTime.UtcNow
-            };
-            
-            await BotContext.Transactions.AddAsync(transaction);
-            await BotContext.SaveChangesAsync();
-            
-            MudDialog.Close(DialogResult.Ok(true));
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Error confirming winner: {ex.Message}", Severity.Error);
         }
     }
 } 

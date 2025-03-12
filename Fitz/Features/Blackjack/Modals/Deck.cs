@@ -8,14 +8,15 @@ namespace Fitz.Features.Blackjack.Modals
 {
     public class Deck
     {
-        public List<Card> cards = new List<Card>(52);
+        private readonly List<Card> cards;
 
         public Deck()
         {
-            this.Populate();
+            cards = new List<Card>(52);
+            Populate();
         }
 
-        internal ReadOnlyCollection<Card> Cards
+        public ReadOnlyCollection<Card> Cards
         {
             get { return this.cards.AsReadOnly(); }
         }
@@ -28,7 +29,8 @@ namespace Fitz.Features.Blackjack.Modals
             this.cards.Clear();
             this.cards.AddRange(
                 Enumerable.Range(1, 4)
-                    .SelectMany(s => Enumerable.Range(1, 13).Select(n => new Card((Rank)n, (Suite)s))));
+                    .SelectMany(s => Enumerable.Range(1, 13)
+                    .Select(n => new Card((Rank)n, (Suite)s))));
         }
 
         /// <summary>
@@ -37,7 +39,7 @@ namespace Fitz.Features.Blackjack.Modals
         public void Shuffle()
         {
             var i = this.cards.Count;
-            var rng = new RNGCryptoServiceProvider();
+            using var rng = new RNGCryptoServiceProvider();
 
             while (i > 1)
             {
@@ -58,7 +60,7 @@ namespace Fitz.Features.Blackjack.Modals
         {
             if (this.cards.Count < 2)
             {
-                throw new InvalidOperationException();
+                throw new InvalidOperationException("Not enough cards in the deck to deal.");
             }
 
             var card = this.cards.First();
@@ -66,12 +68,10 @@ namespace Fitz.Features.Blackjack.Modals
             this.cards.Remove(card);
 
             card = this.cards.First();
-
             if (hand.IsDealer)
             {
                 card.Flip();
             }
-
             hand.AddCard(card);
             this.cards.Remove(card);
         }
@@ -80,10 +80,11 @@ namespace Fitz.Features.Blackjack.Modals
         {
             if (this.cards.Count < 1)
             {
-                throw new InvalidOperationException();
+                throw new InvalidOperationException("No cards left in the deck.");
             }
 
-            hand.AddCard(this.cards.First());
+            var card = this.cards.First();
+            hand.AddCard(card);
             this.cards.RemoveAt(0);
         }
     }

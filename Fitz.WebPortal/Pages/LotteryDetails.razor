@@ -1,19 +1,17 @@
-@page "/lottery/{id:int}"
+@page "/lottery/{Id:int}"
 @using Fitz.WebPortal.Data
 @using Microsoft.EntityFrameworkCore
-@using Fitz.Shared.Models
+@using Fitz.Features.Accounts.Models
+@using Fitz.Features.Lottery.Models
 @inject BotContext BotContext
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
 @inject NavigationManager NavigationManager
-@attribute [Authorize]
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Lottery Details - Fitz</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <MudText Typo="Typo.h3">Lottery #@Id Details</MudText>
-        <MudButton Variant="Variant.Filled" Color="Color.Secondary" Href="/lottery">
-            Back to Lottery Management
-        </MudButton>
-    </div>
-
     @if (_lottery == null)
     {
         <MudAlert Severity="Severity.Error">Lottery not found.</MudAlert>
@@ -21,157 +19,192 @@
     else
     {
         <MudGrid>
-            <MudItem xs="12" md="6">
-                <MudPaper Class="pa-4 mb-4">
-                    <MudText Typo="Typo.h5" Class="mb-2">Lottery Information</MudText>
-                    <MudText><strong>Start Date:</strong> @_lottery.StartDate.ToString("g")</MudText>
-                    <MudText><strong>Draw Date:</strong> @_lottery.DrawDate.ToString("g")</MudText>
-                    <MudText><strong>Duration:</strong> @((_lottery.DrawDate - _lottery.StartDate).TotalDays.ToString("F1")) days</MudText>
-                    <MudText>
-                        <strong>Status:</strong> 
-                        @if (_lottery.IsActive)
-                        {
-                            <MudChip Color="Color.Success" Size="Size.Small">Active</MudChip>
-                        }
-                        else
-                        {
-                            <MudChip Color="Color.Default" Size="Size.Small">Ended</MudChip>
-                        }
-                    </MudText>
+            <MudItem xs="12">
+                <MudPaper Class="pa-4">
+                    <MudGrid>
+                        <MudItem xs="12" md="8">
+                            <MudText Typo="Typo.h4">Lottery #@_lottery.Id</MudText>
+                            <MudText Typo="Typo.subtitle1">Start Date: @_lottery.StartDate.ToString("g")</MudText>
+                            <MudText Typo="Typo.subtitle1">End Date: @_lottery.EndDate.ToString("g")</MudText>
+                            <MudText Typo="Typo.subtitle1">Duration: @(_lottery.EndDate - _lottery.StartDate).TotalDays days</MudText>
+                            <MudText Typo="Typo.subtitle1">Status: @(_lottery.CurrentLottery ? "Active" : "Ended")</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="4" Class="d-flex flex-column justify-end align-end">
+                            @if (_lottery.CurrentLottery)
+                            {
+                                <MudButton Color="Color.Primary" OnClick="OpenBuyTicketsDialog">Buy Tickets</MudButton>
+                                @if (DateTime.UtcNow > _lottery.EndDate)
+                                {
+                                    <MudButton Color="Color.Secondary" OnClick="OpenDrawDialog" Class="mt-2">Draw Winner</MudButton>
+                                }
+                            }
+                        </MudItem>
+                    </MudGrid>
                 </MudPaper>
             </MudItem>
-            
-            <MudItem xs="12" md="6">
-                <MudPaper Class="pa-4 mb-4">
-                    <MudText Typo="Typo.h5" Class="mb-2">Prize Information</MudText>
-                    <div class="text-center mb-3">
-                        <MudText Typo="Typo.h2">@_lottery.PrizePool</MudText>
-                        <MudText Typo="Typo.body2">Total Prize Pool</MudText>
-                    </div>
-                    
-                    <MudText><strong>Total Entries:</strong> @_entries.Count</MudText>
-                    
-                    @if (_lottery.WinnerId.HasValue)
+
+            <MudItem xs="12" Class="mt-4">
+                <MudPaper Class="pa-4">
+                    <MudText Typo="Typo.h5" Class="mb-4">Prize Pool</MudText>
+                    <MudText Typo="Typo.h3">@_lottery.Pool beer</MudText>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" Class="mt-4">
+                <MudPaper Class="pa-4">
+                    <MudText Typo="Typo.h5" Class="mb-4">Tickets</MudText>
+                    @if (_lottery.Tickets == null || !_lottery.Tickets.Any())
                     {
-                        <MudAlert Severity="Severity.Success" Class="mt-3">
-                            <MudText Typo="Typo.h6">Winner</MudText>
-                            <MudText><strong>Username:</strong> @_winnerName</MudText>
-                            <MudText><strong>Prize Amount:</strong> @_lottery.PrizePool</MudText>
-                        </MudAlert>
+                        <MudAlert Severity="Severity.Info">No tickets have been purchased yet.</MudAlert>
                     }
-                    else if (!_lottery.IsActive)
+                    else
                     {
-                        <MudAlert Severity="Severity.Warning" Class="mt-3">
-                            This lottery has ended but no winner was selected.
-                        </MudAlert>
+                        <MudTable Items="@_lottery.Tickets" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm">
+                            <HeaderContent>
+                                <MudTh>Ticket #</MudTh>
+                                <MudTh>Owner</MudTh>
+                                <MudTh>Purchase Date</MudTh>
+                                <MudTh>Status</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Ticket #">@context.TicketNumber</MudTd>
+                                <MudTd DataLabel="Owner">@GetUsername(context.UserId)</MudTd>
+                                <MudTd DataLabel="Purchase Date">@context.PurchaseDate.ToString("g")</MudTd>
+                                <MudTd DataLabel="Status">
+                                    @if (context.IsWinner)
+                                    {
+                                        <MudChip Color="Color.Success" Size="Size.Small">Winner</MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip Color="Color.Default" Size="Size.Small">Regular</MudChip>
+                                    }
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
                     }
                 </MudPaper>
             </MudItem>
         </MudGrid>
-
-        <MudPaper Class="pa-4">
-            <MudText Typo="Typo.h5" Class="mb-3">Lottery Entries</MudText>
-            
-            @if (_entries.Any())
-            {
-                <MudTable Items="@_entries" Hover="true" Striped="true">
-                    <HeaderContent>
-                        <MudTh>Entry ID</MudTh>
-                        <MudTh>User</MudTh>
-                        <MudTh>Entry Date</MudTh>
-                        <MudTh>Status</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd DataLabel="Entry ID">@context.Id</MudTd>
-                        <MudTd DataLabel="User">@GetUsername(context.AccountId)</MudTd>
-                        <MudTd DataLabel="Entry Date">@context.EntryDate.ToString("g")</MudTd>
-                        <MudTd DataLabel="Status">
-                            @if (_lottery.WinnerId.HasValue && context.AccountId == _lottery.WinnerId.Value)
-                            {
-                                <MudChip Color="Color.Success" Size="Size.Small">Winner</MudChip>
-                            }
-                            else
-                            {
-                                <MudChip Color="Color.Default" Size="Size.Small">Regular</MudChip>
-                            }
-                        </MudTd>
-                    </RowTemplate>
-                    <PagerContent>
-                        <MudTablePager />
-                    </PagerContent>
-                </MudTable>
-            }
-            else
-            {
-                <MudAlert Severity="Severity.Info">No entries were made for this lottery.</MudAlert>
-            }
-        </MudPaper>
     }
 </MudContainer>
 
 @code {
-    [Parameter]
-    public int Id { get; set; }
-    
-    private WebPortal.Data.Lottery? _lottery;
-    private List<WebPortal.Data.LotteryEntry> _entries = new();
-    private Dictionary<ulong, string> _usernames = new();
-    private string _winnerName = "No Winner";
-    
+    [Parameter] public int Id { get; set; }
+
+    private Fitz.Features.Lottery.Models.Lottery _lottery;
+    private Dictionary<ulong, string> _usernameCache = new();
+
     protected override async Task OnInitializedAsync()
     {
         await LoadLotteryData();
     }
-    
+
     private async Task LoadLotteryData()
     {
-        // Get the lottery by ID
-        var sharedLottery = await BotContext.Lotteries
-            .Include(l => l.Entries)
-            .FirstOrDefaultAsync(l => l.Id == Id);
-
-        if (sharedLottery == null)
+        try
         {
+            var lottery = await BotContext.Lotteries
+                .Include(l => l.Tickets)
+                .FirstOrDefaultAsync(l => l.Id == Id);
+
+            _lottery = lottery?.ToWebPortalLottery();
+
+            if (_lottery == null)
+            {
+                Snackbar.Add("Lottery not found.", Severity.Error);
+                return;
+            }
+
+            await CacheUsernames();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading lottery data: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task CacheUsernames()
+    {
+        try
+        {
+            if (_lottery?.Tickets == null || !_lottery.Tickets.Any())
+            {
+                return;
+            }
+
+            var userIds = _lottery.Tickets.Select(t => t.UserId).Distinct().ToList();
+            var accounts = await BotContext.Accounts
+                .Where(a => userIds.Contains(a.Id))
+                .ToDictionaryAsync(a => a.Id, a => a.Username);
+
+            _usernameCache = accounts;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading usernames: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private string GetUsername(ulong userId)
+    {
+        return _usernameCache.TryGetValue(userId, out var username) ? username : $"User {userId}";
+    }
+
+    private async Task OpenBuyTicketsDialog()
+    {
+        // Get the user's account
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var discordId = ulong.Parse(user.FindFirst(c => c.Type == "DiscordId")?.Value ?? "0");
+
+        if (discordId == 0)
+        {
+            Snackbar.Add("Please log in to buy tickets.", Severity.Warning);
             return;
         }
 
-        _lottery = sharedLottery.ToWebPortalLottery();
-
-        // Get all entries for this lottery
-        var sharedEntries = await BotContext.LotteryEntries
-            .Where(e => e.LotteryId == Id)
-            .ToListAsync();
-            
-        _entries = sharedEntries.ToWebPortalLotteryEntries();
-
-        // Get usernames for all entry holders
-        if (_entries.Any())
+        var account = await BotContext.Accounts.FirstOrDefaultAsync(a => a.Id == discordId);
+        if (account == null)
         {
-            var userIds = _entries.Select(e => e.AccountId).Distinct().ToList();
-            var accounts = await BotContext.Accounts
-                .Where(a => userIds.Contains(a.Id))
-                .ToDictionaryAsync(a => a.Id, a => a.Username ?? $"User {a.Id}");
+            Snackbar.Add("Account not found.", Severity.Error);
+            return;
+        }
 
-            _usernames = accounts;
+        var parameters = new DialogParameters
+        {
+            { "LotteryId", _lottery.Id },
+            { "Account", account }
+        };
 
-            // Get winner username if there is a winner
-            if (_lottery.WinnerId.HasValue)
-            {
-                if (_usernames.TryGetValue(_lottery.WinnerId.Value, out var name))
-                {
-                    _winnerName = name;
-                }
-                else
-                {
-                    var winner = await BotContext.Accounts.FindAsync(_lottery.WinnerId.Value);
-                    _winnerName = winner?.Username ?? $"User {_lottery.WinnerId.Value}";
-                }
-            }
+        var dialog = await DialogService.ShowAsync<LotteryDialog>("Buy Tickets", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadLotteryData();
         }
     }
-    
-    private string GetUsername(ulong userId)
+
+    private async Task OpenDrawDialog()
     {
-        return _usernames.TryGetValue(userId, out var username) ? username : $"User {userId}";
+        if (!_lottery.CurrentLottery || DateTime.UtcNow <= _lottery.EndDate)
+        {
+            Snackbar.Add("Cannot draw winner yet.", Severity.Warning);
+            return;
+        }
+
+        var parameters = new DialogParameters
+        {
+            { "LotteryId", _lottery.Id }
+        };
+
+        var dialog = await DialogService.ShowAsync<DrawLotteryDialog>("Draw Winner", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadLotteryData();
+        }
     }
 } 

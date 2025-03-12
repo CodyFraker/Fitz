@@ -6,83 +6,63 @@ namespace Fitz.Features.Bank.Models
     public enum TransactionReason
     {
         /// <summary>
-        /// Bonus for creating an account
+        /// Unknown reason
         /// </summary>
-        AccountCreationBonus,
-
-        /// <summary>
-        /// Generic bonus
-        /// </summary>
-        Bonus,
+        Unknown = 0,
 
         /// <summary>
         /// User donated to another user
         /// </summary>
-        Donated,
+        Donated = 1,
 
         /// <summary>
-        /// User bought a lottery ticket
+        /// Generic bonus
         /// </summary>
-        Lotto,
+        Bonus = 2,
 
         /// <summary>
-        /// User won the lottery
+        /// Bonus for creating an account
         /// </summary>
-        LottoWin,
-
-        /// <summary>
-        /// User renamed themselves
-        /// </summary>
-        Rename,
-
-        /// <summary>
-        /// User played a song
-        /// </summary>
-        MusicPlay,
-
-        /// <summary>
-        /// User skipped a song
-        /// </summary>
-        MusicSkip,
+        AccountCreationBonus = 3,
 
         /// <summary>
         /// Happy hour bonus
         /// </summary>
-        HappyHour,
+        HappyHour = 4,
 
         /// <summary>
-        /// User submitted a poll
+        /// Admin added balance to user
         /// </summary>
-        PollSubmitted,
+        AdminAddBalance = 5,
+
+        /// <summary>
+        /// Admin removed balance from user
+        /// </summary>
+        AdminRemoveBalance = 6,
+
+        /// <summary>
+        /// User renamed themselves
+        /// </summary>
+        Rename = 7,
+
+        /// <summary>
+        /// User bought a lottery ticket
+        /// </summary>
+        Lotto = 8,
+
+        /// <summary>
+        /// User played a song
+        /// </summary>
+        GameBet = 9,
+
+        /// <summary>
+        /// User won the lottery
+        /// </summary>
+        GameWin = 10,
 
         /// <summary>
         /// User's poll was approved
         /// </summary>
-        PollApproved,
-
-        /// <summary>
-        /// User's poll was declined
-        /// </summary>
-        PollDeclined,
-
-        /// <summary>
-        /// User voted on a poll
-        /// </summary>
-        PollVote,
-
-        /// <summary>
-        /// User tipped a poll creator
-        /// </summary>
-        PollCreatorTip,
-        
-        /// <summary>
-        /// Admin added balance to user
-        /// </summary>
-        AdminAddBalance,
-        
-        /// <summary>
-        /// Admin removed balance from user
-        /// </summary>
-        AdminRemoveBalance
+        GameRefund = 11
     }
 } 

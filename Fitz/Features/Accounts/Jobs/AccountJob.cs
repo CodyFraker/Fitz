@@ -1,70 +1,62 @@
 ﻿using DSharpPlus;
-using DSharpPlus.Entities;
-using Fitz.Core.Discord;
 using Fitz.Core.Services.Jobs;
+using Fitz.Core.Discord;
+using Fitz.Core.Contexts;
 using Fitz.Features.Accounts.Commands;
-using Fitz.Features.Accounts.Models;
-using Fitz.Variables;
+using Fitz.Features.Accounts.Update.Domain;
+using Fitz.Features.Accounts.Update.Persistence;
 using Fitz.Variables.Emojis;
-using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Accounts.Jobs
 {
-    public class AccountJob(AccountService accountService, DiscordClient dClient, BotLog botLog) : ITimedJob
+    public class AccountJob : ITimedJob
     {
-        private readonly AccountService accountService = accountService;
-        private readonly DiscordClient dClient = dClient;
-        private readonly BotLog botLog = botLog;
+        private readonly IServiceScopeFactory _scopeFactory;
+        private readonly DiscordClient _discordClient;
+        private readonly BotLog _botLog;
+
+        public AccountJob(IServiceScopeFactory scopeFactory, DiscordClient dClient, BotLog botLog)
+        {
+            _scopeFactory = scopeFactory;
+            _discordClient = dClient;
+            _botLog = botLog;
+        }
+
+        public string Name => "Account Activity Check";
 
         public ulong Emoji => ManageRoleEmojis.Warning;
 
-        public int Interval => 25;
+        public int Interval => 5;
 
         public async Task Execute()
         {
-            botLog.Information(LogConsoleSettings.Jobs, ManageRoleEmojis.Warning, $"Checking account members & their roles...");
-            // Get all accounts
-            List<Account> accounts = accountService.QueryAccounts();
-
-            // Get the waterbear discord guild
-            DiscordGuild guild = await dClient.GetGuildAsync(Guilds.Waterbear);
-
-            // Get all members in the guild with the role "account"
-            List<DiscordMember> accountMembers = guild.Members.Values.Where(x => x.Roles.Any(role => role.Id == Roles.Accounts)).ToList();
-
-            List<DiscordMember> guildMembers = guild.Members.Values.ToList();
-
-            // Get all members in the guild with the role "account" that are not in the database
-            foreach (DiscordMember member in guildMembers)
+            try
             {
-                if (member == null) continue;
-                if (member.IsBot) continue;
-                if (member.Roles.Any(role => role.Id == Roles.Accounts))
+                using var scope = _scopeFactory.CreateScope();
+                using var db = scope.ServiceProvider.GetRequiredService<BotContext>();
+                
+                var accounts = await db.Accounts.ToListAsync();
+                foreach (var account in accounts)
                 {
-                    // Check to see if the user is in the database
-                    if (accounts.Any(x => x.Id == member.Id))
+                    var member = await _discordClient.GetUserAsync(account.Id);
+                    if (member != null)
                     {
-                        // If the user is already in the database and has the role.
-                        continue;
-                    }
-                    else
-                    {
-                        // If the user is not in the database, remove the role "account"
-                        botLog.Information(LogConsoleSettings.Jobs, ManageRoleEmojis.Demotion, $"User {member.Username} does not have an account. Removing role.");
-                        await member.RevokeRoleAsync(guild.GetRole(Roles.Accounts), "User had account role but did not have an account.");
+                        account.LastSeenDate = DateTime.UtcNow;
+                        db.Accounts.Update(account);
                     }
                 }
-                // if the user has an account but doesn't have the role, we need to add them to the role.
-                if (accounts.Any(x => x.Id == member.Id) && !member.Roles.Any(role => role.Id == Roles.Accounts))
-                {
-                    botLog.Information(LogConsoleSettings.Jobs, ManageRoleEmojis.Promotion, $"{member.Username} had an account but didn't have the account role. Added role.");
-                    await member.GrantRoleAsync(guild.GetRole(Roles.Accounts), $"{member.Username} had an account but didn't have the account role. Added role.");
-                }
+                
+                await db.SaveChangesAsync();
             }
-
-            botLog.Information(LogConsoleSettings.Jobs, ManageRoleEmojis.Warning, $"Finished checking account members & their roles.");
+            catch (Exception ex)
+            {
+                _botLog.Error($"Error checking account activity: {ex.Message}");
+            }
         }
     }
 }

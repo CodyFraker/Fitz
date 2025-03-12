@@ -1,93 +1,131 @@
 @using Fitz.WebPortal.Data
 @using Microsoft.EntityFrameworkCore
-@inject BotContext BotContext
+@using Fitz.Features.Accounts.Models
+@using Fitz.Features.Lottery.Models
+@inject WebPortalContext Context
 @inject ISnackbar Snackbar
 
 <MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Buy Lottery Tickets</MudText>
+    </TitleContent>
     <DialogContent>
-        <MudText Typo="Typo.h6" Class="mb-3">Create New Lottery</MudText>
-        <MudForm @ref="_form" @bind-IsValid="@_isValid">
-            <MudNumericField @bind-Value="_prizePool" Label="Prize Pool (Beer)" Required="true" Min="10" 
-                            RequiredError="Prize pool is required" />
-            <MudDatePicker @bind-Date="_drawDate" Label="Drawing Date" Required="true" 
-                          RequiredError="Drawing date is required" DisablePast="true" />
-            <MudCheckBox @bind-Checked="_autoSubscribeEligible" Label="Auto-subscribe eligible accounts" />
-        </MudForm>
+        @if (_lottery == null)
+        {
+            <MudAlert Severity="Severity.Error">No lottery data available</MudAlert>
+        }
+        else
+        {
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudPaper Class="pa-4">
+                        <MudText Typo="Typo.h6">Lottery #@_lottery.Id</MudText>
+                        <MudText>Prize Pool: @_lottery.Pool beer</MudText>
+                        <MudText>End Date: @_lottery.EndDate.ToString("g")</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" Class="mt-4">
+                    <MudNumericField T="int" @bind-Value="_ticketCount" Label="Number of Tickets" Required="true" Min="1" Max="100" />
+                </MudItem>
+            </MudGrid>
+        }
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="@(!_isValid)">Create Lottery</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="@(_lottery == null || _ticketCount < 1)">Buy Tickets</MudButton>
     </DialogActions>
 </MudDialog>
 
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
-    
-    private int _prizePool = 100;
-    private DateTime? _drawDate = DateTime.UtcNow.AddDays(7);
-    private bool _autoSubscribeEligible = true;
-    private MudForm _form = null!;
-    private bool _isValid;
-    
+    [Parameter] public int LotteryId { get; set; }
+    [Parameter] public Fitz.WebPortal.Data.Account Account { get; set; } = null!;
+
+    private Fitz.WebPortal.Data.Lottery _lottery;
+    private int _ticketCount = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLotteryData();
+    }
+
+    private async Task LoadLotteryData()
+    {
+        try
+        {
+            _lottery = await Context.Lotteries
+                .Include(l => l.Tickets)
+                .FirstOrDefaultAsync(l => l.Id == LotteryId);
+
+            if (_lottery == null)
+            {
+                Snackbar.Add("Failed to load lottery data.", Severity.Error);
+                return;
+            }
+
+            if (!_lottery.CurrentLottery)
+            {
+                Snackbar.Add("This lottery is no longer active.", Severity.Warning);
+                return;
+            }
+
+            if (Account.Deactivated)
+            {
+                Snackbar.Add("Your account is not active.", Severity.Warning);
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading lottery data: {ex.Message}", Severity.Error);
+        }
+    }
+
     private void Cancel()
     {
         MudDialog.Cancel();
     }
-    
+
     private async Task Submit()
     {
-        await _form.Validate();
-        
-        if (_isValid && _drawDate.HasValue)
+        try
         {
-            try
+            if (_lottery == null || _ticketCount < 1)
             {
-                // Create new lottery
-                var lottery = new Lottery
+                return;
+            }
+
+            var totalCost = _ticketCount;
+            if (Account.Beer < totalCost)
+            {
+                Snackbar.Add($"Insufficient balance. You need {totalCost} beer to buy {_ticketCount} tickets.", Severity.Warning);
+                return;
+            }
+
+            // Create tickets
+            for (var i = 0; i < _ticketCount; i++)
+            {
+                var ticket = new Fitz.WebPortal.Data.Ticket
                 {
-                    PrizePool = _prizePool,
-                    StartDate = DateTime.UtcNow,
-                    DrawDate = _drawDate.Value,
-                    IsActive = true
+                    LotteryId = _lottery.Id,
+                    UserId = Account.Id,
+                    TicketNumber = _lottery.Tickets.Count + i + 1,
+                    PurchaseDate = DateTime.UtcNow
                 };
-                
-                await BotContext.Lotteries.AddAsync(lottery);
-                await BotContext.SaveChangesAsync();
-                
-                // Auto-subscribe eligible accounts if selected
-                if (_autoSubscribeEligible)
-                {
-                    var eligibleAccounts = await BotContext.Accounts
-                        .Where(a => a.IsActive && a.SubscribeToLottery)
-                        .ToListAsync();
-                        
-                    foreach (var account in eligibleAccounts)
-                    {
-                        var entry = new LotteryEntry
-                        {
-                            LotteryId = lottery.Id,
-                            AccountId = account.Id,
-                            EntryDate = DateTime.UtcNow
-                        };
-                        
-                        await BotContext.LotteryEntries.AddAsync(entry);
-                    }
-                    
-                    await BotContext.SaveChangesAsync();
-                    
-                    Snackbar.Add($"Created new lottery with {eligibleAccounts.Count} auto-subscribed entries", Severity.Success);
-                }
-                else
-                {
-                    Snackbar.Add("Created new lottery", Severity.Success);
-                }
-                
-                MudDialog.Close(DialogResult.Ok(true));
+                Context.Tickets.Add(ticket);
             }
-            catch (Exception ex)
-            {
-                Snackbar.Add($"Error creating lottery: {ex.Message}", Severity.Error);
-            }
+
+            // Update account balance
+            Account.Beer -= totalCost;
+            Context.Accounts.Update(Account);
+
+            await Context.SaveChangesAsync();
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error buying tickets: {ex.Message}", Severity.Error);
         }
     }
 } 

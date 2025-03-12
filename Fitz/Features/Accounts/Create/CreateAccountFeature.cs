@@ -8,83 +8,125 @@ using Fitz.Core.Services.Features;
 using Fitz.Core.Services.Jobs;
 using Fitz.Features.Accounts.Commands;
 using Fitz.Features.Accounts.Create.Discord;
+using Fitz.Features.Accounts.Models;
+using Fitz.Features.Accounts.Jobs;
+using Fitz.Features.Accounts.Update.Domain;
 using Fitz.Variables;
 using System;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Accounts.Create;
 
-public class CreateAccountFeature(DiscordClient dClient, AccountService accountService, JobManager jobManager, BotLog botLog) : Feature
+public class CreateAccountFeature : Feature
 {
-    private readonly JobManager jobManager = jobManager;
-    private readonly SlashCommandsExtension slash = dClient.GetSlashCommands();
-    private readonly CommandsNextExtension cNext = dClient.GetCommandsNext();
-    private AccountService accountService = accountService;
-    private readonly BotLog botlog = botLog;
-    private readonly DiscordClient dClient = dClient;
+    private readonly AccountService _accountService;
+    private readonly DiscordClient _discordClient;
+    private readonly JobManager _jobManager;
+    private readonly SlashCommandsExtension _slash;
+    private readonly CommandsNextExtension _cNext;
+    private readonly BotLog _botLog;
+    private readonly AccountJob _accountJob;
+
+    public CreateAccountFeature(AccountService accountService, DiscordClient discordClient, JobManager jobManager, BotLog botLog, AccountJob accountJob)
+    {
+        _accountService = accountService;
+        _discordClient = discordClient;
+        _jobManager = jobManager;
+        _slash = discordClient.GetSlashCommands();
+        _cNext = discordClient.GetCommandsNext();
+        _botLog = botLog;
+        _accountJob = accountJob;
+    }
 
     public override string Name => "Accounts";
 
     public override string Description => "Enables users to create accounts with the bot.";
 
-    public override Task Disable()
+    public override async Task Enable()
     {
-        this.jobManager.RemoveJob(this.accountJob);
-        return base.Disable();
-    }
+        _jobManager.AddJob(_accountJob);
 
-    public override Task Enable()
-    {
-        this.jobManager.AddJob(this.accountJob);
-
-        this.slash.RegisterCommands<AccountSlashCommands>(Guilds.Waterbear);
+        _slash.RegisterCommands<AccountSlashCommands>(Guilds.Waterbear);
 
         // Check to see if Fitz has an account registered in the database.
-        if (accountService.FindAccount(Users.Fitz) == null)
+        var fitzAccount = _accountService.FindAccount(Users.Fitz);
+        if (fitzAccount == null)
         {
-            accountService.CreateFitzAccountAsync();
-        }
-
-        this.dClient.GuildMemberRemoved += this.GuildMemberRemoved;
-        this.dClient.GuildMemberAdded += this.GuildMemberAdded;
-
-        return base.Enable();
-    }
-
-    private async Task GuildMemberAdded(DiscordClient sender, GuildMemberAddEventArgs args)
-    {
-        // Check to see if the user has an account. If so, mark as active.
-        Account account = accountService.FindAccount(args.Member.Id);
-        if (account != null)
-        {
-            await accountService.SetDeactivatedAsync(account, !account.Deactivated);
-        }
-        else
-        {
-            try
+            var response = await _accountService.CreateAccountAsync(await _discordClient.GetUserAsync(Users.Fitz));
+            if (response.StatusCode != System.Net.HttpStatusCode.Created)
             {
-                DiscordDmChannel dmChannel = await args.Member.CreateDmChannelAsync();
-                await dmChannel.SendMessageAsync("Hey, I'm Fitz. If you want to get the most out of the server, run `/signup`.");
-                botlog.Information(LogConsoleSettings.AccountLog, $"Sent the welcome message to {args.Member.Username} via DM.");
-            }
-            catch (Exception e)
-            {
-                botlog.Information(LogConsoleSettings.AccountLog, $"Failed to send the welcome message to {args.Member.Username} via DM. User might have blocked the bot. {e.Message}");
+                _botLog.Error($"Failed to create Fitz account: {response.Message}");
             }
         }
+
+        // Register event handlers
+        _discordClient.GuildMemberAdded += HandleGuildMemberAdded;
+        _discordClient.GuildMemberRemoved += HandleGuildMemberRemoved;
+        _discordClient.GuildMemberUpdated += HandleGuildMemberUpdated;
+
+        await base.Enable();
     }
 
-    private async Task GuildMemberRemoved(DiscordClient sender, GuildMemberRemoveEventArgs args)
+    public override async Task Disable()
     {
-        // Check to see if the user has an account. If so, mark as inactive.
-        Account account = accountService.FindAccount(args.Member.Id);
-        if (account != null)
-        {
-            await accountService.SetDeactivatedAsync(account, !account.Deactivated);
-        }
-        else
-        {
+        _jobManager.RemoveJob(_accountJob);
+        
+        // Unregister commands
+        _slash.RegisterCommands<AccountSlashCommands>();
+
+        // Unregister event handlers
+        _discordClient.GuildMemberAdded -= HandleGuildMemberAdded;
+        _discordClient.GuildMemberRemoved -= HandleGuildMemberRemoved;
+        _discordClient.GuildMemberUpdated -= HandleGuildMemberUpdated;
+
+        await base.Disable();
+    }
+
+    private async Task HandleGuildMemberAdded(DiscordClient sender, GuildMemberAddEventArgs e)
+    {
+        if (e.Guild.Id != Guilds.Waterbear)
             return;
+
+        var response = await _accountService.CreateAccountAsync(e.Member);
+        if (response.StatusCode != System.Net.HttpStatusCode.Created)
+        {
+            _botLog.Error($"Failed to create account for {e.Member.Username}: {response.Message}");
+        }
+    }
+
+    private async Task HandleGuildMemberRemoved(DiscordClient sender, GuildMemberRemoveEventArgs e)
+    {
+        if (e.Guild.Id != Guilds.Waterbear)
+            return;
+
+        var account = _accountService.FindAccount(e.Member.Id);
+        if (account != null)
+        {
+            account.Deactivated = true;
+            var command = new UpdateAccountCommand
+            {
+                Id = account.Id,
+                Deactivated = true
+            };
+            await _accountService.SetFavorabilityAsync(account, account.Favorability);
+        }
+    }
+
+    private async Task HandleGuildMemberUpdated(DiscordClient sender, GuildMemberUpdateEventArgs e)
+    {
+        if (e.Guild.Id != Guilds.Waterbear)
+            return;
+
+        var account = _accountService.FindAccount(e.Member.Id);
+        if (account != null)
+        {
+            account.Username = e.Member.Username;
+            var command = new UpdateAccountCommand
+            {
+                Id = account.Id,
+                Username = e.Member.Username
+            };
+            await _accountService.SetFavorabilityAsync(account, account.Favorability);
         }
     }
 }

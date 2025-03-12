@@ -181,5 +181,10 @@ namespace Fitz.Features.Bank
             
             await Task.CompletedTask;
         }
+
+        internal async Task<int> GetBalanceAsync(ulong id)
+        {
+            throw new NotImplementedException();
+        }
     }
 } 
