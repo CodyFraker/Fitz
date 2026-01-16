@@ -6,11 +6,11 @@ using Fitz.Core.Services.Jobs;
 using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Rename.Models;
+using Fitz.Variables;
 using Fitz.Variables.Emojis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Rename.Jobs
@@ -31,7 +31,6 @@ namespace Fitz.Features.Rename.Jobs
             try
             {
                 this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, "Checking for expired renames...");
-                //Get a list of all users who have been renamed
                 List<Renames> renames = renameService.GetExpiredRenames();
 
                 if (renames.Count == 0 || renames == null)
@@ -40,30 +39,49 @@ namespace Fitz.Features.Rename.Jobs
                     return;
                 }
 
-                // Iterate through each rename where the user has not been notified and the rename is still active.
+                DiscordGuild waterbear = await dClient.GetGuildAsync(Guilds.Waterbear);
+
                 foreach (Renames rename in renames.Where(x => x.Notified == false && x.Status == RenameStatus.Active))
                 {
-                    // Get the affected user
                     Account affectedUser = accountService.FindAccount(rename.AffectedUserId);
-                    DiscordGuild waterbear = await dClient.GetGuildAsync(Variables.Guilds.Waterbear);
                     DiscordMember discordMember;
                     try
                     {
                         discordMember = await waterbear.GetMemberAsync(affectedUser.Id);
+                        
+                        List<Renames> activeRenames = renameService.GetRenamesByAccountId(affectedUser.Id)
+                            .Where(x => x.Status == RenameStatus.Active && x.Id != rename.Id)
+                            .ToList();
+                        
                         await renameService.SetUserNotified(rename);
                         await renameService.SetRenameStatus(rename.Id, RenameStatus.Expired);
+
+                        if (activeRenames.Count == 0)
+                        {
+                            string nicknameToSet = string.IsNullOrWhiteSpace(rename.OldName) ? discordMember.Username : rename.OldName;
+                            await discordMember.ModifyAsync(x => x.Nickname = nicknameToSet);
+                            this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, $"Reset nickname for user {affectedUser.Id} to {nicknameToSet}");
+
+                            try
+                            {
+                                DiscordDmChannel userDMChannel = await discordMember.CreateDmChannelAsync();
+                                await userDMChannel.SendMessageAsync(embed: renameEmbed(rename, affectedUser));
+                            }
+                            catch (Exception dmEx)
+                            {
+                                this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, $"Could not send DM to user {affectedUser.Id}: {dmEx.Message}");
+                            }
+                        }
                     }
                     catch (NotFoundException e)
                     {
-                        // Set the rename as notified. The user is no longer in the guild.
                         await renameService.SetUserNotified(rename);
                         await renameService.SetRenameStatus(rename.Id, RenameStatus.Expired);
                         continue;
                     }
                     catch (Exception e)
                     {
-                        this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, "There was an error getting discord member. CheckForExpiredRenameJob");
-                        // Set the rename as notified. There was an error getting the member.
+                        this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, $"There was an error getting discord member. CheckForExpiredRenameJob: {e.Message}");
                         await renameService.SetUserNotified(rename);
                         await renameService.SetRenameStatus(rename.Id, RenameStatus.Expired);
                         continue;
@@ -71,17 +89,41 @@ namespace Fitz.Features.Rename.Jobs
                 }
 
                 List<Renames> pendingRenames = this.renameService.GetPendingRenames();
-                if (pendingRenames.Count == 0 || pendingRenames == null)
+                if (pendingRenames != null && pendingRenames.Count > 0)
                 {
-                    return;
-                }
-                else
-                {
-                    Renames nextRename = pendingRenames.OrderBy(x => x.StartDate).First();
-                    if (nextRename != null)
+                    var pendingRenamesToActivate = pendingRenames
+                        .Where(x => x.StartDate.HasValue && x.StartDate.Value <= DateTime.Now)
+                        .OrderBy(x => x.StartDate)
+                        .ToList();
+
+                    foreach (Renames pendingRename in pendingRenamesToActivate)
                     {
+                        Account affectedUser = accountService.FindAccount(pendingRename.AffectedUserId);
+                        Renames activeRename = renameService.GetActiveRenameByAccountId(affectedUser.Id);
+                        
+                        if (activeRename == null)
+                        {
+                            try
+                            {
+                                DiscordMember discordMember = await waterbear.GetMemberAsync(affectedUser.Id);
+                                
+                                await discordMember.ModifyAsync(x => x.Nickname = pendingRename.NewName);
+                                await renameService.SetRenameStatus(pendingRename.Id, RenameStatus.Active);
+                                
+                                this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, $"Activated pending rename {pendingRename.Id} for user {affectedUser.Id} with nickname {pendingRename.NewName}");
+                            }
+                            catch (NotFoundException)
+                            {
+                                await renameService.SetRenameStatus(pendingRename.Id, RenameStatus.Expired);
+                            }
+                            catch (Exception ex)
+                            {
+                                this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, $"Error activating pending rename {pendingRename.Id}: {ex.Message}");
+                            }
+                        }
                     }
                 }
+
                 this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, "Finished checking for expired renames.");
             }
             catch (Exception ex)
