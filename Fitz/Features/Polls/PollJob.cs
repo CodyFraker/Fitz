@@ -1,4 +1,4 @@
-﻿using DSharpPlus;
+using DSharpPlus;
 using DSharpPlus.Entities;
 using Fitz.Core.Discord;
 using Fitz.Core.Services.Jobs;
@@ -18,7 +18,7 @@ namespace Fitz.Features.Polls
 
         public ulong Emoji => PollEmojis.InfoIcon;
 
-        public int Interval => 5;
+        public string Interval => CronInterval.Every5Minutes;
 
         public async Task Execute()
         {

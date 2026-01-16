@@ -1,4 +1,4 @@
-﻿namespace Fitz.Core.Services.Jobs
+namespace Fitz.Core.Services.Jobs
 {
     using System.Threading.Tasks;
 
@@ -6,7 +6,7 @@
     {
         ulong Emoji { get; }
 
-        int Interval { get; }
+        string Interval { get; }
 
         Task Execute();
     }

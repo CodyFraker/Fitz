@@ -1,4 +1,4 @@
-﻿using DSharpPlus;
+using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.Exceptions;
 using Fitz.Core.Discord;
@@ -24,7 +24,7 @@ namespace Fitz.Features.Rename.Jobs
 
         public ulong Emoji => ManageRoleEmojis.Warning;
 
-        public int Interval => 5;
+        public string Interval => CronInterval.Every5Minutes;
 
         public async Task Execute()
         {

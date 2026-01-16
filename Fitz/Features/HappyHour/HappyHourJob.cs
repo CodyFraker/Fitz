@@ -1,4 +1,4 @@
-﻿using DSharpPlus;
+using DSharpPlus;
 using DSharpPlus.Entities;
 using Fitz.Core.Services.Jobs;
 using Fitz.Features.Bank;
@@ -18,7 +18,7 @@ namespace Fitz.Features.HappyHour
 
         public ulong Emoji => PollEmojis.HotTake;
 
-        public int Interval => 5;
+        public string Interval => CronInterval.Every5Minutes;
 
         public async Task Execute()
         {

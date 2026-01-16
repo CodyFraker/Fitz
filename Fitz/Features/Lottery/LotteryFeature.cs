@@ -4,24 +4,22 @@ using DSharpPlus.EventArgs;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Discord;
 using Fitz.Core.Services.Features;
-using Fitz.Core.Services.Jobs;
 using Fitz.Features.Accounts;
 using Fitz.Features.Bank;
 using Fitz.Features.Lottery.Commands;
 using Fitz.Features.Settings;
+using Hangfire;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Lottery
 {
-    public class LotteryFeature(JobManager jobManager,
-        SettingsService settingsService,
+    public class LotteryFeature(SettingsService settingsService,
         DiscordClient dClient,
         AccountService accountService,
         LotteryService lotteryService,
         BankService bankService,
         BotLog botLog) : Feature
     {
-        private readonly JobManager jobManager = jobManager;
         private readonly LotteryJob lottoJob = new LotteryJob(dClient, lotteryService, bankService, accountService, botLog, settingsService);
         private readonly SlashCommandsExtension slash = dClient.GetSlashCommands();
         private readonly CommandsNextExtension cNext = dClient.GetCommandsNext();
@@ -34,7 +32,7 @@ namespace Fitz.Features.Lottery
         public override Task Disable()
         {
             // WE CANNOT UNREGISTER SLASH COMMANDS.
-            this.jobManager.RemoveJob(this.lottoJob);
+            RecurringJob.RemoveIfExists("LotteryJob");
             this.cNext.UnregisterCommands<LotteryAdminCommands>();
             return base.Disable();
         }
@@ -44,7 +42,7 @@ namespace Fitz.Features.Lottery
             this.dClient.MessageCreated += this.onLotteryChannelMessageSent;
             this.slash.RegisterCommands<LotterySlashCommands>();
             this.cNext.RegisterCommands<LotteryAdminCommands>();
-            this.jobManager.AddJob(this.lottoJob);
+            RecurringJob.AddOrUpdate("LotteryJob", () => this.lottoJob.Execute(), this.lottoJob.Interval);
             return base.Enable();
         }
 

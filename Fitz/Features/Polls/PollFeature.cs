@@ -1,17 +1,17 @@
-﻿using DSharpPlus;
+using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Discord;
 using Fitz.Core.Services.Features;
-using Fitz.Core.Services.Jobs;
 using Fitz.Features.Accounts;
 using Fitz.Features.Bank;
 using Fitz.Features.Polls.Models;
 using Fitz.Features.Polls.Polls;
 using Fitz.Variables.Channels;
 using Fitz.Variables.Emojis;
+using Hangfire;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,10 +19,9 @@ using System.Threading.Tasks;
 
 namespace Fitz.Features.Polls
 {
-    public class PollFeature(DiscordClient dClient, BotLog botLog, AccountService accountService, BankService bankService, PollService pollService, JobManager jobManager) : Feature
+    public class PollFeature(DiscordClient dClient, BotLog botLog, AccountService accountService, BankService bankService, PollService pollService) : Feature
     {
         private readonly CommandsNextExtension cNext = dClient.GetCommandsNext();
-        private readonly JobManager jobManager = jobManager;
         private readonly SlashCommandsExtension slash = dClient.GetSlashCommands();
         private readonly AccountService accountService = accountService;
         private readonly PollService pollService = pollService;
@@ -37,7 +36,7 @@ namespace Fitz.Features.Polls
         public override Task Disable()
         {
             this.dClient.MessageReactionAdded -= this.OnReactionAddAsync;
-            this.jobManager.RemoveJob(this.pollJob);
+            RecurringJob.RemoveIfExists("PollJob");
             this.cNext.UnregisterCommands<PollSlashCommands>();
             return base.Disable();
         }
@@ -45,7 +44,7 @@ namespace Fitz.Features.Polls
         public override Task Enable()
         {
             this.dClient.MessageReactionAdded += this.OnReactionAddAsync;
-            this.jobManager.AddJob(this.pollJob);
+            RecurringJob.AddOrUpdate("PollJob", () => this.pollJob.Execute(), this.pollJob.Interval);
             // TODO: Fix register of slash commands and add modal context here too
             //this.slash.RegisterCommands<PollSlashCommands>();
             return base.Enable();

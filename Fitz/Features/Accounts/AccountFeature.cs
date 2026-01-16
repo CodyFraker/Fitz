@@ -5,21 +5,20 @@ using DSharpPlus.EventArgs;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Discord;
 using Fitz.Core.Services.Features;
-using Fitz.Core.Services.Jobs;
 using Fitz.Features.Accounts.Commands;
 using Fitz.Features.Accounts.Jobs;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Accounts.Queries;
 using Fitz.Variables;
+using Hangfire;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Accounts
 {
-    public class UserAccountFeature(DiscordClient dClient, IServiceScopeFactory scopeFactory, JobManager jobManager, BotLog botLog) : Feature
+    public class UserAccountFeature(DiscordClient dClient, IServiceScopeFactory scopeFactory, BotLog botLog) : Feature
     {
-        private readonly JobManager jobManager = jobManager;
         private readonly AccountJob accountJob = new AccountJob(scopeFactory, dClient, botLog);
         private readonly SlashCommandsExtension slash = dClient.GetSlashCommands();
         private readonly CommandsNextExtension cNext = dClient.GetCommandsNext();
@@ -33,14 +32,14 @@ namespace Fitz.Features.Accounts
 
         public override Task Disable()
         {
-            this.jobManager.RemoveJob(this.accountJob);
+            RecurringJob.RemoveIfExists("AccountJob");
             this.cNext.UnregisterCommands<AccountAdminSlashCommands>();
             return base.Disable();
         }
 
         public override Task Enable()
         {
-            this.jobManager.AddJob(this.accountJob);
+            RecurringJob.AddOrUpdate("AccountJob", () => this.accountJob.Execute(), this.accountJob.Interval);
 
             // For some reason, discord isn't wanting to register the command globally.
             // Hence why I register the commands in two guilds here.
