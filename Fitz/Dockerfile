@@ -5,9 +5,8 @@ WORKDIR /app
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/aspnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["Fitz.csproj", "Fitz/"]
-RUN dotnet restore "./Fitz/Fitz.csproj"
-WORKDIR "/src/Fitz"
+COPY ["Fitz.csproj", "./"]
+RUN dotnet restore "./Fitz.csproj"
 COPY . .
 RUN dotnet build "./Fitz.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
