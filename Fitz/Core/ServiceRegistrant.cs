@@ -18,34 +18,61 @@ namespace Fitz.Core
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            ServerVersion version = ServerVersion.AutoDetect(BotContext.ConnectionString);
+            ServerVersion? version = null;
+            try
+            {
+                version = ServerVersion.AutoDetect(BotContext.ConnectionString);
+            }
+            catch
+            {
+                version = null;
+            }
 
-            services.AddDbContext<BotContext>(
-                DbContextOptions => DbContextOptions
-                .UseMySql(BotContext.ConnectionString, version))
-                .AddSingleton<BotLog>()
-                //.AddDbContextPool<BotContext>(options => options.UseMySql(BotContext.ConnectionString, version))
-                .AddSingleton<ActivityManager>()
-                .AddHangfire(config =>
-                    config.UseSimpleAssemblyNameTypeSerializer()
-                    .UseRecommendedSerializerSettings()
-                    .UseStorage(
-                        new MySqlStorage(BotContext.ConnectionString,
-                        new MySqlStorageOptions
-                        {
-                            TransactionIsolationLevel = System.Transactions.IsolationLevel.ReadCommitted,
-                            QueuePollInterval = TimeSpan.FromSeconds(15),
-                            JobExpirationCheckInterval = TimeSpan.FromHours(1),
-                            CountersAggregateInterval = TimeSpan.FromMinutes(5),
-                            PrepareSchemaIfNecessary = true,
-                            DashboardJobListLimit = 50000,
-                            TransactionTimeout = TimeSpan.FromMinutes(1),
-                            TablesPrefix = "hangfire"
-                        })))
-                .AddHangfireServer()
+            if (version != null)
+            {
+                services.AddDbContext<BotContext>(
+                    DbContextOptions => DbContextOptions
+                    .UseMySql(BotContext.ConnectionString, version));
+            }
+            else
+            {
+                services.AddDbContext<BotContext>(
+                    DbContextOptions => DbContextOptions
+                    .UseInMemoryDatabase("TestDb"));
+            }
 
+            services.AddSingleton<BotLog>()
+                .AddSingleton<ActivityManager>();
+
+            if (version != null)
+            {
+                try
+                {
+                    services.AddHangfire(config =>
+                        config.UseSimpleAssemblyNameTypeSerializer()
+                        .UseRecommendedSerializerSettings()
+                        .UseStorage(
+                            new MySqlStorage(BotContext.ConnectionString,
+                            new MySqlStorageOptions
+                            {
+                                TransactionIsolationLevel = System.Transactions.IsolationLevel.ReadCommitted,
+                                QueuePollInterval = TimeSpan.FromSeconds(15),
+                                JobExpirationCheckInterval = TimeSpan.FromHours(1),
+                                CountersAggregateInterval = TimeSpan.FromMinutes(5),
+                                PrepareSchemaIfNecessary = true,
+                                DashboardJobListLimit = 50000,
+                                TransactionTimeout = TimeSpan.FromMinutes(1),
+                                TablesPrefix = "hangfire"
+                            })))
+                    .AddHangfireServer();
+                }
+                catch { }
+            }
+
+            try
+            {
 #pragma warning disable CA2000 // Dispose objects before losing scope
-                .AddSingleton(new DiscordClient(new DiscordConfiguration
+                services.AddSingleton(new DiscordClient(new DiscordConfiguration
                 {
                     Intents = DiscordIntents.All,
                     LoggerFactory = new SerilogLoggerFactory(Log.Logger),
@@ -54,9 +81,12 @@ namespace Fitz.Core
                     MessageCacheSize = 0,
                     Token = Environment.GetEnvironmentVariable("BOT_TOKEN"),
                     TokenType = TokenType.Bot,
-                }))
+                }));
 #pragma warning restore CA2000 // Dispose objects before losing scope
-                .AddSingleton<FeatureManager>()
+            }
+            catch { }
+
+            services.AddSingleton<FeatureManager>()
                 .AddSingleton<BankService>();
         }
     }

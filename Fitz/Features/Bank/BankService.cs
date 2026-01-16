@@ -39,24 +39,10 @@ namespace Fitz.Features.Bank
         /// <param name="userId"></param>
         /// <param name="amount"></param>
         /// <returns></returns>
-        public async Task AwardBonus(ulong userId, int amount)
+        public async Task<Result> AwardBonus(ulong userId, int amount)
         {
-            using IServiceScope scope = scopeFactory.CreateScope();
-            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-
-            Account account = accountService.FindAccount(userId);
-            if (account == null)
-            {
-                Log.Error($"Account not found. {userId}");
-                return;
-            }
-
-            account.Beer += amount;
-            account.LifetimeBeer += amount;
-            db.Update(account);
-            await db.SaveChangesAsync();
-            var logTransactionCommand = new LogTransactionCommand(scopeFactory, botLog);
-            await logTransactionCommand.ExecuteAsync(account, account, amount, Reason.Bonus);
+            var command = new AwardBonusCommand(scopeFactory, accountService, botLog);
+            return await command.ExecuteAsync(userId, amount);
         }
 
         #endregion Award Bonus Generic
@@ -65,33 +51,8 @@ namespace Fitz.Features.Bank
 
         public async Task<Result> DeductBeerFromUser(ulong userId, int amount, Reason reason)
         {
-            try
-            {
-                using IServiceScope scope = scopeFactory.CreateScope();
-                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-
-                Account account = accountService.FindAccount(userId);
-                if (account == null)
-                {
-                    return new Result(false, $"{userId} did not have an account.", null);
-                }
-                if (account.Beer < amount)
-                {
-                    return new Result(false, $"{userId} did not have enough beer to deduct.", null);
-                }
-
-                account.Beer -= amount;
-                db.Update(account);
-                await db.SaveChangesAsync();
-                var logTransactionCommand = new LogTransactionCommand(scopeFactory, botLog);
-                await logTransactionCommand.ExecuteAsync(account, account, amount, reason);
-
-                return new Result(true, $"Deducted {amount} beer from {account.Username}.", account);
-            }
-            catch (Exception ex)
-            {
-                return new Result(false, ex.Message, null);
-            }
+            var command = new DeductBeerCommand(scopeFactory, accountService, botLog);
+            return await command.ExecuteAsync(userId, amount, reason);
         }
 
         #endregion Deduct Beer
@@ -100,31 +61,8 @@ namespace Fitz.Features.Bank
 
         public async Task<Result> AwardHappyHour(ulong userId)
         {
-            try
-            {
-                using IServiceScope scope = scopeFactory.CreateScope();
-                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-                var settings = this.settingsService.GetSettings();
-
-                Account account = accountService.FindAccount(userId);
-                if (account == null)
-                {
-                    return new Result(false, $"{userId} did not have an account.", null);
-                }
-
-                account.Beer += settings.BaseHappyHourAmount;
-                account.LifetimeBeer += settings.BaseHappyHourAmount;
-                db.Update(account);
-                await db.SaveChangesAsync();
-                var logTransactionCommand = new LogTransactionCommand(scopeFactory, botLog);
-                await logTransactionCommand.ExecuteAsync(account, account, settings.BaseHappyHourAmount, Reason.HappyHour);
-
-                return new Result(true, $"Awarded happy hour bonus to {account.Username}.", account);
-            }
-            catch (Exception ex)
-            {
-                return new Result(false, ex.Message, null);
-            }
+            var command = new AwardHappyHourCommand(scopeFactory, accountService, settingsService, botLog);
+            return await command.ExecuteAsync(userId);
         }
 
         #endregion Award Happy Hour
@@ -135,31 +73,8 @@ namespace Fitz.Features.Bank
 
         public async Task<Result> AwardPollVote(ulong userId)
         {
-            try
-            {
-                using IServiceScope scope = scopeFactory.CreateScope();
-                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-                var settings = this.settingsService.GetSettings();
-
-                Account account = accountService.FindAccount(userId);
-                if (account == null)
-                {
-                    return new Result(false, $"{userId} did not have an account.", null);
-                }
-
-                account.Beer += settings.PollVote;
-                account.LifetimeBeer += settings.PollVote;
-                db.Update(account);
-                await db.SaveChangesAsync();
-                var logTransactionCommand = new LogTransactionCommand(scopeFactory, botLog);
-                await logTransactionCommand.ExecuteAsync(account, account, settings.PollVote, Reason.PollVote);
-
-                return new Result(true, $"Awarded poll vote bonus to {account.Username}.", account);
-            }
-            catch (Exception ex)
-            {
-                return new Result(false, ex.Message, null);
-            }
+            var command = new AwardPollVoteCommand(scopeFactory, accountService, settingsService, botLog);
+            return await command.ExecuteAsync(userId);
         }
 
         #endregion Award Poll Vote
@@ -168,40 +83,8 @@ namespace Fitz.Features.Bank
 
         public async Task<Result> TipPollCreatorVote(ulong accountId)
         {
-            try
-            {
-                if (accountId == Users.Fitz)
-                {
-                    return new Result(false, "Cannot tip Fitz.", null);
-                }
-                if (accountId == Users.Dodecuplet)
-                {
-                    return new Result(false, "Cannot tip Dodecuplet.", null);
-                }
-
-                using IServiceScope scope = scopeFactory.CreateScope();
-                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-                var settings = this.settingsService.GetSettings();
-
-                Account account = accountService.FindAccount(accountId);
-                if (account == null)
-                {
-                    return new Result(false, $"{accountId} did not have an account.", null);
-                }
-
-                account.Beer += settings.PollCreatorTip;
-                account.LifetimeBeer += settings.PollCreatorTip;
-                db.Update(account);
-                await db.SaveChangesAsync();
-                var logTransactionCommand = new LogTransactionCommand(scopeFactory, botLog);
-                await logTransactionCommand.ExecuteAsync(account, account, settings.PollCreatorTip, Reason.PollCreatorTip);
-
-                return new Result(true, $"Tipped poll creator vote bonus to {account.Username}.", account);
-            }
-            catch (Exception ex)
-            {
-                return new Result(false, ex.Message, null);
-            }
+            var command = new TipPollCreatorVoteCommand(scopeFactory, accountService, settingsService, botLog);
+            return await command.ExecuteAsync(accountId);
         }
 
         #endregion Tip Poll Creator Vote
@@ -215,31 +98,8 @@ namespace Fitz.Features.Bank
         /// <returns></returns>
         public async Task<Result> AwardPollApproval(ulong userId)
         {
-            try
-            {
-                using IServiceScope scope = scopeFactory.CreateScope();
-                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-                var settings = this.settingsService.GetSettings();
-
-                Account account = accountService.FindAccount(userId);
-                if (account == null)
-                {
-                    return new Result(false, $"{userId} did not have an account.", null);
-                }
-
-                account.Beer += settings.PollApprovedBonus;
-                account.LifetimeBeer += settings.PollApprovedBonus;
-                db.Update(account);
-                await db.SaveChangesAsync();
-                var logTransactionCommand = new LogTransactionCommand(scopeFactory, botLog);
-                await logTransactionCommand.ExecuteAsync(account, account, settings.PollApprovedBonus, Reason.PollApproved);
-
-                return new Result(true, $"Awarded poll approval bonus to {account.Username}.", account);
-            }
-            catch (Exception ex)
-            {
-                return new Result(false, ex.Message, null);
-            }
+            var command = new AwardPollApprovalCommand(scopeFactory, accountService, settingsService, botLog);
+            return await command.ExecuteAsync(userId);
         }
 
         #endregion Award Poll Approved
@@ -248,26 +108,8 @@ namespace Fitz.Features.Bank
 
         public async Task<Result> DeclineUserPoll(ulong userId)
         {
-            try
-            {
-                using IServiceScope scope = scopeFactory.CreateScope();
-                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-                var settings = this.settingsService.GetSettings();
-
-                Account account = accountService.FindAccount(userId);
-                if (account == null)
-                {
-                    return new Result(false, $"{userId} did not have an account.", null);
-                }
-
-                await TransferToFitz(account.Id, settings.PollDeclinedPenalty, Reason.PollDeclined);
-
-                return new Result(true, $"Deducted poll declined bonus to {account.Username}.", account);
-            }
-            catch (Exception ex)
-            {
-                return new Result(false, ex.Message, null);
-            }
+            var command = new DeclineUserPollCommand(scopeFactory, accountService, settingsService, botLog);
+            return await command.ExecuteAsync(userId);
         }
 
         #endregion Poll Declined Penalty
@@ -276,26 +118,8 @@ namespace Fitz.Features.Bank
 
         public async Task<Result> UserSubmittedPollPenalty(ulong userId)
         {
-            try
-            {
-                using IServiceScope scope = scopeFactory.CreateScope();
-                using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-                var settings = this.settingsService.GetSettings();
-
-                Account account = accountService.FindAccount(userId);
-                if (account == null)
-                {
-                    return new Result(false, $"{userId} did not have an account.", null);
-                }
-
-                await TransferToFitz(account.Id, (settings.PollSubmittedPenalty + settings.PollDeclinedPenalty), Reason.PollSubmitted);
-
-                return new Result(true, $"Deducted poll submitted penalty to {account.Username}.", account);
-            }
-            catch (Exception ex)
-            {
-                return new Result(false, ex.Message, null);
-            }
+            var command = new UserSubmittedPollPenaltyCommand(scopeFactory, accountService, settingsService, botLog);
+            return await command.ExecuteAsync(userId);
         }
 
         #endregion Poll Submitted Penalty
@@ -312,18 +136,10 @@ namespace Fitz.Features.Bank
 
         #region Deposit Lottery Winnings
 
-        public async Task DepositLotteryWinningsAsync(Account account, int amount)
+        public async Task<Result> DepositLotteryWinningsAsync(Account account, int amount)
         {
-            using IServiceScope scope = scopeFactory.CreateScope();
-            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-
-            account.Beer += amount;
-            account.LifetimeBeer += amount;
-
-            db.Update(account);
-            await db.SaveChangesAsync();
-            var logTransactionCommand = new LogTransactionCommand(scopeFactory, botLog);
-            await logTransactionCommand.ExecuteAsync(account, account, amount, Reason.LottoWin);
+            var command = new DepositLotteryWinningsCommand(scopeFactory, botLog);
+            return await command.ExecuteAsync(account, amount);
         }
 
         #endregion Deposit Lottery Winnings
@@ -336,42 +152,10 @@ namespace Fitz.Features.Bank
             return await command.ExecuteAsync(userId, amount, reason);
         }
 
-        public async Task TransferBeer(ulong sender, ulong recipient, int amount)
+        public async Task<Result> TransferBeer(ulong sender, ulong recipient, int amount)
         {
-            using IServiceScope scope = scopeFactory.CreateScope();
-            using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-
-            Account senderAccount = accountService.FindAccount(sender);
-            if (senderAccount == null)
-            {
-                Log.Error($"Sender account not found. {sender}");
-                return;
-            }
-
-            Account recipientAccount = accountService.FindAccount(recipient);
-            if (recipientAccount == null)
-            {
-                Log.Error($"Recipient account not found. {recipient}");
-                return;
-            }
-
-            // Check to see if sender has enough beer to give.
-            if (senderAccount.Beer < amount)
-            {
-                Log.Error($"Sender does not have enough beer to give. {sender}");
-                return;
-            }
-
-            senderAccount.Beer -= amount;
-            db.Update(senderAccount);
-            await db.SaveChangesAsync();
-            recipientAccount.LifetimeBeer += amount;
-            recipientAccount.Beer += amount;
-            db.Update(recipientAccount);
-            await db.SaveChangesAsync();
-
-            var logTransactionCommand = new LogTransactionCommand(scopeFactory, botLog);
-            await logTransactionCommand.ExecuteAsync(senderAccount, recipientAccount, amount, Reason.Donated);
+            var command = new TransferBeerCommand(scopeFactory, accountService, botLog);
+            return await command.ExecuteAsync(sender, recipient, amount);
         }
 
         #region Renames
