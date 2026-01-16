@@ -1,14 +1,14 @@
-﻿using DSharpPlus;
+using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.ModalCommands;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Commands.Attributes;
 using Fitz.Core.Models;
-using Fitz.Core.Services.Settings;
 using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Fitz.Features.Lottery.Models;
+using Fitz.Features.Settings;
 using Fitz.Variables.Emojis;
 using System;
 using System.Collections.Generic;
@@ -49,7 +49,7 @@ namespace Fitz.Features.Lottery.Commands
                 }
             }
             // Get settings for lottery
-            Settings settings = settingsService.GetSettings();
+            Core.Models.Settings settings = settingsService.GetSettings();
 
             Models.Lottery lottery = lotteryService.GetCurrentLottery();
 
@@ -131,7 +131,7 @@ namespace Fitz.Features.Lottery.Commands
         [RequireAccount]
         public async Task LotteryTickets(InteractionContext ctx, [Option("Tickets", "How many tickets do you want?")] long tickets)
         {
-            Settings settings = settingsService.GetSettings();
+            Core.Models.Settings settings = settingsService.GetSettings();
             Account account = accountService.FindAccount(ctx.User.Id);
             if (account == null)
             {

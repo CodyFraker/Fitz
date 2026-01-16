@@ -1,12 +1,14 @@
-﻿using DSharpPlus;
+using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
 using DSharpPlus.ModalCommands;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Commands.Attributes;
-using Fitz.Core.Contexts;
+using Fitz.Core.Discord;
 using Fitz.Core.Models;
+using Fitz.Features.Accounts.Commands;
 using Fitz.Features.Accounts.Models;
+using Fitz.Features.Accounts.Queries;
 using Fitz.Features.Bank;
 using Fitz.Features.Lottery;
 using Fitz.Features.Lottery.Models;
@@ -15,6 +17,7 @@ using Fitz.Features.Polls.Models;
 using Fitz.Features.Rename;
 using Fitz.Variables;
 using Fitz.Variables.Emojis;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -25,24 +28,23 @@ namespace Fitz.Features.Accounts
     [SlashModuleLifespan(SlashModuleLifespan.Scoped)]
     public sealed class AccountSlashCommands : ApplicationCommandModule
     {
-        private readonly BotContext db;
         private readonly DiscordClient dClient;
-        private readonly AccountService accountService;
+        private readonly IServiceScopeFactory scopeFactory;
+        private readonly BotLog botLog;
         private readonly BankService bankService;
         private readonly PollService pollService;
         private readonly LotteryService lotteryService;
         private readonly RenameService renameService;
 
-        public AccountSlashCommands(BotContext db, AccountService accountService, BankService bankService, DiscordClient dClient, PollService pollService, LotteryService lotteryService, RenameService renameService)
+        public AccountSlashCommands(IServiceScopeFactory scopeFactory, BotLog botLog, BankService bankService, DiscordClient dClient, PollService pollService, LotteryService lotteryService, RenameService renameService)
         {
-            this.db = db;
+            this.scopeFactory = scopeFactory;
+            this.botLog = botLog;
             this.dClient = dClient;
             this.renameService = renameService;
             this.lotteryService = lotteryService;
-            this.accountService = accountService;
             this.pollService = pollService;
             this.bankService = bankService;
-            this.dClient = dClient;
 
             #region Account Creation Interactions
 
@@ -56,7 +58,8 @@ namespace Fitz.Features.Accounts
         [SlashCommand("signup", "Just sign this form.")]
         public async Task Signup(InteractionContext ctx)
         {
-            Result accountCreationResult = await accountService.CreateAccountAsync(ctx.User);
+            var createAccountCommand = new CreateAccountCommand(scopeFactory, botLog);
+            var accountCreationResult = await createAccountCommand.ExecuteAsync(ctx.User);
             if (accountCreationResult.Success)
             {
                 Account account = accountCreationResult.Data as Account;
@@ -106,7 +109,8 @@ namespace Fitz.Features.Accounts
         [RequireAccount]
         public async Task Profile(InteractionContext ctx)
         {
-            Account account = accountService.FindAccount(ctx.User.Id);
+            var findAccountQuery = new FindAccountQuery(scopeFactory);
+            Account account = findAccountQuery.Execute(ctx.User.Id);
             if (account != null)
             {
                 await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
@@ -127,7 +131,8 @@ namespace Fitz.Features.Accounts
         [RequireAccount]
         public async Task ProfileLookup(InteractionContext ctx, [Option("User", "Whose profile do you want to see?")] DiscordUser user = null)
         {
-            Account account = accountService.FindAccount(user.Id);
+            var findAccountQuery = new FindAccountQuery(scopeFactory);
+            Account account = findAccountQuery.Execute(user.Id);
             if (account != null)
             {
                 await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
@@ -148,7 +153,8 @@ namespace Fitz.Features.Accounts
         [RequireAccount]
         public async Task AccountSettings(InteractionContext ctx)
         {
-            Account account = accountService.FindAccount(ctx.User.Id);
+            var findAccountQuery = new FindAccountQuery(scopeFactory);
+            Account account = findAccountQuery.Execute(ctx.User.Id);
             DiscordButtonComponent subscribeBtn;
             if (account.subscribeToLottery)
             {
@@ -170,6 +176,33 @@ namespace Fitz.Features.Accounts
         }
 
         #endregion Settings
+
+        #region Beer
+
+        [SlashCommand("beer", "Give a beer to Fitz")]
+        [RequireAccount]
+        public async Task GiveBeer(InteractionContext ctx, [Option("Beer", "How much beer do you want to give Fitz?", false)] double amount = 0)
+        {
+            var giveBeerCommand = new GiveBeerCommand(scopeFactory, botLog, bankService);
+            var result = await giveBeerCommand.ExecuteAsync(ctx, amount);
+            
+            if (result.Success)
+            {
+                await ctx.CreateResponseAsync(
+                    DiscordInteractionResponseType.ChannelMessageWithSource,
+                    new DiscordInteractionResponseBuilder()
+                    .WithContent(result.Message).AsEphemeral(true));
+            }
+            else
+            {
+                await ctx.CreateResponseAsync(
+                    DiscordInteractionResponseType.ChannelMessageWithSource,
+                    new DiscordInteractionResponseBuilder()
+                    .WithContent(result.Message).AsEphemeral(true));
+            }
+        }
+
+        #endregion Beer
 
         #region Embeds
 
@@ -261,16 +294,18 @@ namespace Fitz.Features.Accounts
             DiscordMessage accountSettingsMessage = args.Message;
 
             // Get the account who is interacting
-            Account account = accountService.FindAccount(args.User.Id);
+            var findAccountQuery = new FindAccountQuery(scopeFactory);
+            Account account = findAccountQuery.Execute(args.User.Id);
 
             // If the subscribe button was pressed.
             if (args.Id == $"subscribe_button" && args.User.Id == account.Id)
             {
                 // Set their lottery subscription to the opposite of what it currently is.
-                await this.accountService.SetLotterySubscribe(account, !account.subscribeToLottery);
+                var setLotterySubscribeCommand = new SetLotterySubscribeCommand(scopeFactory, botLog);
+                await setLotterySubscribeCommand.ExecuteAsync(account, !account.subscribeToLottery);
 
                 // Retrieve Updated Account Settings
-                account = accountService.FindAccount(account.Id);
+                account = findAccountQuery.Execute(account.Id);
 
                 // Modify the original message.
                 DiscordButtonComponent subscribeBtn;
@@ -304,9 +339,11 @@ namespace Fitz.Features.Accounts
                     if (modalSubmitEvent.Values.ContainsKey($"safe_balance") && modalSubmitEvent.Interaction.User.Id == account.Id)
                     {
                         int safeBalance = int.Parse(modalSubmitEvent.Values["safe_balance"]);
-                        var setSafeBalanceResult = await this.accountService.SetSafeBalanceAsync(account, safeBalance);
+                        var setSafeBalanceCommand = new SetSafeBalanceCommand(scopeFactory, botLog);
+                        var setSafeBalanceResult = await setSafeBalanceCommand.ExecuteAsync(account, safeBalance);
                         if (setSafeBalanceResult.Success)
                         {
+                            account = findAccountQuery.Execute(account.Id);
                             DiscordButtonComponent subscribeBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "subscribe_button", "Subscribe To Lottery", false);
                             DiscordButtonComponent setSafeBalance = new DiscordButtonComponent(DiscordButtonStyle.Secondary, "setSafeBalance", "Set Safe Balance", false);
                             DiscordButtonComponent setTicketAmount = new DiscordButtonComponent(DiscordButtonStyle.Secondary, "setTicketAmount", "Set Ticket Amount", false);
@@ -336,9 +373,11 @@ namespace Fitz.Features.Accounts
                     if (modalSubmitEvent.Values.ContainsKey($"safe_tickets") && modalSubmitEvent.Interaction.User.Id == account.Id)
                     {
                         int ticketAmount = int.Parse(modalSubmitEvent.Values["safe_tickets"]);
-                        var setTicketAmountResult = await this.accountService.SetTicketAmountAsync(account, ticketAmount);
+                        var setTicketAmountCommand = new SetTicketAmountCommand(scopeFactory, botLog);
+                        var setTicketAmountResult = await setTicketAmountCommand.ExecuteAsync(account, ticketAmount);
                         if (setTicketAmountResult.Success)
                         {
+                            account = findAccountQuery.Execute(account.Id);
                             DiscordButtonComponent subscribeBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, "subscribe_button", "Subscribe To Lottery", false);
                             DiscordButtonComponent setSafeBalance = new DiscordButtonComponent(DiscordButtonStyle.Secondary, "setSafeBalance", "Set Safe Balance", false);
                             DiscordButtonComponent setTicketAmount = new DiscordButtonComponent(DiscordButtonStyle.Secondary, "setTicketAmount", "Set Ticket Amount", false);

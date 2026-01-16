@@ -1,10 +1,9 @@
-﻿using DSharpPlus;
+using DSharpPlus;
 using Fitz.Core.Contexts;
 using Fitz.Core.Discord;
 using Fitz.Core.Services;
 using Fitz.Core.Services.Features;
 using Fitz.Core.Services.Jobs;
-using Fitz.Core.Services.Settings;
 using Fitz.Features.Bank;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,7 +40,6 @@ namespace Fitz.Core
 #pragma warning restore CA2000 // Dispose objects before losing scope
                 .AddSingleton<FeatureManager>()
                 .AddSingleton<BankService>()
-                .AddSingleton<SettingsService>()
                 .AddSingleton<JobManager>();
         }
     }

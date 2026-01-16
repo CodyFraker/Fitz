@@ -1,4 +1,4 @@
-﻿using DSharpPlus;
+using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
@@ -9,19 +9,21 @@ using Fitz.Core.Services.Jobs;
 using Fitz.Features.Accounts.Commands;
 using Fitz.Features.Accounts.Jobs;
 using Fitz.Features.Accounts.Models;
+using Fitz.Features.Accounts.Queries;
 using Fitz.Variables;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Accounts
 {
-    public class UserAccountFeature(DiscordClient dClient, AccountService accountService, JobManager jobManager, BotLog botLog) : Feature
+    public class UserAccountFeature(DiscordClient dClient, IServiceScopeFactory scopeFactory, JobManager jobManager, BotLog botLog) : Feature
     {
         private readonly JobManager jobManager = jobManager;
-        private readonly AccountJob accountJob = new AccountJob(accountService, dClient, botLog);
+        private readonly AccountJob accountJob = new AccountJob(scopeFactory, dClient, botLog);
         private readonly SlashCommandsExtension slash = dClient.GetSlashCommands();
         private readonly CommandsNextExtension cNext = dClient.GetCommandsNext();
-        private AccountService accountService = accountService;
+        private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly BotLog botlog = botLog;
         private readonly DiscordClient dClient = dClient;
 
@@ -47,9 +49,11 @@ namespace Fitz.Features.Accounts
             this.slash.RegisterCommands<AccountAdminSlashCommands>();
 
             // Check to see if Fitz has an account registered in the database.
-            if (accountService.FindAccount(Users.Fitz) == null)
+            var findAccountQuery = new FindAccountQuery(scopeFactory);
+            if (findAccountQuery.Execute(Users.Fitz) == null)
             {
-                accountService.CreateFitzAccountAsync();
+                var createFitzAccountCommand = new CreateFitzAccountCommand(scopeFactory, botLog);
+                createFitzAccountCommand.ExecuteAsync();
             }
 
             this.dClient.GuildMemberRemoved += this.GuildMemberRemoved;
@@ -61,10 +65,12 @@ namespace Fitz.Features.Accounts
         private async Task GuildMemberAdded(DiscordClient sender, GuildMemberAddEventArgs args)
         {
             // Check to see if the user has an account. If so, mark as active.
-            Account account = accountService.FindAccount(args.Member.Id);
+            var findAccountQuery = new FindAccountQuery(scopeFactory);
+            Account account = findAccountQuery.Execute(args.Member.Id);
             if (account != null)
             {
-                await accountService.SetDeactivatedAsync(account, !account.Deactivated);
+                var setDeactivatedCommand = new SetDeactivatedCommand(scopeFactory, botLog);
+                await setDeactivatedCommand.ExecuteAsync(account, !account.Deactivated);
             }
             else
             {
@@ -84,10 +90,12 @@ namespace Fitz.Features.Accounts
         private async Task GuildMemberRemoved(DiscordClient sender, GuildMemberRemoveEventArgs args)
         {
             // Check to see if the user has an account. If so, mark as inactive.
-            Account account = accountService.FindAccount(args.Member.Id);
+            var findAccountQuery = new FindAccountQuery(scopeFactory);
+            Account account = findAccountQuery.Execute(args.Member.Id);
             if (account != null)
             {
-                await accountService.SetDeactivatedAsync(account, !account.Deactivated);
+                var setDeactivatedCommand = new SetDeactivatedCommand(scopeFactory, botLog);
+                await setDeactivatedCommand.ExecuteAsync(account, !account.Deactivated);
             }
             else
             {

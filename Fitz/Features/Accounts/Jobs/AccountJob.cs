@@ -1,19 +1,21 @@
-﻿using DSharpPlus;
+using DSharpPlus;
 using DSharpPlus.Entities;
 using Fitz.Core.Discord;
 using Fitz.Core.Services.Jobs;
 using Fitz.Features.Accounts.Models;
+using Fitz.Features.Accounts.Queries;
 using Fitz.Variables;
 using Fitz.Variables.Emojis;
+using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Accounts.Jobs
 {
-    public class AccountJob(AccountService accountService, DiscordClient dClient, BotLog botLog) : ITimedJob
+    public class AccountJob(IServiceScopeFactory scopeFactory, DiscordClient dClient, BotLog botLog) : ITimedJob
     {
-        private readonly AccountService accountService = accountService;
+        private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly DiscordClient dClient = dClient;
         private readonly BotLog botLog = botLog;
 
@@ -25,7 +27,8 @@ namespace Fitz.Features.Accounts.Jobs
         {
             botLog.Information(LogConsoleSettings.Jobs, ManageRoleEmojis.Warning, $"Checking account members & their roles...");
             // Get all accounts
-            List<Account> accounts = accountService.QueryAccounts();
+            var queryAccountsQuery = new QueryAccountsQuery(scopeFactory);
+            List<Account> accounts = queryAccountsQuery.Execute();
 
             // Get the waterbear discord guild
             DiscordGuild guild = await dClient.GetGuildAsync(Guilds.Waterbear);

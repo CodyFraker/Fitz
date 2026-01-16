@@ -1,4 +1,4 @@
-﻿using DSharpPlus;
+using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Exceptions;
 using DSharpPlus.Entities;
@@ -96,18 +96,16 @@ namespace Fitz.Core.Discord
             this.modals.ModalCommandErrored += this.ModalCommandErrored;
 
             this.cNext.RegisterCommands<PrivateCommands>();
-            this.slash.RegisterCommands<GeneralSlashCommands>();
             //this.slash.RegisterCommands<PollSlashCommands>();
 
             //this.cNext.RegisterCommands<PublicCommands>();
-            this.slash.RegisterCommands<SettingsCommands>();
             this.slash.RegisterCommands<HelpSlashCommands>();
             this.slash.RegisterCommands<PollSlashCommands>();
             this.slash.RegisterCommands<BlackjackSlashCommands>();
-            this.modals.RegisterModals<SettingsModalComands>();
             this.modals.RegisterModals<PollModalCommands>();
             this.modals.RegisterModals<LotteryModalCommands>();
             this.modals.RegisterModals<AccountModalCommands>();
+            this.modals.RegisterModals<Fitz.Features.Settings.Commands.SettingsModalCommands>();
 
             var playerOptions = new LavalinkPlayerOptions
             {

@@ -1,13 +1,13 @@
-﻿using DSharpPlus;
+using DSharpPlus;
 using DSharpPlus.Entities;
 using Fitz.Core.Contexts;
 using Fitz.Core.Discord;
 using Fitz.Core.Models;
-using Fitz.Core.Services.Settings;
 using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Fitz.Features.Lottery.Models;
+using Fitz.Features.Settings;
 using Fitz.Variables;
 using Fitz.Variables.Emojis;
 using Microsoft.Extensions.DependencyInjection;
@@ -297,7 +297,7 @@ namespace Fitz.Features.Lottery
             {
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-                Settings settings = this.settingsService.GetSettings();
+                Core.Models.Settings settings = this.settingsService.GetSettings();
 
                 if (startDate == null)
                 {
@@ -455,7 +455,7 @@ namespace Fitz.Features.Lottery
             try
             {
                 // Get the settings for the lottery.
-                Settings settings = settingsService.GetSettings();
+                Core.Models.Settings settings = settingsService.GetSettings();
                 if (settings == null || settings.MaxTickets == 0)
                 {
                     return new Result(false, "Failed to get lottery settings.", settings);
@@ -532,7 +532,7 @@ namespace Fitz.Features.Lottery
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
                 // Get User Account Settings
-                Settings settings = this.settingsService.GetSettings();
+                Core.Models.Settings settings = this.settingsService.GetSettings();
 
                 // Get account tickets for this current lottery.
                 var accountTicketsResult = this.GetUserTickets(account);
@@ -759,7 +759,7 @@ namespace Fitz.Features.Lottery
             return lotteryEmbed;
         }
 
-        public DiscordEmbed LotteryCommandEmbed(DiscordClient dClient, Models.Lottery lottery, Settings settings, Account account, List<Ticket> userTickets = null)
+        public DiscordEmbed LotteryCommandEmbed(DiscordClient dClient, Models.Lottery lottery, Core.Models.Settings settings, Account account, List<Ticket> userTickets = null)
         {
             DiscordEmbedBuilder lotteryEmbed = new()
             {
@@ -791,7 +791,7 @@ namespace Fitz.Features.Lottery
             return lotteryEmbed;
         }
 
-        public DiscordEmbed LotteryEmbed(DiscordClient dClient, Models.Lottery lottery, Settings settings)
+        public DiscordEmbed LotteryEmbed(DiscordClient dClient, Models.Lottery lottery, Core.Models.Settings settings)
         {
             DiscordEmbedBuilder lotteryEmbed = new()
             {
@@ -817,7 +817,7 @@ namespace Fitz.Features.Lottery
             return lotteryEmbed;
         }
 
-        public DiscordEmbed LotteryHelpEmbed(DiscordClient dClient, Models.Lottery lottery, Settings settings)
+        public DiscordEmbed LotteryHelpEmbed(DiscordClient dClient, Models.Lottery lottery, Core.Models.Settings settings)
         {
             DiscordEmbedBuilder lotteryHelpEmbed = new DiscordEmbedBuilder
             {

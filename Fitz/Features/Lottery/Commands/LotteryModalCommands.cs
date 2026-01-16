@@ -1,14 +1,14 @@
-﻿using DSharpPlus.Entities;
+using DSharpPlus.Entities;
 using DSharpPlus.ModalCommands;
 using DSharpPlus.ModalCommands.Attributes;
 using Fitz.Core.Models;
-using Fitz.Core.Services.Settings;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Accounts;
 using System.Threading.Tasks;
 using DSharpPlus;
 using Fitz.Features.Bank;
 using Fitz.Features.Lottery.Models;
+using Fitz.Features.Settings;
 using System.Collections.Generic;
 
 namespace Fitz.Features.Lottery.Commands
@@ -38,7 +38,7 @@ namespace Fitz.Features.Lottery.Commands
                     return;
                 }
 
-                Settings settings = settingsService.GetSettings();
+                Core.Models.Settings settings = settingsService.GetSettings();
 
                 Models.Lottery lottery = lotteryService.GetCurrentLottery();
 

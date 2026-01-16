@@ -1,0 +1,25 @@
+using DSharpPlus.Entities;
+using Fitz.Core.Contexts;
+using Fitz.Features.Accounts.Models;
+using Microsoft.Extensions.DependencyInjection;
+using System.Linq;
+
+namespace Fitz.Features.Accounts.Queries
+{
+    public class FindAccountQuery(IServiceScopeFactory scopeFactory)
+    {
+        private readonly IServiceScopeFactory scopeFactory = scopeFactory;
+
+        public Account Execute(ulong id)
+        {
+            using var scope = scopeFactory.CreateScope();
+            using var db = scope.ServiceProvider.GetRequiredService<BotContext>();
+            return db.Accounts.Where(x => x.Id == id).FirstOrDefault();
+        }
+
+        public Account Execute(DiscordUser user)
+        {
+            return Execute(user.Id);
+        }
+    }
+}

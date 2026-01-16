@@ -1,13 +1,13 @@
-﻿using DSharpPlus;
+using DSharpPlus;
 using DSharpPlus.Entities;
 using Fitz.Core.Discord;
 using Fitz.Core.Models;
 using Fitz.Core.Services.Jobs;
-using Fitz.Core.Services.Settings;
 using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Fitz.Features.Lottery.Models;
+using Fitz.Features.Settings;
 using Fitz.Variables;
 using Fitz.Variables.Channels;
 using Fitz.Variables.Emojis;
@@ -47,7 +47,7 @@ namespace Fitz.Features.Lottery
                 Models.Lottery currentDrawing = this.lotteryService.GetCurrentLottery();
 
                 // Get current settings
-                Settings settings = this.settingsService.GetSettings();
+                Core.Models.Settings settings = this.settingsService.GetSettings();
 
                 if (currentDrawing == null)
                 {
@@ -158,7 +158,7 @@ namespace Fitz.Features.Lottery
 
         private async Task HandleLotterySubscriptions()
         {
-            Settings settings = this.settingsService.GetSettings();
+            Core.Models.Settings settings = this.settingsService.GetSettings();
             List<Account> lotterySubscribers = this.accountService.GetLotterySubscribers();
             foreach (Account subscriber in lotterySubscribers)
             {

@@ -1,10 +1,10 @@
-﻿using DSharpPlus.Entities;
+using DSharpPlus.Entities;
 using DSharpPlus.ModalCommands;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Models;
-using Fitz.Core.Services.Settings;
 using Fitz.Features.Accounts;
 using Fitz.Features.Polls.Models;
+using Fitz.Features.Settings;
 using Fitz.Variables;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,7 +16,7 @@ namespace Fitz.Features.Polls.Polls
     {
         private readonly AccountService accountService = accountService;
         private readonly PollService pollService = pollService;
-        private readonly Settings settings = settingsService.GetSettings();
+        private readonly Core.Models.Settings settings = settingsService.GetSettings();
 
         [SlashCommand("poll", "Generate a poll.")]
         public async Task GeneratePoll(InteractionContext ctx,

@@ -1,14 +1,14 @@
-﻿using DSharpPlus;
+using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.EventArgs;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Discord;
 using Fitz.Core.Services.Features;
 using Fitz.Core.Services.Jobs;
-using Fitz.Core.Services.Settings;
 using Fitz.Features.Accounts;
 using Fitz.Features.Bank;
 using Fitz.Features.Lottery.Commands;
+using Fitz.Features.Settings;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Lottery

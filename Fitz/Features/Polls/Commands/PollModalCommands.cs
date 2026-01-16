@@ -1,10 +1,10 @@
-﻿using DSharpPlus.Entities;
+using DSharpPlus.Entities;
 using DSharpPlus.ModalCommands;
 using DSharpPlus.ModalCommands.Attributes;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Models;
-using Fitz.Core.Services.Settings;
 using Fitz.Features.Polls.Models;
+using Fitz.Features.Settings;
 using Fitz.Variables.Emojis;
 using System;
 using System.Collections.Generic;
@@ -18,7 +18,7 @@ namespace Fitz.Features.Polls.Polls
     public class PollModalCommands(PollService pollService, SettingsService settingsService) : ModalCommandModule
     {
         private readonly PollService pollService = pollService;
-        private readonly Settings settings = settingsService.GetSettings();
+        private readonly Core.Models.Settings settings = settingsService.GetSettings();
 
         #region Number
 
