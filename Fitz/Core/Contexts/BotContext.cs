@@ -25,12 +25,12 @@
         /// Pulls variables stored in the .env file.
         /// </summary>
         public static string ConnectionString =>
-            $"Host={Environment.GetEnvironmentVariable("DB_HOST")};"
+            $"Server={Environment.GetEnvironmentVariable("DB_HOST")};"
             + $"Port={Environment.GetEnvironmentVariable("DB_PORT")};"
-            + $"Username={Environment.GetEnvironmentVariable("DB_USER")};"
+            + $"User={Environment.GetEnvironmentVariable("DB_USER")};"
             + $"Password={Environment.GetEnvironmentVariable("DB_PASS")};"
             + $"Database={Environment.GetEnvironmentVariable("DB_NAME")};"
-            + $"SSL Mode=none;";
+            + $"SslMode=None;";
 
         public DbSet<Job> Jobs { get; set; }
 

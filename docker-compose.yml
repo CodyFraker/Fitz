@@ -1,0 +1,45 @@
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Fitz/Dockerfile
+    container_name: fitz-bot
+    restart: unless-stopped
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: 3306
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+    env_file:
+      - .env
+    networks:
+      - fitz-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Fitz.Api/Dockerfile
+    container_name: fitz-api
+    restart: unless-stopped
+    ports:
+      - "5000:8080"
+      - "5001:8081"
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: 3306
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_HTTP_PORTS: 8080
+      ASPNETCORE_HTTPS_PORTS: 8081
+    env_file:
+      - .env
+    networks:
+      - fitz-network
+
+networks:
+  fitz-network:
+    driver: bridge
