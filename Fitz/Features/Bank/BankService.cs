@@ -7,6 +7,7 @@ using Fitz.Features.Bank.Commands;
 using Fitz.Features.Bank.Models;
 using Fitz.Features.Bank.Queries;
 using Fitz.Features.Settings;
+using Fitz.Metrics;
 using Fitz.Variables;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -18,16 +19,17 @@ using Transaction = Fitz.Features.Bank.Models.Transaction;
 
 namespace Fitz.Features.Bank
 {
-    public class BankService(IServiceScopeFactory scopeFactory, AccountService accountService, SettingsService settingsService, BotLog botLog)
+    public class BankService(IServiceScopeFactory scopeFactory, AccountService accountService, SettingsService settingsService, BotLog botLog, FitzMetrics? fitzMetrics = null)
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly AccountService accountService = accountService;
         private readonly SettingsService settingsService = settingsService;
         private readonly BotLog botLog = botLog;
+        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
         public async Task<Result> AwardAccountCreationBonusAsync(Account account)
         {
-            var command = new AwardAccountCreationBonusCommand(scopeFactory, botLog);
+            var command = new AwardAccountCreationBonusCommand(scopeFactory, botLog, fitzMetrics);
             return await command.ExecuteAsync(account);
         }
 
@@ -41,7 +43,7 @@ namespace Fitz.Features.Bank
         /// <returns></returns>
         public async Task<Result> AwardBonus(ulong userId, int amount)
         {
-            var command = new AwardBonusCommand(scopeFactory, accountService, botLog);
+            var command = new AwardBonusCommand(scopeFactory, accountService, botLog, fitzMetrics);
             return await command.ExecuteAsync(userId, amount);
         }
 
@@ -51,7 +53,7 @@ namespace Fitz.Features.Bank
 
         public async Task<Result> DeductBeerFromUser(ulong userId, int amount, Reason reason)
         {
-            var command = new DeductBeerCommand(scopeFactory, accountService, botLog);
+            var command = new DeductBeerCommand(scopeFactory, accountService, botLog, fitzMetrics);
             return await command.ExecuteAsync(userId, amount, reason);
         }
 
@@ -61,7 +63,7 @@ namespace Fitz.Features.Bank
 
         public async Task<Result> AwardHappyHour(ulong userId)
         {
-            var command = new AwardHappyHourCommand(scopeFactory, accountService, settingsService, botLog);
+            var command = new AwardHappyHourCommand(scopeFactory, accountService, settingsService, botLog, fitzMetrics);
             return await command.ExecuteAsync(userId);
         }
 
@@ -73,7 +75,7 @@ namespace Fitz.Features.Bank
 
         public async Task<Result> AwardPollVote(ulong userId)
         {
-            var command = new AwardPollVoteCommand(scopeFactory, accountService, settingsService, botLog);
+            var command = new AwardPollVoteCommand(scopeFactory, accountService, settingsService, botLog, fitzMetrics);
             return await command.ExecuteAsync(userId);
         }
 
@@ -83,7 +85,7 @@ namespace Fitz.Features.Bank
 
         public async Task<Result> TipPollCreatorVote(ulong accountId)
         {
-            var command = new TipPollCreatorVoteCommand(scopeFactory, accountService, settingsService, botLog);
+            var command = new TipPollCreatorVoteCommand(scopeFactory, accountService, settingsService, botLog, fitzMetrics);
             return await command.ExecuteAsync(accountId);
         }
 
@@ -98,7 +100,7 @@ namespace Fitz.Features.Bank
         /// <returns></returns>
         public async Task<Result> AwardPollApproval(ulong userId)
         {
-            var command = new AwardPollApprovalCommand(scopeFactory, accountService, settingsService, botLog);
+            var command = new AwardPollApprovalCommand(scopeFactory, accountService, settingsService, botLog, fitzMetrics);
             return await command.ExecuteAsync(userId);
         }
 
@@ -108,7 +110,7 @@ namespace Fitz.Features.Bank
 
         public async Task<Result> DeclineUserPoll(ulong userId)
         {
-            var command = new DeclineUserPollCommand(scopeFactory, accountService, settingsService, botLog);
+            var command = new DeclineUserPollCommand(scopeFactory, accountService, settingsService, botLog, fitzMetrics);
             return await command.ExecuteAsync(userId);
         }
 
@@ -118,7 +120,7 @@ namespace Fitz.Features.Bank
 
         public async Task<Result> UserSubmittedPollPenalty(ulong userId)
         {
-            var command = new UserSubmittedPollPenaltyCommand(scopeFactory, accountService, settingsService, botLog);
+            var command = new UserSubmittedPollPenaltyCommand(scopeFactory, accountService, settingsService, botLog, fitzMetrics);
             return await command.ExecuteAsync(userId);
         }
 
@@ -130,7 +132,7 @@ namespace Fitz.Features.Bank
 
         public async Task<Result> PurchaseLotteryTicket(Account user, int amount)
         {
-            var command = new PurchaseLotteryTicketCommand(scopeFactory, botLog);
+            var command = new PurchaseLotteryTicketCommand(scopeFactory, botLog, fitzMetrics);
             return await command.ExecuteAsync(user, amount);
         }
 
@@ -138,7 +140,7 @@ namespace Fitz.Features.Bank
 
         public async Task<Result> DepositLotteryWinningsAsync(Account account, int amount)
         {
-            var command = new DepositLotteryWinningsCommand(scopeFactory, botLog);
+            var command = new DepositLotteryWinningsCommand(scopeFactory, botLog, fitzMetrics);
             return await command.ExecuteAsync(account, amount);
         }
 
@@ -148,13 +150,13 @@ namespace Fitz.Features.Bank
 
         public async Task<Result> TransferToFitz(ulong userId, int amount, Reason reason)
         {
-            var command = new TransferToFitzCommand(scopeFactory, botLog);
+            var command = new TransferToFitzCommand(scopeFactory, botLog, fitzMetrics);
             return await command.ExecuteAsync(userId, amount, reason);
         }
 
         public async Task<Result> TransferBeer(ulong sender, ulong recipient, int amount)
         {
-            var command = new TransferBeerCommand(scopeFactory, accountService, botLog);
+            var command = new TransferBeerCommand(scopeFactory, accountService, botLog, fitzMetrics);
             return await command.ExecuteAsync(sender, recipient, amount);
         }
 

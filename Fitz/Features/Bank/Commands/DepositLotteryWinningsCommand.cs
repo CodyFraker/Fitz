@@ -3,16 +3,18 @@ using Fitz.Core.Discord;
 using Fitz.Core.Models;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank.Models;
+using Fitz.Metrics;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Bank.Commands
 {
-    public class DepositLotteryWinningsCommand(IServiceScopeFactory scopeFactory, BotLog botLog)
+    public class DepositLotteryWinningsCommand(IServiceScopeFactory scopeFactory, BotLog botLog, FitzMetrics? fitzMetrics = null)
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly BotLog botLog = botLog;
+        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
         public async Task<Result> ExecuteAsync(Account account, int amount)
         {
@@ -29,6 +31,9 @@ namespace Fitz.Features.Bank.Commands
                 
                 var logTransactionCommand = new LogTransactionCommand(scopeFactory, botLog);
                 await logTransactionCommand.ExecuteAsync(account, account, amount, Reason.LottoWin);
+                
+                fitzMetrics?.RecordBeerAward(amount, Reason.LottoWin.ToString());
+                fitzMetrics?.RecordTransaction("lottery_win");
                 
                 return new Result(true, $"Deposited {amount} lottery winnings to {account.Username}.", account);
             }

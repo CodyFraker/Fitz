@@ -69,6 +69,20 @@ namespace Fitz.Api.Authentication
                 return claims;
             }
 
+            var serviceToken = Environment.GetEnvironmentVariable("API_SERVICE_TOKEN");
+            if (!string.IsNullOrEmpty(serviceToken) && token == serviceToken)
+            {
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.NameIdentifier, "service"),
+                    new Claim(ClaimTypes.Name, "ServiceAccount"),
+                    new Claim("discord_id", "service"),
+                    new Claim("service_account", "true")
+                };
+
+                return claims;
+            }
+
             try
             {
                 using var httpClient = new HttpClient();

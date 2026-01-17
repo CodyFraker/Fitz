@@ -6,6 +6,7 @@ using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Fitz.Features.Rename.Models;
 using Fitz.Features.Settings;
+using Fitz.Metrics;
 using Fitz.Variables.Emojis;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -15,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Fitz.Features.Rename
 {
-    public class RenameService(IServiceScopeFactory scopeFactory, AccountService accountService, BankService bankService, SettingsService settingsService, BotLog botLog)
+    public class RenameService(IServiceScopeFactory scopeFactory, AccountService accountService, BankService bankService, SettingsService settingsService, BotLog botLog, FitzMetrics? fitzMetrics = null)
     {
         #region Private Members
 
@@ -24,6 +25,7 @@ namespace Fitz.Features.Rename
         private readonly BankService bankService = bankService;
         private readonly SettingsService settingsService = settingsService;
         private readonly BotLog botLog = botLog;
+        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
         #endregion Private Members
 
@@ -39,6 +41,12 @@ namespace Fitz.Features.Rename
                 db.Renames.Add(rename);
                 await db.SaveChangesAsync();
                 await this.bankService.PurchaseRenameAsync(rename.RequestedUserId, rename.Cost);
+                
+                fitzMetrics?.RecordRenameCreated(rename.Cost);
+                
+                var activeRenames = this.GetRenamesByAccountId(rename.AffectedUserId).Where(r => r.Status == RenameStatus.Active).Count();
+                fitzMetrics?.SetRenamesActive(activeRenames);
+                
                 this.botLog.Information(LogConsoleSettings.RenameLog, AccountEmojis.Edit, $"User {rename.RequestedUserId} has renamed user {rename.AffectedUserId} with the name {rename.NewName} for {rename.Days} day(s). Costed: {rename.Cost}");
                 return new Result(true, "Successfully renamed user.", null);
             }
@@ -84,6 +92,7 @@ namespace Fitz.Features.Rename
                     rename.Notified = true;
                     db.Renames.Update(rename);
                     await db.SaveChangesAsync();
+                    fitzMetrics?.RecordRenameBoughtOut();
                 }
                 this.botLog.Information(LogConsoleSettings.RenameLog, AccountEmojis.Edit, $"User {accountId} has bought out all rename requests.");
                 return new Result(true, "Successfully bought out all rename requests.", null);

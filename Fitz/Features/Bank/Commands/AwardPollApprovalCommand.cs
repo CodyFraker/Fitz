@@ -5,18 +5,20 @@ using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank.Models;
 using Fitz.Features.Settings;
+using Fitz.Metrics;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Bank.Commands
 {
-    public class AwardPollApprovalCommand(IServiceScopeFactory scopeFactory, AccountService accountService, SettingsService settingsService, BotLog botLog)
+    public class AwardPollApprovalCommand(IServiceScopeFactory scopeFactory, AccountService accountService, SettingsService settingsService, BotLog botLog, FitzMetrics? fitzMetrics = null)
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly AccountService accountService = accountService;
         private readonly SettingsService settingsService = settingsService;
         private readonly BotLog botLog = botLog;
+        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
         public async Task<Result> ExecuteAsync(ulong userId)
         {
@@ -39,6 +41,9 @@ namespace Fitz.Features.Bank.Commands
                 
                 var logTransactionCommand = new LogTransactionCommand(scopeFactory, botLog);
                 await logTransactionCommand.ExecuteAsync(account, account, settings.PollApprovedBonus, Reason.PollApproved);
+
+                fitzMetrics?.RecordBeerAward(settings.PollApprovedBonus, Reason.PollApproved.ToString());
+                fitzMetrics?.RecordTransaction("poll_approval");
 
                 return new Result(true, $"Awarded poll approval bonus to {account.Username}.", account);
             }

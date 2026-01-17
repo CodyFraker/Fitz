@@ -31,6 +31,13 @@
     <PackageReference Include="Serilog.Sinks.File" Version="4.1.0" />
     <PackageReference Include="ToMarkdownTable" Version="0.2.1-alpha0003" />
     <PackageReference Include="XeroxDev.DSharpPlus.ModalCommands" Version="2.0.0" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.9.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.7.0-beta.1" />
+    <PackageReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Fitz.Metrics\Fitz.Metrics.csproj" />
   </ItemGroup>
 
   <ItemGroup>

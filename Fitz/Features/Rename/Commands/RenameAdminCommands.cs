@@ -1,9 +1,12 @@
-﻿using DSharpPlus.CommandsNext;
+using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
+using Fitz.Core.Api;
+using Fitz.Core.Api.Models;
 using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Rename.Models;
+using Fitz.Variables;
 using Fitz.Variables.Emojis;
 using System;
 using System.Collections.Generic;
@@ -13,17 +16,17 @@ using System.Threading.Tasks;
 namespace Fitz.Features.Rename.Commands
 {
     [ModuleLifespan(ModuleLifespan.Transient)]
-    public class RenameAdminCommands(RenameService renameService, AccountService accountService) : BaseCommandModule
+    public class RenameAdminCommands(FitzApiClient apiClient, AccountService accountService) : BaseCommandModule
     {
-        private readonly RenameService renameService = renameService;
+        private readonly FitzApiClient apiClient = apiClient;
         private readonly AccountService accountService = accountService;
 
         [Command("renames")]
         [Description("Rename a user.")]
-        public Task GetCurretRenames(CommandContext ctx)
+        public async Task GetCurretRenames(CommandContext ctx)
         {
-            this.renameService.GetExpiredRenames();
-            return ctx.RespondAsync("Getting expired renames.");
+            var response = await apiClient.GetAsync<ApiResponse<List<RenameResponse>>>("/api/rename?status=Expired");
+            await ctx.RespondAsync($"Found {response?.Data?.Count ?? 0} expired renames.");
         }
 
         [Command("listrenames")]
@@ -32,7 +35,8 @@ namespace Fitz.Features.Rename.Commands
         {
             try
             {
-                var renames = this.renameService.GetRenamesByAccountId(userId);
+                var response = await apiClient.GetAsync<ApiResponse<List<RenameResponse>>>($"/api/rename/user/{userId}");
+                var renames = response?.Data ?? new List<RenameResponse>();
                 if (renames.Count == 0)
                 {
                     await ctx.RespondAsync("No renames found for this user.");
@@ -41,7 +45,7 @@ namespace Fitz.Features.Rename.Commands
                 {
                     string table = renames.Select(rename => new
                     {
-                        User = this.accountService.FindAccount(rename.AffectedUserId).Username,
+                        User = this.accountService.FindAccount(rename.AffectedUserId)?.Username ?? "Unknown",
                         NewName = rename.NewName,
                         Days = rename.Days,
                         Expiration = rename.Expiration,
@@ -74,11 +78,14 @@ namespace Fitz.Features.Rename.Commands
             try
             {
                 DiscordGuild guild = await ctx.Client.GetGuildAsync(Variables.Guilds.Waterbear);
-                List<Renames> renames = this.renameService.GetAllRenames(null);
+                var response = await apiClient.GetAsync<ApiResponse<List<RenameResponse>>>("/api/rename");
+                var renames = response?.Data ?? new List<RenameResponse>();
                 string message = string.Empty;
-                foreach (Renames rename in renames)
+                foreach (var rename in renames)
                 {
                     Account affectedUser = this.accountService.FindAccount(rename.AffectedUserId);
+                    if (affectedUser == null) continue;
+
                     DiscordMember discordMember = await guild.GetMemberAsync(affectedUser.Id);
                     if (discordMember != null)
                     {
@@ -86,8 +93,9 @@ namespace Fitz.Features.Rename.Commands
                         await resetRename;
                         if (resetRename.IsCompletedSuccessfully)
                         {
-                            var setRenameStatusResult = await this.renameService.SetRenameStatus(rename.Id, RenameStatus.Expired);
-                            if (setRenameStatusResult.Success)
+                            var statusRequest = new UpdateRenameStatusRequest { Status = RenameStatus.Expired };
+                            var statusResponse = await apiClient.PatchAsync<UpdateRenameStatusRequest, ApiResponse<RenameResponse>>($"/api/rename/{rename.Id}/status", statusRequest);
+                            if (statusResponse != null && statusResponse.Success)
                             {
                                 message += $"Reset {affectedUser.Username}'s nickname to {discordMember.Username}\n";
                             }

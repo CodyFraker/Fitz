@@ -8,12 +8,14 @@ using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Fitz.Features.Lottery.Models;
 using Fitz.Features.Settings;
+using Fitz.Metrics;
 using Fitz.Variables;
 using Fitz.Variables.Channels;
 using Fitz.Variables.Emojis;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -24,7 +26,8 @@ namespace Fitz.Features.Lottery
         BankService bankService,
         AccountService accountService,
         BotLog botLog,
-        SettingsService settingsService) : ITimedJob
+        SettingsService settingsService,
+        FitzMetrics? fitzMetrics = null) : ITimedJob
     {
         private readonly DiscordClient dClient = dClient;
         private readonly LotteryService lotteryService = lotteryService;
@@ -32,6 +35,7 @@ namespace Fitz.Features.Lottery
         private readonly AccountService accountService = accountService;
         private readonly BotLog botLog = botLog;
         private readonly SettingsService settingsService = settingsService;
+        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
         public ulong Emoji => LotteryEmojis.Lottery;
 
@@ -39,9 +43,15 @@ namespace Fitz.Features.Lottery
 
         public async Task Execute()
         {
+            var stopwatch = Stopwatch.StartNew();
+            var jobName = "LotteryJob";
+            
             try
             {
                 this.botLog.Information(LogConsoleSettings.Jobs, LotteryEmojis.Lottery, $"Starting Lottery Job...");
+                
+                var subscribers = this.accountService.GetLotterySubscribers();
+                fitzMetrics?.SetLotterySubscriptionsActive(subscribers.Count);
 
                 // Get Current Lottery
                 Models.Lottery currentDrawing = this.lotteryService.GetCurrentLottery();
@@ -149,9 +159,15 @@ namespace Fitz.Features.Lottery
                 {
                     Log.Error(ex, "An error occured when running lottery job.");
                 }
+                
+                stopwatch.Stop();
+                fitzMetrics?.RecordJobExecution(jobName, "success", stopwatch.Elapsed.TotalSeconds);
             }
             catch (Exception ex)
             {
+                stopwatch.Stop();
+                fitzMetrics?.RecordJobExecution(jobName, "error", stopwatch.Elapsed.TotalSeconds);
+                fitzMetrics?.RecordJobExecutionError(jobName);
                 Log.Error(ex, "An error occured when running lottery job.");
             }
         }

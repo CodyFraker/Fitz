@@ -2,7 +2,9 @@ using Fitz.Api.Attributes;
 using Fitz.Api.Models.Requests;
 using Fitz.Api.Models.Responses;
 using Fitz.Features.Accounts;
+using Fitz.Metrics;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 
 namespace Fitz.Api.Controllers.Account
 {
@@ -11,52 +13,70 @@ namespace Fitz.Api.Controllers.Account
     public class SetTicketAmountController : ControllerBase
     {
         private readonly AccountService _accountService;
+        private readonly FitzMetrics? _fitzMetrics;
 
-        public SetTicketAmountController(AccountService accountService)
+        public SetTicketAmountController(AccountService accountService, FitzMetrics? fitzMetrics = null)
         {
             _accountService = accountService;
+            _fitzMetrics = fitzMetrics;
         }
 
         [HttpPost("ticket-amount")]
         [RequireDiscordAuth]
         public async Task<IActionResult> SetTicketAmount([FromBody] SetTicketAmountRequest request)
         {
-            if (!ModelState.IsValid)
+            var stopwatch = Stopwatch.StartNew();
+            var endpoint = "/api/account/ticket-amount";
+            
+            _fitzMetrics?.RecordApiRequest(endpoint, "POST");
+            
+            try
             {
-                return BadRequest(new ApiResponse<object>
+                if (!ModelState.IsValid)
                 {
-                    Success = false,
-                    Message = "Invalid request"
+                    _fitzMetrics?.RecordApiError(endpoint, "validation_error");
+                    return BadRequest(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Invalid request"
+                    });
+                }
+
+                var account = _accountService.FindAccount(request.UserId);
+                if (account == null)
+                {
+                    _fitzMetrics?.RecordApiError(endpoint, "not_found");
+                    return NotFound(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Account not found"
+                    });
+                }
+
+                var result = await _accountService.SetTicketAmountAsync(account, request.Amount);
+
+                if (!result.Success)
+                {
+                    _fitzMetrics?.RecordApiError(endpoint, "business_error");
+                    return BadRequest(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = result.Message
+                    });
+                }
+
+                return Ok(new ApiResponse<object>
+                {
+                    Success = true,
+                    Message = result.Message,
+                    Data = result.Data
                 });
             }
-
-            var account = _accountService.FindAccount(request.UserId);
-            if (account == null)
+            finally
             {
-                return NotFound(new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = "Account not found"
-                });
+                stopwatch.Stop();
+                _fitzMetrics?.RecordApiRequestDuration(endpoint, stopwatch.Elapsed.TotalSeconds);
             }
-
-            var result = await _accountService.SetTicketAmountAsync(account, request.Amount);
-
-            if (!result.Success)
-            {
-                return BadRequest(new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = result.Message
-                });
-            }
-
-            return Ok(new ApiResponse<object>
-            {
-                Success = true,
-                Message = result.Message,
-                Data = result.Data
-            });
         }
     }
 }

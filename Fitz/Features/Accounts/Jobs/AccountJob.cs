@@ -4,20 +4,24 @@ using Fitz.Core.Discord;
 using Fitz.Core.Services.Jobs;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Accounts.Queries;
+using Fitz.Metrics;
 using Fitz.Variables;
 using Fitz.Variables.Emojis;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Accounts.Jobs
 {
-    public class AccountJob(IServiceScopeFactory scopeFactory, DiscordClient dClient, BotLog botLog) : ITimedJob
+    public class AccountJob(IServiceScopeFactory scopeFactory, DiscordClient dClient, BotLog botLog, FitzMetrics? fitzMetrics = null) : ITimedJob
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly DiscordClient dClient = dClient;
         private readonly BotLog botLog = botLog;
+        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
         public ulong Emoji => ManageRoleEmojis.Warning;
 
@@ -25,10 +29,21 @@ namespace Fitz.Features.Accounts.Jobs
 
         public async Task Execute()
         {
-            botLog.Information(LogConsoleSettings.Jobs, ManageRoleEmojis.Warning, $"Checking account members & their roles...");
-            // Get all accounts
-            var queryAccountsQuery = new QueryAccountsQuery(scopeFactory);
-            List<Account> accounts = queryAccountsQuery.Execute();
+            var stopwatch = Stopwatch.StartNew();
+            var jobName = "AccountJob";
+            
+            try
+            {
+                botLog.Information(LogConsoleSettings.Jobs, ManageRoleEmojis.Warning, $"Checking account members & their roles...");
+                // Get all accounts
+                var queryAccountsQuery = new QueryAccountsQuery(scopeFactory);
+                List<Account> accounts = queryAccountsQuery.Execute();
+                
+                var activeAccounts = accounts.Where(a => !a.Deactivated).Count();
+                fitzMetrics?.SetAccountsActive(activeAccounts);
+                
+                var totalBeerBalance = accounts.Sum(a => a.Beer);
+                fitzMetrics?.SetTotalBeerBalance(totalBeerBalance);
 
             // Get the waterbear discord guild
             DiscordGuild guild = await dClient.GetGuildAsync(Guilds.Waterbear);
@@ -67,6 +82,18 @@ namespace Fitz.Features.Accounts.Jobs
             }
 
             botLog.Information(LogConsoleSettings.Jobs, ManageRoleEmojis.Warning, $"Finished checking account members & their roles.");
+            
+            stopwatch.Stop();
+            fitzMetrics?.RecordJobExecution(jobName, "success", stopwatch.Elapsed.TotalSeconds);
+            fitzMetrics?.RecordAccountJobExecution("success");
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                fitzMetrics?.RecordJobExecution(jobName, "error", stopwatch.Elapsed.TotalSeconds);
+                fitzMetrics?.RecordJobExecutionError(jobName);
+                fitzMetrics?.RecordAccountJobExecution("error");
+            }
         }
     }
 }

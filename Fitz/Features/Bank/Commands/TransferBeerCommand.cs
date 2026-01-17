@@ -4,6 +4,7 @@ using Fitz.Core.Models;
 using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank.Models;
+using Fitz.Metrics;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System;
@@ -11,11 +12,12 @@ using System.Threading.Tasks;
 
 namespace Fitz.Features.Bank.Commands
 {
-    public class TransferBeerCommand(IServiceScopeFactory scopeFactory, AccountService accountService, BotLog botLog)
+    public class TransferBeerCommand(IServiceScopeFactory scopeFactory, AccountService accountService, BotLog botLog, FitzMetrics? fitzMetrics = null)
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly AccountService accountService = accountService;
         private readonly BotLog botLog = botLog;
+        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
         public async Task<Result> ExecuteAsync(ulong sender, ulong recipient, int amount)
         {
@@ -55,6 +57,9 @@ namespace Fitz.Features.Bank.Commands
 
                 var logTransactionCommand = new LogTransactionCommand(scopeFactory, botLog);
                 await logTransactionCommand.ExecuteAsync(senderAccount, recipientAccount, amount, Reason.Donated);
+                
+                fitzMetrics?.RecordBeerTransfer(amount, Reason.Donated.ToString());
+                fitzMetrics?.RecordTransaction("transfer");
                 
                 return new Result(true, $"Transferred {amount} beer from {senderAccount.Username} to {recipientAccount.Username}.", senderAccount);
             }

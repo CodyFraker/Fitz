@@ -1,21 +1,23 @@
 using DSharpPlus.Entities;
 using DSharpPlus.ModalCommands;
 using DSharpPlus.SlashCommands;
-using Fitz.Core.Models;
+using Fitz.Core.Api;
+using Fitz.Core.Api.Models;
 using Fitz.Features.Accounts;
 using Fitz.Features.Polls.Models;
 using Fitz.Features.Settings;
 using Fitz.Variables;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Polls.Polls
 {
     [SlashModuleLifespan(SlashModuleLifespan.Scoped)]
-    internal class PollSlashCommands(AccountService accountService, SettingsService settingsService, PollService pollService) : ApplicationCommandModule
+    internal class PollSlashCommands(AccountService accountService, SettingsService settingsService, FitzApiClient apiClient) : ApplicationCommandModule
     {
         private readonly AccountService accountService = accountService;
-        private readonly PollService pollService = pollService;
+        private readonly FitzApiClient apiClient = apiClient;
         private readonly Core.Models.Settings settings = settingsService.GetSettings();
 
         [SlashCommand("poll", "Generate a poll.")]
@@ -37,7 +39,9 @@ namespace Fitz.Features.Polls.Polls
                 return;
             }
 
-            if (this.pollService.GetPollsSubmittedByUser(account.Id).Where(x => x.Status == PollStatus.Pending).Count() >= settings.MaxPendingPolls)
+            var pollsResponse = await apiClient.GetAsync<ApiResponse<List<PollResponse>>>($"/api/polls?status=Pending&userId={account.Id}");
+            var pendingPolls = pollsResponse?.Data ?? new List<PollResponse>();
+            if (pendingPolls.Count >= settings.MaxPendingPolls)
             {
                 await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder()
                     .WithContent($"You have reached the maximum number of polls you can submit. You can have a maximum of {settings.MaxPendingPolls} polls submitted at a time.").AsEphemeral(true));

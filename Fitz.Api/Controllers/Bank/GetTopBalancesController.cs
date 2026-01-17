@@ -1,7 +1,9 @@
 using Fitz.Api.Attributes;
 using Fitz.Api.Models.Responses;
 using Fitz.Features.Bank;
+using Fitz.Metrics;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 
 namespace Fitz.Api.Controllers.Bank
 {
@@ -10,33 +12,48 @@ namespace Fitz.Api.Controllers.Bank
     public class GetTopBalancesController : ControllerBase
     {
         private readonly BankService _bankService;
+        private readonly FitzMetrics? _fitzMetrics;
 
-        public GetTopBalancesController(BankService bankService)
+        public GetTopBalancesController(BankService bankService, FitzMetrics? fitzMetrics = null)
         {
             _bankService = bankService;
+            _fitzMetrics = fitzMetrics;
         }
 
         [HttpGet("top-balances")]
         [RequireDiscordAuth]
         public IActionResult GetTopBalances([FromQuery] int limit = 10)
         {
-            var accounts = _bankService.GetTopBeerBalances(limit);
+            var stopwatch = Stopwatch.StartNew();
+            var endpoint = "/api/bank/top-balances";
             
-            var response = new TopBalanceResponse
+            _fitzMetrics?.RecordApiRequest(endpoint, "GET");
+            
+            try
             {
-                Accounts = accounts.Select(a => new AccountBalanceResponse
+                var accounts = _bankService.GetTopBeerBalances(limit);
+                
+                var response = new TopBalanceResponse
                 {
-                    Id = a.Id,
-                    Username = a.Username,
-                    Beer = a.Beer
-                }).ToList()
-            };
+                    Accounts = accounts.Select(a => new AccountBalanceResponse
+                    {
+                        Id = a.Id,
+                        Username = a.Username,
+                        Beer = a.Beer
+                    }).ToList()
+                };
 
-            return Ok(new ApiResponse<TopBalanceResponse>
+                return Ok(new ApiResponse<TopBalanceResponse>
+                {
+                    Success = true,
+                    Data = response
+                });
+            }
+            finally
             {
-                Success = true,
-                Data = response
-            });
+                stopwatch.Stop();
+                _fitzMetrics?.RecordApiRequestDuration(endpoint, stopwatch.Elapsed.TotalSeconds);
+            }
         }
     }
 }

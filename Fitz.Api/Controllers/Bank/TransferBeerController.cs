@@ -2,7 +2,9 @@ using Fitz.Api.Attributes;
 using Fitz.Api.Models.Requests;
 using Fitz.Api.Models.Responses;
 using Fitz.Features.Bank;
+using Fitz.Metrics;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 
 namespace Fitz.Api.Controllers.Bank
 {
@@ -11,42 +13,59 @@ namespace Fitz.Api.Controllers.Bank
     public class TransferBeerController : ControllerBase
     {
         private readonly BankService _bankService;
+        private readonly FitzMetrics? _fitzMetrics;
 
-        public TransferBeerController(BankService bankService)
+        public TransferBeerController(BankService bankService, FitzMetrics? fitzMetrics = null)
         {
             _bankService = bankService;
+            _fitzMetrics = fitzMetrics;
         }
 
         [HttpPost("transfer")]
         [RequireDiscordAuth]
         public async Task<IActionResult> TransferBeer([FromBody] TransferBeerRequest request)
         {
-            if (!ModelState.IsValid)
+            var stopwatch = Stopwatch.StartNew();
+            var endpoint = "/api/bank/transfer";
+            
+            _fitzMetrics?.RecordApiRequest(endpoint, "POST");
+            
+            try
             {
-                return BadRequest(new ApiResponse<object>
+                if (!ModelState.IsValid)
                 {
-                    Success = false,
-                    Message = "Invalid request"
+                    _fitzMetrics?.RecordApiError(endpoint, "validation_error");
+                    return BadRequest(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Invalid request"
+                    });
+                }
+
+                var result = await _bankService.TransferBeer(request.SenderId, request.RecipientId, request.Amount);
+
+                if (!result.Success)
+                {
+                    _fitzMetrics?.RecordApiError(endpoint, "business_error");
+                    return BadRequest(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = result.Message
+                    });
+                }
+
+                return Ok(new ApiResponse<object>
+                {
+                    Success = true,
+                    Message = result.Message,
+                    Data = result.Data
                 });
             }
-
-            var result = await _bankService.TransferBeer(request.SenderId, request.RecipientId, request.Amount);
-
-            if (!result.Success)
+            finally
             {
-                return BadRequest(new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = result.Message
-                });
+                stopwatch.Stop();
+                _fitzMetrics?.RecordApiRequestDuration(endpoint, stopwatch.Elapsed.TotalSeconds);
             }
-
-            return Ok(new ApiResponse<object>
-            {
-                Success = true,
-                Message = result.Message,
-                Data = result.Data
-            });
         }
     }
 }

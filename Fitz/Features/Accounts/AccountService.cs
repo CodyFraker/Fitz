@@ -4,21 +4,33 @@ using Fitz.Core.Models;
 using Fitz.Features.Accounts.Commands;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Accounts.Queries;
+using Fitz.Metrics;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Accounts
 {
-    public sealed class AccountService(IServiceScopeFactory scopeFactory, BotLog botLog)
+    public sealed class AccountService(IServiceScopeFactory scopeFactory, BotLog botLog, FitzMetrics? fitzMetrics = null)
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly BotLog botLog = botLog;
+        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
         public async Task<Result> CreateAccountAsync(DiscordUser user)
         {
-            var command = new CreateAccountCommand(scopeFactory, botLog);
-            return await command.ExecuteAsync(user);
+            var command = new CreateAccountCommand(scopeFactory, botLog, fitzMetrics);
+            var result = await command.ExecuteAsync(user);
+            
+            if (result.Success)
+            {
+                var accounts = this.QueryAccounts();
+                var activeAccounts = accounts.Where(a => !a.Deactivated).Count();
+                fitzMetrics?.SetAccountsActive(activeAccounts);
+            }
+            
+            return result;
         }
 
         public async Task<Result> CreateFitzAccountAsync()

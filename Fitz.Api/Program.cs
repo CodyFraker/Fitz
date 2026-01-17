@@ -11,9 +11,13 @@ using Fitz.Features.Lottery;
 using Fitz.Features.Polls;
 using Fitz.Features.Rename;
 using Fitz.Features.Settings;
+using Fitz.Metrics;
+using Fitz.Metrics.Extensions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using Serilog;
 using System.Reflection;
 
@@ -126,6 +130,18 @@ foreach (Type type in Assembly.Load("Fitz")
     registrant?.ConfigureServices(builder.Services);
 }
 
+builder.Services.AddFitzMetrics();
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource
+        .AddService(serviceName: "fitz-api", serviceVersion: "1.0.0"))
+    .WithMetrics(metrics =>
+    {
+        metrics.AddAspNetCoreInstrumentation();
+        metrics.AddMeter("Fitz.Metrics");
+        metrics.AddPrometheusExporter();
+    });
+
 builder.Host.UseSerilog((context, configuration) =>
 {
     configuration
@@ -148,6 +164,7 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
 app.Run();
 

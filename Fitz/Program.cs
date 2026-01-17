@@ -1,4 +1,4 @@
-﻿namespace Fitz
+namespace Fitz
 {
     using dotenv.net;
     using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +12,12 @@
     using System.Reflection;
     using Fitz.Core.Services;
     using Fitz.Core;
+    using Fitz.Metrics;
+    using Fitz.Metrics.Extensions;
+    using OpenTelemetry.Metrics;
+    using OpenTelemetry.Resources;
+    using Microsoft.AspNetCore.Builder;
+    using Microsoft.AspNetCore.Hosting;
 
     /// <summary>
     /// This is the main class which bloon requires in order to go live. Its the brains of the entire setup.
@@ -86,8 +92,20 @@
 
         private static IHostBuilder CreateHostBuilder()
         {
-            return new HostBuilder()
+            var metricsPort = Environment.GetEnvironmentVariable("METRICS_PORT") ?? "9090";
+            var metricsUrl = $"http://localhost:{metricsPort}";
+
+            return Host.CreateDefaultBuilder()
                 .ConfigureServices(ConfigureServices)
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseUrls(metricsUrl);
+                    webBuilder.Configure(app =>
+                    {
+                        app.UseRouting();
+                        app.UseOpenTelemetryPrometheusScrapingEndpoint();
+                    });
+                })
                 .UseSerilog();
         }
 
@@ -103,6 +121,18 @@
                 IServiceRegistrant registrant = Activator.CreateInstance(type) as IServiceRegistrant;
                 registrant.ConfigureServices(services);
             }
+            
+            services.AddFitzMetrics();
+            
+            services.AddOpenTelemetry()
+                .ConfigureResource(resource => resource
+                    .AddService(serviceName: "fitz-bot", serviceVersion: "1.0.0"))
+                .WithMetrics(metrics =>
+                {
+                    metrics.AddMeter("Fitz.Metrics");
+                    metrics.AddPrometheusExporter();
+                });
+            
             services.AddHostedService<Service>();
             Log.Information("Services configured");
         }

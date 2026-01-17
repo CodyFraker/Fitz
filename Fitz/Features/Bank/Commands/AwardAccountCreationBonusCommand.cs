@@ -4,6 +4,7 @@ using Fitz.Core.Models;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank.Models;
 using Fitz.Features.Settings.Queries;
+using Fitz.Metrics;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
@@ -11,10 +12,11 @@ using Transaction = Fitz.Features.Bank.Models.Transaction;
 
 namespace Fitz.Features.Bank.Commands
 {
-    public class AwardAccountCreationBonusCommand(IServiceScopeFactory scopeFactory, BotLog botLog)
+    public class AwardAccountCreationBonusCommand(IServiceScopeFactory scopeFactory, BotLog botLog, FitzMetrics? fitzMetrics = null)
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly BotLog botLog = botLog;
+        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
         public async Task<Result> ExecuteAsync(Account account)
         {
@@ -33,6 +35,9 @@ namespace Fitz.Features.Bank.Commands
                 
                 var logTransactionCommand = new LogTransactionCommand(scopeFactory, botLog);
                 await logTransactionCommand.ExecuteAsync(account, account, settings.AccountCreationBonusAmount, Reason.AccountCreationBonus);
+                
+                fitzMetrics?.RecordBeerAward(settings.AccountCreationBonusAmount, Reason.AccountCreationBonus.ToString());
+                fitzMetrics?.RecordTransaction("account_creation_bonus");
                 
                 return new Result(true, $"Awarded account creation bonus to {account.Username}.", account);
             }

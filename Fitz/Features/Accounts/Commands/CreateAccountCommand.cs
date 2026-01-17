@@ -4,6 +4,7 @@ using Fitz.Core.Discord;
 using Fitz.Core.Models;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Accounts.Queries;
+using Fitz.Metrics;
 using Fitz.Variables.Emojis;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -12,10 +13,11 @@ using System.Threading.Tasks;
 
 namespace Fitz.Features.Accounts.Commands
 {
-    public class CreateAccountCommand(IServiceScopeFactory scopeFactory, BotLog botLog)
+    public class CreateAccountCommand(IServiceScopeFactory scopeFactory, BotLog botLog, FitzMetrics? fitzMetrics = null)
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly BotLog botLog = botLog;
+        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
         public async Task<Result> ExecuteAsync(DiscordUser user)
         {
@@ -49,6 +51,8 @@ namespace Fitz.Features.Accounts.Commands
                 db.Accounts.Add(account);
                 await db.SaveChangesAsync();
 
+                fitzMetrics?.RecordAccountCreated();
+                
                 Log.Debug($"Added new account to Database: {user.Username} | {user.Id}");
                 this.botLog.Information(LogConsoleSettings.AccountLog, AccountEmojis.Add, $"Created a new account for: {user.Username} | {user.Id}");
                 return new Result(true, "Account created successfully.", account);

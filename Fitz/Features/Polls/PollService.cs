@@ -1,4 +1,4 @@
-﻿using DSharpPlus;
+using DSharpPlus;
 using DSharpPlus.Entities;
 using Fitz.Core.Contexts;
 using Fitz.Core.Discord;
@@ -7,6 +7,7 @@ using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Fitz.Features.Polls.Models;
+using Fitz.Metrics;
 using Fitz.Variables.Emojis;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -16,12 +17,13 @@ using System.Threading.Tasks;
 
 namespace Fitz.Features.Polls
 {
-    public class PollService(IServiceScopeFactory scopeFactory, AccountService accountService, BankService bankService, BotLog botLog)
+    public class PollService(IServiceScopeFactory scopeFactory, AccountService accountService, BankService bankService, BotLog botLog, FitzMetrics? fitzMetrics = null)
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly AccountService accountService = accountService;
         private readonly BankService bankService = bankService;
         private readonly BotLog botLog = botLog;
+        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
         #region Add Poll
 
@@ -36,6 +38,8 @@ namespace Fitz.Features.Polls
                 await db.SaveChangesAsync();
 
                 await this.bankService.UserSubmittedPollPenalty(poll.AccountId);
+                fitzMetrics?.RecordPollCreated();
+                
                 this.botLog.Information(LogConsoleSettings.PollLog, PollEmojis.InfoIcon, $"User {poll.AccountId} submitted a new poll {poll.Id}");
                 return new Result(true, $"Poll #{poll.Id} created.", poll);
             }
@@ -64,9 +68,11 @@ namespace Fitz.Features.Polls
                 if (evaluation == PollStatus.Approved)
                 {
                     await this.bankService.AwardPollApproval(pendingPoll.AccountId);
+                    fitzMetrics?.RecordPollApproved();
                 }
                 else
                 {
+                    fitzMetrics?.RecordPollDeclined();
                     // Stopped using this since we don't know how much beer an account has at the time of poll decline.
                     //await this.bankService.DeclineUserPoll(pendingPoll.AccountId);
                 }
@@ -200,6 +206,8 @@ namespace Fitz.Features.Polls
 
             // Add beer to the user's account for voting.
             await this.bankService.AwardPollVote(account.Id);
+            fitzMetrics?.RecordPollVote();
+            
             this.botLog.Information(LogConsoleSettings.PollLog, PollEmojis.InfoIcon, $"User {account.Id} voted on poll {poll.Id}");
 
             // Add beer to the poll creator's account for having their poll voted on.

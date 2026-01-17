@@ -3,12 +3,14 @@ using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
 using DSharpPlus.SlashCommands;
+using Fitz.Core.Api;
+using Fitz.Core.Api.Models;
 using Fitz.Core.Discord;
 using Fitz.Core.Services.Features;
 using Fitz.Features.Accounts;
-using Fitz.Features.Bank;
 using Fitz.Features.Polls.Models;
 using Fitz.Features.Polls.Polls;
+using Fitz.Variables;
 using Fitz.Variables.Channels;
 using Fitz.Variables.Emojis;
 using Hangfire;
@@ -19,14 +21,14 @@ using System.Threading.Tasks;
 
 namespace Fitz.Features.Polls
 {
-    public class PollFeature(DiscordClient dClient, BotLog botLog, AccountService accountService, BankService bankService, PollService pollService) : Feature
+    public class PollFeature(DiscordClient dClient, BotLog botLog, AccountService accountService, PollService pollService, FitzApiClient apiClient) : Feature
     {
         private readonly CommandsNextExtension cNext = dClient.GetCommandsNext();
         private readonly SlashCommandsExtension slash = dClient.GetSlashCommands();
         private readonly AccountService accountService = accountService;
         private readonly PollService pollService = pollService;
         private readonly PollJob pollJob = new PollJob(dClient, pollService, botLog);
-        private readonly BankService bankService = bankService;
+        private readonly FitzApiClient apiClient = apiClient;
         private readonly DiscordClient dClient = dClient;
 
         public override string Name => "Polls";
@@ -62,8 +64,35 @@ namespace Fitz.Features.Polls
             if (reaction.Message.Channel.Id == Waterbear.PendingPolls || reaction.Message.Channel.Id == Waterbear.Polls)
             {
                 // Get the poll from the database.
-                Poll poll = this.pollService.GetPoll(reaction.Message.Id);
-                List<PollOptions> pollOptions = this.pollService.GetPollOptions(poll);
+                var pollResponse = await apiClient.GetAsync<ApiResponse<PollResponse>>($"/api/polls/message/{reaction.Message.Id}");
+                if (pollResponse == null || !pollResponse.Success || pollResponse.Data == null)
+                {
+                    return;
+                }
+
+                var pollData = pollResponse.Data;
+                var poll = new Poll
+                {
+                    Id = pollData.Id,
+                    AccountId = pollData.AccountId,
+                    MessageId = pollData.MessageId,
+                    Question = pollData.Question,
+                    Type = pollData.Type,
+                    Status = pollData.Status,
+                    EvaluatedOn = pollData.EvaluatedOn,
+                    SubmittedOn = pollData.SubmittedOn
+                };
+
+                var optionsResponse = await apiClient.GetAsync<ApiResponse<List<PollOptionResponse>>>($"/api/polls/{poll.Id}/options");
+                var pollOptionsData = optionsResponse?.Data ?? new List<PollOptionResponse>();
+                var pollOptions = pollOptionsData.Select(o => new PollOptions
+                {
+                    Id = o.Id,
+                    PollId = o.PollId,
+                    Answer = o.Answer,
+                    EmojiName = o.EmojiName,
+                    EmojiId = o.EmojiId
+                }).ToList();
 
                 #region Pending Polls
 
@@ -77,9 +106,12 @@ namespace Fitz.Features.Polls
                     // Approved
                     if (approvalReactions.Where(x => !x.IsBot).Count() >= 2)
                     {
-                        var approvalPendingPollResult = await this.pollService.EvaluatePoll(poll, PollStatus.Approved);
-                        if (approvalPendingPollResult.Success)
+                        var evaluateRequest = new EvaluatePollRequest { Status = PollStatus.Approved };
+                        var approvalResponse = await apiClient.PatchAsync<EvaluatePollRequest, ApiResponse<PollResponse>>($"/api/polls/{poll.Id}/evaluate", evaluateRequest);
+                        if (approvalResponse != null && approvalResponse.Success && approvalResponse.Data != null)
                         {
+                            poll.Status = approvalResponse.Data.Status;
+                            poll.EvaluatedOn = approvalResponse.Data.EvaluatedOn;
                             if (pollChannel != null)
                             {
                                 // Send the poll to the poll channel
@@ -99,7 +131,6 @@ namespace Fitz.Features.Polls
                                 }
                                 // Update the poll's message.id to the new message ID.
                                 poll.MessageId = pollMessage.Id;
-                                await this.pollService.UpdatePollAsync(poll);
 
                                 // Update the pending poll message to show it was approved.
                                 await reaction.Message.ModifyAsync(this.pollService.UpdatePollEmbed(dClient, poll, pollOptions, pollMessage));
@@ -118,9 +149,12 @@ namespace Fitz.Features.Polls
                     // Denied
                     else if (denyReactions.Where(x => !x.IsBot).Count() >= 2)
                     {
-                        var denyPendingPollResult = await this.pollService.EvaluatePoll(poll, PollStatus.Declined);
-                        if (denyPendingPollResult.Success)
+                        var evaluateRequest = new EvaluatePollRequest { Status = PollStatus.Declined };
+                        var denyResponse = await apiClient.PatchAsync<EvaluatePollRequest, ApiResponse<PollResponse>>($"/api/polls/{poll.Id}/evaluate", evaluateRequest);
+                        if (denyResponse != null && denyResponse.Success && denyResponse.Data != null)
                         {
+                            poll.Status = denyResponse.Data.Status;
+                            poll.EvaluatedOn = denyResponse.Data.EvaluatedOn;
                             if (pollChannel != null)
                             {
                                 // Update the pending poll message to show it was denied.
@@ -165,12 +199,20 @@ namespace Fitz.Features.Polls
                             // User had no account to award beer. Ignore.
                             return;
                         }
-                        Vote vote = this.pollService.GetVoteByUserOnPoll(poll, reaction.User.Id);
+
+                        var votesResponse = await apiClient.GetAsync<ApiResponse<List<VoteResponse>>>($"/api/polls/{poll.Id}/votes");
+                        var votes = votesResponse?.Data ?? new List<VoteResponse>();
+                        var vote = votes.FirstOrDefault(v => v.UserId == reaction.User.Id);
+
                         if (vote == null)
                         {
                             // User has not provided a vote
-                            // add beer to user account
-                            await this.pollService.AddVote(poll, userOption, account);
+                            var addVoteRequest = new AddVoteRequest
+                            {
+                                UserId = reaction.User.Id,
+                                OptionId = userOption.Id
+                            };
+                            await apiClient.PostAsync<AddVoteRequest, ApiResponse<object>>($"/api/polls/{poll.Id}/vote", addVoteRequest);
                         }
                         else
                         {
@@ -178,7 +220,12 @@ namespace Fitz.Features.Polls
                             if (vote.Choice == null)
                             {
                                 // Update the vote
-                                await this.pollService.UpdateVote(vote, userOption.Id, account);
+                                var updateVoteRequest = new UpdateVoteRequest
+                                {
+                                    UserId = reaction.User.Id,
+                                    OptionId = userOption.Id
+                                };
+                                await apiClient.PutAsync<UpdateVoteRequest, ApiResponse<VoteResponse>>($"/api/polls/{poll.Id}/vote", updateVoteRequest);
                                 return;
                             }
                             else
@@ -205,9 +252,13 @@ namespace Fitz.Features.Polls
                                 {
                                     await reaction.Message.DeleteReactionAsync(DiscordEmoji.FromGuildEmote(dClient, userOldOption.EmojiId.Value), reaction.User);
                                 }
-                                var sdfsdfsdf = userOption;
 
-                                await this.pollService.UpdateVote(vote, userOption.Id, account);
+                                var updateVoteRequest = new UpdateVoteRequest
+                                {
+                                    UserId = reaction.User.Id,
+                                    OptionId = userOption.Id
+                                };
+                                await apiClient.PutAsync<UpdateVoteRequest, ApiResponse<VoteResponse>>($"/api/polls/{poll.Id}/vote", updateVoteRequest);
                             }
                         }
                     }

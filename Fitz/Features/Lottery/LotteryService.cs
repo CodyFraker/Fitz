@@ -8,6 +8,7 @@ using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Fitz.Features.Lottery.Models;
 using Fitz.Features.Settings;
+using Fitz.Metrics;
 using Fitz.Variables;
 using Fitz.Variables.Emojis;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,13 +21,14 @@ using System.Threading.Tasks;
 
 namespace Fitz.Features.Lottery
 {
-    public sealed class LotteryService(IServiceScopeFactory scopeFactory, AccountService accountService, BankService bankService, SettingsService settingsService, BotLog botLog)
+    public sealed class LotteryService(IServiceScopeFactory scopeFactory, AccountService accountService, BankService bankService, SettingsService settingsService, BotLog botLog, FitzMetrics? fitzMetrics = null)
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly AccountService accountService = accountService;
         private readonly BankService bankService = bankService;
         private readonly SettingsService settingsService = settingsService;
         private readonly BotLog botLog = botLog;
+        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
         #region Get Lottery Details
 
@@ -319,6 +321,11 @@ namespace Fitz.Features.Lottery
                 };
                 db.Add(drawing);
                 await db.SaveChangesAsync();
+                
+                var duration = (endDate - startDate).TotalSeconds;
+                fitzMetrics?.RecordLotteryDuration(duration);
+                fitzMetrics?.SetLotteryPoolSize(pool);
+                
                 Log.Debug($"Started new lottery with ID: {drawing.Id} | End Date: {drawing.EndDate}");
                 this.botLog.Information(LogConsoleSettings.LotteryLog, LotteryEmojis.Lottery, $"Started new lottery with ID: {drawing.Id} | End Date: {drawing.EndDate}");
             }
@@ -407,6 +414,9 @@ namespace Fitz.Features.Lottery
                     this.botLog.Information(LogConsoleSettings.LotteryLog, LotteryEmojis.Lottery, $"User {account.Username} won {payout} beer in the lottery.");
                     winners.Add(winner);
                 }
+                
+                fitzMetrics?.RecordLotteryDrawing(winners.Count);
+                
                 return winners;
             }
             return winners;
@@ -511,6 +521,8 @@ namespace Fitz.Features.Lottery
                 {
                     return new Result(false, "Failed to add to pool.", addToPoolResult.Message);
                 }
+
+                fitzMetrics?.RecordLotteryTicketPurchase(tickets, totalTicketCost);
 
                 userTickets = this.GetUserTickets(account).Data as List<Ticket>;
 
@@ -654,6 +666,8 @@ namespace Fitz.Features.Lottery
                 drawing.Pool += amount;
                 db.Update(drawing);
                 await db.SaveChangesAsync();
+
+                fitzMetrics?.SetLotteryPoolSize(drawing.Pool ?? 0);
 
                 return new Result(true, $"Successfully added {amount} to the pool.", drawing);
             }

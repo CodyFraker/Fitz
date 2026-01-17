@@ -1,9 +1,10 @@
-﻿using DSharpPlus.Entities;
+using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
+using Fitz.Core.Api;
+using Fitz.Core.Api.Models;
 using Fitz.Core.Commands.Attributes;
 using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Models;
-using Fitz.Features.Bank;
 using Fitz.Features.Rename.Models;
 using System;
 using System.Collections.Generic;
@@ -14,11 +15,10 @@ using System.Threading.Tasks;
 namespace Fitz.Features.Rename.Commands
 {
     [SlashModuleLifespan(SlashModuleLifespan.Scoped)]
-    internal class RenameSlashCommands(RenameService renameService, AccountService accountService, BankService bankService) : ApplicationCommandModule
+    internal class RenameSlashCommands(FitzApiClient apiClient, AccountService accountService) : ApplicationCommandModule
     {
-        private readonly RenameService renameService = renameService;
+        private readonly FitzApiClient apiClient = apiClient;
         private readonly AccountService accountService = accountService;
-        private readonly BankService bankService = bankService;
 
         [SlashCommand("rename", "Rename a user within the guild.")]
         [RequireAccount]
@@ -81,7 +81,24 @@ namespace Fitz.Features.Rename.Commands
 
             #endregion Check Accounts
 
-            int renameCost = renameService.GenerateRenameCost(affectedUser, requestingUser, days, newName);
+            var costRequest = new CalculateRenameCostRequest
+            {
+                AffectedUserId = affectedUser.Id,
+                RequestedUserId = requestingUser.Id,
+                Days = days,
+                NewName = newName
+            };
+
+            var costResponse = await apiClient.PostAsync<CalculateRenameCostRequest, ApiResponse<RenameCostResponse>>("/api/rename/calculate-cost", costRequest);
+            if (costResponse == null || !costResponse.Success || costResponse.Data == null)
+            {
+                await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
+                    new DiscordInteractionResponseBuilder()
+                    .WithContent("Failed to calculate rename cost.").AsEphemeral(true));
+                return;
+            }
+
+            int renameCost = costResponse.Data.Cost;
 
             // Check to see if requesting user has enough beer
             if (requestingUser.Beer < renameCost)
@@ -92,13 +109,12 @@ namespace Fitz.Features.Rename.Commands
                 return;
             }
 
-            Renames renameRequest = new Renames()
+            CreateRenameRequest renameRequest = new CreateRenameRequest
             {
                 NewName = newName,
                 AffectedUserId = affectedUser.Id,
                 RequestedUserId = requestingUser.Id,
-                Days = (int)days,
-                Cost = renameCost,
+                Days = (int)days
             };
 
             int unique_id = 0;
@@ -117,7 +133,9 @@ namespace Fitz.Features.Rename.Commands
             await ctx.DeferAsync(true);
 
             // Check to see if the affected users already has an active rename
-            List<Renames> renames = renameService.GetRenamesByAccountId(affectedUser.Id).OrderByDescending(x => x.Expiration).ToList();
+            var renamesResponse = await apiClient.GetAsync<ApiResponse<List<RenameResponse>>>($"/api/rename/user/{affectedUser.Id}");
+            List<RenameResponse> renamesList = renamesResponse?.Data ?? new List<RenameResponse>();
+            var renames = renamesList.OrderByDescending(x => x.Expiration).ToList();
             int buyoutCost = 0;
             DiscordButtonComponent accpetBtn = new(DiscordButtonStyle.Success, $"rename_confirm_{unique_id}", "Confirm", false);
             DiscordButtonComponent cancelBtn = new(DiscordButtonStyle.Danger, $"rename_cancel_{unique_id}", "Cancel", false);
@@ -140,7 +158,7 @@ namespace Fitz.Features.Rename.Commands
             }
             else
             {
-                foreach (Renames renameRequests in renames)
+                foreach (var renameRequests in renames)
                 {
                     buyoutCost += renameRequests.Cost;
                 }
@@ -197,7 +215,15 @@ namespace Fitz.Features.Rename.Commands
                         if (renameStatus.IsCompletedSuccessfully)
                         {
                             renameRequest.Status = RenameStatus.Active;
-                            await renameService.RenameUserAsync(renameRequest);
+                            renameRequest.StartDate = DateTime.Now;
+                            renameRequest.Expiration = DateTime.Now.AddDays(days);
+                            var createResponse = await apiClient.PostAsync<CreateRenameRequest, ApiResponse<RenameResponse>>("/api/rename", renameRequest);
+
+                            if (createResponse == null || !createResponse.Success)
+                            {
+                                await ctx.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent($"Failed to create rename: {createResponse?.Message ?? "Unknown error"}"));
+                                return;
+                            }
 
                             string oldName = affectedUser.Username;
 
@@ -218,19 +244,35 @@ namespace Fitz.Features.Rename.Commands
                     renameRequest.StartDate = renames[0].Expiration;
                     renameRequest.Expiration = renames[0].Expiration.Value.AddDays(days);
                     renameRequest.Status = RenameStatus.Pending;
-                    renameRequest.Timestamp = DateTime.Now;
 
-                    await renameService.RenameUserAsync(renameRequest);
+                    var createResponse = await apiClient.PostAsync<CreateRenameRequest, ApiResponse<RenameResponse>>("/api/rename", renameRequest);
+                    if (createResponse == null || !createResponse.Success)
+                    {
+                        await ctx.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent($"Failed to create rename: {createResponse?.Message ?? "Unknown error"}"));
+                        return;
+                    }
+
                     await ctx.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent($"Your rename request has been set to start after {renames[0].Expiration}EST."));
                 }
                 else if (e.Id == $"buyout_confirm_{unique_id}" && e.Interaction.User.Id == requestingUser.Id)
                 {
-                    await renameService.BuyoutRenameRequests(affectedUser.Id);
+                    var buyoutResponse = await apiClient.PostAsync<ApiResponse<object>>($"/api/rename/user/{affectedUser.Id}/buyout");
+                    if (buyoutResponse == null || !buyoutResponse.Success)
+                    {
+                        await ctx.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent($"Failed to buyout renames: {buyoutResponse?.Message ?? "Unknown error"}"));
+                        return;
+                    }
+
                     renameRequest.StartDate = DateTime.Now;
                     renameRequest.Expiration = DateTime.Now.AddDays(days);
-                    renameRequest.Timestamp = DateTime.Now;
                     renameRequest.Status = RenameStatus.Active;
-                    await renameService.RenameUserAsync(renameRequest);
+                    var createResponse = await apiClient.PostAsync<CreateRenameRequest, ApiResponse<RenameResponse>>("/api/rename", renameRequest);
+                    if (createResponse == null || !createResponse.Success)
+                    {
+                        await ctx.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent($"Failed to create rename: {createResponse?.Message ?? "Unknown error"}"));
+                        return;
+                    }
+
                     var renameStatus = ctx.Guild.GetMemberAsync(affectedUser.Id).Result.ModifyAsync(x => x.Nickname = newName);
                     await ctx.EditFollowupAsync(e.Message.Id, new DiscordWebhookBuilder().WithContent("Renames bought out."));
                 }

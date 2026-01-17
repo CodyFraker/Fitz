@@ -2,9 +2,12 @@ using DSharpPlus.Entities;
 using DSharpPlus.ModalCommands;
 using DSharpPlus.ModalCommands.Attributes;
 using DSharpPlus.SlashCommands;
+using Fitz.Core.Api;
+using Fitz.Core.Api.Models;
 using Fitz.Core.Models;
 using Fitz.Features.Polls.Models;
 using Fitz.Features.Settings;
+using Fitz.Variables;
 using Fitz.Variables.Emojis;
 using System;
 using System.Collections.Generic;
@@ -15,9 +18,9 @@ using System.Threading.Tasks;
 namespace Fitz.Features.Polls.Polls
 {
     [SlashModuleLifespan(SlashModuleLifespan.Transient)]
-    public class PollModalCommands(PollService pollService, SettingsService settingsService) : ModalCommandModule
+    public class PollModalCommands(FitzApiClient apiClient, SettingsService settingsService) : ModalCommandModule
     {
-        private readonly PollService pollService = pollService;
+        private readonly FitzApiClient apiClient = apiClient;
         private readonly Core.Models.Settings settings = settingsService.GetSettings();
 
         #region Number
@@ -573,46 +576,40 @@ namespace Fitz.Features.Polls.Polls
                     return new Result(false, "Failed to send poll message.", null);
                 }
 
-                var pendingPollResult = await this.pollService.AddPoll(new Poll
+                var pollRequest = new CreatePollRequest
                 {
                     AccountId = ctx.User.Id,
                     MessageId = pollMessage.Id,
                     Question = question,
                     Type = pollType,
-                    Status = PollStatus.Pending,
-                    EvaluatedOn = null,
-                    SubmittedOn = DateTime.UtcNow,
-                });
+                    Options = options.Select(o => new PollOptionRequest
+                    {
+                        Answer = o.Answer,
+                        EmojiName = o.EmojiName,
+                        EmojiId = o.EmojiId
+                    }).ToList()
+                };
 
-                if (pendingPollResult.Success)
+                var createPollResponse = await apiClient.PostAsync<CreatePollRequest, ApiResponse<PollResponse>>("/api/polls", pollRequest);
+
+                if (createPollResponse != null && createPollResponse.Success)
                 {
                     try
                     {
-                        if (pendingPollResult.Data != null)
-                        {
-                            var addPollOptionsResult = await this.pollService.AddPollOption(pendingPollResult.Data as Poll, options);
-                            if (addPollOptionsResult.Success)
-                            {
-                                // Send approval reactions
-                                await pollMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.Yes));
-                                await pollMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.No));
-                            }
-                            else
-                            {
-                                return new Result(false, "Adding poll options failed.", null);
-                            }
-                        }
+                        // Send approval reactions
+                        await pollMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.Yes));
+                        await pollMessage.CreateReactionAsync(DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.No));
                     }
                     catch (Exception ex)
                     {
                         return new Result(false, ex.Message, null);
                     }
 
-                    return new Result(true, "Poll added to pending polls.", pendingPollResult.Data);
+                    return new Result(true, "Poll added to pending polls.", createPollResponse.Data);
                 }
                 else
                 {
-                    return new Result(false, pendingPollResult.Message, null);
+                    return new Result(false, createPollResponse?.Message ?? "Failed to create poll", null);
                 }
             }
             catch (Exception ex)

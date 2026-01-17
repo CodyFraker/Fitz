@@ -6,21 +6,24 @@ using Fitz.Core.Services.Jobs;
 using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Rename.Models;
+using Fitz.Metrics;
 using Fitz.Variables;
 using Fitz.Variables.Emojis;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Rename.Jobs
 {
-    public class CheckForExpiredRenames(DiscordClient dClient, RenameService renameService, AccountService accountService, BotLog botLog) : ITimedJob
+    public class CheckForExpiredRenames(DiscordClient dClient, RenameService renameService, AccountService accountService, BotLog botLog, FitzMetrics? fitzMetrics = null) : ITimedJob
     {
         private readonly DiscordClient dClient = dClient;
         private readonly BotLog botLog = botLog;
         private readonly RenameService renameService = renameService;
         private readonly AccountService accountService = accountService;
+        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
         public ulong Emoji => ManageRoleEmojis.Warning;
 
@@ -28,6 +31,10 @@ namespace Fitz.Features.Rename.Jobs
 
         public async Task Execute()
         {
+            var stopwatch = Stopwatch.StartNew();
+            var jobName = "CheckForExpiredRenames";
+            int expiredCount = 0;
+            
             try
             {
                 this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, "Checking for expired renames...");
@@ -77,6 +84,8 @@ namespace Fitz.Features.Rename.Jobs
                     {
                         await renameService.SetUserNotified(rename);
                         await renameService.SetRenameStatus(rename.Id, RenameStatus.Expired);
+                        expiredCount++;
+                        fitzMetrics?.RecordRenameExpired();
                         continue;
                     }
                     catch (Exception e)
@@ -84,6 +93,8 @@ namespace Fitz.Features.Rename.Jobs
                         this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, $"There was an error getting discord member. CheckForExpiredRenameJob: {e.Message}");
                         await renameService.SetUserNotified(rename);
                         await renameService.SetRenameStatus(rename.Id, RenameStatus.Expired);
+                        expiredCount++;
+                        fitzMetrics?.RecordRenameExpired();
                         continue;
                     }
                 }
@@ -124,10 +135,20 @@ namespace Fitz.Features.Rename.Jobs
                     }
                 }
 
+                var totalActiveRenames = renameService.GetAllRenames(RenameStatus.Active).Count;
+                fitzMetrics?.SetRenamesActive(totalActiveRenames);
+                
                 this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, "Finished checking for expired renames.");
+                
+                stopwatch.Stop();
+                fitzMetrics?.RecordJobExecution(jobName, "success", stopwatch.Elapsed.TotalSeconds);
+                fitzMetrics?.RecordRenameJobExecution("expired_renames");
             }
             catch (Exception ex)
             {
+                stopwatch.Stop();
+                fitzMetrics?.RecordJobExecution(jobName, "error", stopwatch.Elapsed.TotalSeconds);
+                fitzMetrics?.RecordJobExecutionError(jobName);
                 this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, ex.Message);
             }
         }

@@ -5,6 +5,7 @@ using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank.Models;
 using Fitz.Features.Settings;
+using Fitz.Metrics;
 using Fitz.Variables;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -12,12 +13,13 @@ using System.Threading.Tasks;
 
 namespace Fitz.Features.Bank.Commands
 {
-    public class TipPollCreatorVoteCommand(IServiceScopeFactory scopeFactory, AccountService accountService, SettingsService settingsService, BotLog botLog)
+    public class TipPollCreatorVoteCommand(IServiceScopeFactory scopeFactory, AccountService accountService, SettingsService settingsService, BotLog botLog, FitzMetrics? fitzMetrics = null)
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly AccountService accountService = accountService;
         private readonly SettingsService settingsService = settingsService;
         private readonly BotLog botLog = botLog;
+        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
         public async Task<Result> ExecuteAsync(ulong accountId)
         {
@@ -49,6 +51,9 @@ namespace Fitz.Features.Bank.Commands
                 
                 var logTransactionCommand = new LogTransactionCommand(scopeFactory, botLog);
                 await logTransactionCommand.ExecuteAsync(account, account, settings.PollCreatorTip, Reason.PollCreatorTip);
+
+                fitzMetrics?.RecordBeerAward(settings.PollCreatorTip, Reason.PollCreatorTip.ToString());
+                fitzMetrics?.RecordTransaction("poll_creator_tip");
 
                 return new Result(true, $"Tipped poll creator vote bonus to {account.Username}.", account);
             }

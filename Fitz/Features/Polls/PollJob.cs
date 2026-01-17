@@ -3,18 +3,22 @@ using DSharpPlus.Entities;
 using Fitz.Core.Discord;
 using Fitz.Core.Services.Jobs;
 using Fitz.Features.Polls.Models;
+using Fitz.Metrics;
 using Fitz.Variables.Emojis;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Polls
 {
-    public class PollJob(DiscordClient dClient, PollService pollService, BotLog botLog) : ITimedJob
+    public class PollJob(DiscordClient dClient, PollService pollService, BotLog botLog, FitzMetrics? fitzMetrics = null) : ITimedJob
     {
         private readonly DiscordClient dClient = dClient;
         private readonly PollService PollService = pollService;
         private readonly BotLog botLog = botLog;
+        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
         public ulong Emoji => PollEmojis.InfoIcon;
 
@@ -22,7 +26,16 @@ namespace Fitz.Features.Polls
 
         public async Task Execute()
         {
-            this.botLog.Information(LogConsoleSettings.Jobs, PollEmojis.InfoIcon, $"Starting Poll Job...");
+            var stopwatch = Stopwatch.StartNew();
+            var jobName = "PollJob";
+            
+            try
+            {
+                this.botLog.Information(LogConsoleSettings.Jobs, PollEmojis.InfoIcon, $"Starting Poll Job...");
+                
+                var polls = this.PollService.GetPolls();
+                var activePolls = polls.Where(p => p.Status == PollStatus.Approved).Count();
+                fitzMetrics?.SetPollsActive(activePolls);
             // Get poll channel
             DiscordChannel PollChannel = await dClient.GetChannelAsync(Variables.Channels.Waterbear.Polls);
 
@@ -120,6 +133,16 @@ namespace Fitz.Features.Polls
                 }
             }
             this.botLog.Information(LogConsoleSettings.Jobs, PollEmojis.InfoIcon, $"Finished Poll Job");
+            
+            stopwatch.Stop();
+            fitzMetrics?.RecordJobExecution(jobName, "success", stopwatch.Elapsed.TotalSeconds);
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                fitzMetrics?.RecordJobExecution(jobName, "error", stopwatch.Elapsed.TotalSeconds);
+                fitzMetrics?.RecordJobExecutionError(jobName);
+            }
         }
     }
 }

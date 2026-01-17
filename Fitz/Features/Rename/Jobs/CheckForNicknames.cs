@@ -4,9 +4,11 @@ using Fitz.Core.Discord;
 using Fitz.Core.Services.Jobs;
 using Fitz.Features.Accounts;
 using Fitz.Features.Rename.Models;
+using Fitz.Metrics;
 using Fitz.Variables.Emojis;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Rename.Jobs
@@ -18,12 +20,13 @@ namespace Fitz.Features.Rename.Jobs
     /// <param name="dClient"></param>
     /// <param name="renameService"></param>
     /// <param name="accountService"></param>
-    public class CheckForNicknames(DiscordClient dClient, RenameService renameService, AccountService accountService, BotLog botLog) : ITimedJob
+    public class CheckForNicknames(DiscordClient dClient, RenameService renameService, AccountService accountService, BotLog botLog, FitzMetrics? fitzMetrics = null) : ITimedJob
     {
         private readonly DiscordClient dClient = dClient;
         private readonly BotLog botLog = botLog;
         private readonly RenameService renameService = renameService;
         private readonly AccountService accountService = accountService;
+        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
         public ulong Emoji => ManageRoleEmojis.Warning;
 
@@ -31,6 +34,9 @@ namespace Fitz.Features.Rename.Jobs
 
         public async Task Execute()
         {
+            var stopwatch = Stopwatch.StartNew();
+            var jobName = "CheckForNicknames";
+            
             try
             {
                 this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, "Checking for unset nicknames...");
@@ -58,9 +64,16 @@ namespace Fitz.Features.Rename.Jobs
                     }
                 }
                 this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, "Finished checking for unset nicknames");
+                
+                stopwatch.Stop();
+                fitzMetrics?.RecordJobExecution(jobName, "success", stopwatch.Elapsed.TotalSeconds);
+                fitzMetrics?.RecordRenameJobExecution("check_nicknames");
             }
             catch (Exception e)
             {
+                stopwatch.Stop();
+                fitzMetrics?.RecordJobExecution(jobName, "error", stopwatch.Elapsed.TotalSeconds);
+                fitzMetrics?.RecordJobExecutionError(jobName);
                 Console.WriteLine(e.Message);
             }
         }

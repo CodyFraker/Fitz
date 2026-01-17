@@ -4,17 +4,19 @@ using Fitz.Core.Models;
 using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank.Models;
+using Fitz.Metrics;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Threading.Tasks;
 
 namespace Fitz.Features.Bank.Commands
 {
-    public class DeductBeerCommand(IServiceScopeFactory scopeFactory, AccountService accountService, BotLog botLog)
+    public class DeductBeerCommand(IServiceScopeFactory scopeFactory, AccountService accountService, BotLog botLog, FitzMetrics? fitzMetrics = null)
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly AccountService accountService = accountService;
         private readonly BotLog botLog = botLog;
+        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
         public async Task<Result> ExecuteAsync(ulong userId, int amount, Reason reason)
         {
@@ -39,6 +41,9 @@ namespace Fitz.Features.Bank.Commands
                 
                 var logTransactionCommand = new LogTransactionCommand(scopeFactory, botLog);
                 await logTransactionCommand.ExecuteAsync(account, account, amount, reason);
+
+                fitzMetrics?.RecordBeerDeduction(amount, reason.ToString());
+                fitzMetrics?.RecordTransaction("deduction");
 
                 return new Result(true, $"Deducted {amount} beer from {account.Username}.", account);
             }
