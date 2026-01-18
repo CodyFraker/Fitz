@@ -3,8 +3,8 @@ using DSharpPlus.ModalCommands;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Api;
 using Fitz.Core.Api.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts;
-using Fitz.Features.Polls.Models;
 using Fitz.Features.Settings;
 using Fitz.Variables;
 using System.Collections.Generic;
@@ -18,7 +18,7 @@ namespace Fitz.Features.Polls.Polls
     {
         private readonly AccountService accountService = accountService;
         private readonly FitzApiClient apiClient = apiClient;
-        private readonly Core.Models.Settings settings = settingsService.GetSettings();
+        private readonly Fitz.Database.Entities.Settings settings = settingsService.GetSettings();
 
         [SlashCommand("poll", "Generate a poll.")]
         public async Task GeneratePoll(InteractionContext ctx,

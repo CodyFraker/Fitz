@@ -1,6 +1,7 @@
 using dotenv.net;
+using Fitz.Api;
 using Fitz.Api.Authentication;
-using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Core.Discord;
 using Fitz.Core.Services;
 using Fitz.Features.Accounts;
@@ -13,19 +14,36 @@ using Fitz.Features.Rename;
 using Fitz.Features.Settings;
 using Fitz.Metrics;
 using Fitz.Metrics.Extensions;
+using Fitz.Seeds;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using Serilog;
 using System.Reflection;
 
-DotEnv.Load();
+try
+{
+    DotEnv.Load();
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Warning: Failed to load .env file: {ex.Message}");
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        options.JsonSerializerOptions.Converters.Add(new UlongToStringConverter());
+    });
+builder.Services.AddHttpClient();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -54,7 +72,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-var connectionString = BotContext.ConnectionString;
+var connectionString = DatabaseConnection.ConnectionString;
 ServerVersion? serverVersion = null;
 try
 {
@@ -80,7 +98,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(builder.Configuration["Cors:Origins"]?.Split(',') ?? new[] { "http://localhost:3000" })
+        policy.WithOrigins(builder.Configuration["Cors:Origins"]?.Split(',') ?? new[] { "http://localhost:5173" })
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
@@ -90,8 +108,28 @@ builder.Services.AddCors(options =>
 builder.Services.AddAuthentication("Discord")
     .AddScheme<DiscordAuthenticationOptions, DiscordAuthenticationHandler>("Discord", options =>
     {
-        options.ClientId = builder.Configuration["Discord:ClientId"] ?? string.Empty;
-        options.ClientSecret = builder.Configuration["Discord:ClientSecret"] ?? string.Empty;
+        var clientId = builder.Configuration["DISCORD_CLIENT_ID"]
+            ?? Environment.GetEnvironmentVariable("DISCORD_CLIENT_ID");
+        if (string.IsNullOrEmpty(clientId))
+        {
+            throw new Exception("Discord client ID is not set");
+        }
+        var clientSecret = builder.Configuration["DISCORD_CLIENT_SECRET"]
+            ?? Environment.GetEnvironmentVariable("DISCORD_CLIENT_SECRET");
+        if (string.IsNullOrEmpty(clientSecret))
+        {
+            throw new Exception("Discord client secret is not set");
+        }
+        var redirectUri = builder.Configuration["DISCORD_REDIRECT_URI"]
+            ?? Environment.GetEnvironmentVariable("DISCORD_REDIRECT_URI");
+        if (string.IsNullOrEmpty(redirectUri))
+        {
+            throw new Exception("Discord redirect URI is not set");
+        }
+
+        options.ClientId = clientId;
+        options.ClientSecret = clientSecret;
+        options.RedirectUri = redirectUri;
     });
 
 builder.Services.AddAuthorization();
@@ -153,6 +191,48 @@ builder.Host.UseSerilog((context, configuration) =>
 
 var app = builder.Build();
 
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+if (serverVersion != null)
+{
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        using var db = scope.ServiceProvider.GetRequiredService<BotContext>();
+        logger.LogInformation("Applying database migrations...");
+        db.Database.Migrate();
+        logger.LogInformation("Database migrations applied successfully");
+
+        logger.LogInformation("Running database seeds...");
+        await SeedRunner.RunSeedsAsync(db, logger);
+        logger.LogInformation("Database seeds completed successfully");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Failed to apply database migrations");
+        throw;
+    }
+}
+
+if (app.Environment.IsDevelopment())
+{
+    var clientId = builder.Configuration["DISCORD_CLIENT_ID"] 
+        ?? Environment.GetEnvironmentVariable("DISCORD_CLIENT_ID");
+    var clientSecret = builder.Configuration["DISCORD_CLIENT_SECRET"]
+        ?? Environment.GetEnvironmentVariable("DISCORD_CLIENT_SECRET");
+    var redirectUri = builder.Configuration["DISCORD_REDIRECT_URI"]
+        ?? Environment.GetEnvironmentVariable("DISCORD_REDIRECT_URI");
+
+    logger.LogInformation("Discord OAuth Configuration Loaded:");
+    logger.LogInformation("  ClientId: {ClientIdStatus}", 
+        string.IsNullOrEmpty(clientId) 
+            ? "NOT SET" 
+            : $"{clientId.Substring(0, Math.Min(10, clientId.Length))}...");
+    logger.LogInformation("  ClientSecret: {ClientSecretStatus}", 
+        string.IsNullOrEmpty(clientSecret) ? "NOT SET" : "***SET***");
+    logger.LogInformation("  RedirectUri: {RedirectUri}", redirectUri);
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -171,4 +251,30 @@ app.Run();
 namespace Fitz.Api
 {
     public partial class Program { }
+
+    public class UlongToStringConverter : System.Text.Json.Serialization.JsonConverter<ulong>
+    {
+        public override ulong Read(ref System.Text.Json.Utf8JsonReader reader, Type typeToConvert, System.Text.Json.JsonSerializerOptions options)
+        {
+            if (reader.TokenType == System.Text.Json.JsonTokenType.String)
+            {
+                var stringValue = reader.GetString();
+                if (ulong.TryParse(stringValue, out var value))
+                {
+                    return value;
+                }
+            }
+            else if (reader.TokenType == System.Text.Json.JsonTokenType.Number)
+            {
+                return reader.GetUInt64();
+            }
+            
+            throw new System.Text.Json.JsonException($"Unable to convert {reader.TokenType} to ulong");
+        }
+
+        public override void Write(System.Text.Json.Utf8JsonWriter writer, ulong value, System.Text.Json.JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value.ToString());
+        }
+    }
 }

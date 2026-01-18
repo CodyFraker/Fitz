@@ -1,10 +1,9 @@
-using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Core.Discord;
 using Fitz.Core.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts;
-using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
-using Fitz.Features.Rename.Models;
 using Fitz.Features.Settings;
 using Fitz.Metrics;
 using Fitz.Variables.Emojis;
@@ -207,7 +206,7 @@ namespace Fitz.Features.Rename
                 return 999999999;
             }
 
-            Core.Models.Settings settings = this.settingsService.GetSettings();
+            var settings = this.settingsService.GetSettings();
 
             double baseCost = (double)settings.RenameBaseCost;
 

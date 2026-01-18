@@ -2,7 +2,7 @@ using Fitz.Api.Attributes;
 using Fitz.Api.Models.Requests;
 using Fitz.Api.Models.Responses;
 using Fitz.Features.Bank;
-using Fitz.Features.Bank.Models;
+using Fitz.Database.Entities;
 using Fitz.Metrics;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
@@ -24,6 +24,7 @@ namespace Fitz.Api.Controllers.Bank
 
         [HttpPost("award-bonus")]
         [RequireDiscordAuth]
+        [RequireAdmin]
         public async Task<IActionResult> AwardBonus([FromBody] AwardBonusRequest request)
         {
             var stopwatch = Stopwatch.StartNew();

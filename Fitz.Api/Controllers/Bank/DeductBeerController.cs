@@ -2,7 +2,7 @@ using Fitz.Api.Attributes;
 using Fitz.Api.Models.Requests;
 using Fitz.Api.Models.Responses;
 using Fitz.Features.Bank;
-using Fitz.Features.Bank.Models;
+using Fitz.Database.Entities;
 using Fitz.Metrics;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
@@ -25,6 +25,7 @@ namespace Fitz.Api.Controllers.Bank
 
         [HttpPost("deduct-beer")]
         [RequireDiscordAuth]
+        [RequireAdmin]
         public async Task<IActionResult> DeductBeer([FromBody] DeductBeerRequest request)
         {
             var stopwatch = Stopwatch.StartNew();

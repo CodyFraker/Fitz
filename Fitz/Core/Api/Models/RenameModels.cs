@@ -1,5 +1,5 @@
 using System;
-using Fitz.Features.Rename.Models;
+using Fitz.Database.Entities;
 
 namespace Fitz.Core.Api.Models
 {

@@ -1,6 +1,6 @@
 using DSharpPlus.Entities;
-using Fitz.Core.Contexts;
-using Fitz.Features.Accounts.Models;
+using Fitz.Database;
+using Fitz.Database.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using System.Linq;
 

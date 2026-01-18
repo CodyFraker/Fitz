@@ -1,8 +1,8 @@
-﻿using DSharpPlus;
+using DSharpPlus;
 using DSharpPlus.Entities;
 using Fitz.Core.Discord;
-using Fitz.Core.Services.Jobs;
-using Fitz.Features.Polls.Models;
+using Fitz.Database.Entities;
+using Fitz.Database.Entities;
 using Fitz.Variables.Emojis;
 using System;
 using System.Collections.Generic;

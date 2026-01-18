@@ -18,6 +18,9 @@ namespace Fitz
     using OpenTelemetry.Resources;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Hosting;
+    using Fitz.Database;
+    using Microsoft.EntityFrameworkCore;
+    using Pomelo.EntityFrameworkCore.MySql;
 
     /// <summary>
     /// This is the main class which bloon requires in order to go live. Its the brains of the entire setup.
@@ -74,7 +77,37 @@ namespace Fitz
 
             try
             {
-                CreateHostBuilder().Build().Run();
+                var host = CreateHostBuilder().Build();
+
+                var connectionString = DatabaseConnection.ConnectionString;
+                ServerVersion? serverVersion = null;
+                try
+                {
+                    serverVersion = ServerVersion.AutoDetect(connectionString);
+                }
+                catch
+                {
+                    serverVersion = null;
+                }
+
+                if (serverVersion != null)
+                {
+                    try
+                    {
+                        using var scope = host.Services.CreateScope();
+                        using var db = scope.ServiceProvider.GetRequiredService<BotContext>();
+                        Log.Information("Applying database migrations...");
+                        db.Database.Migrate();
+                        Log.Information("Database migrations applied successfully");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "Failed to apply database migrations");
+                        throw;
+                    }
+                }
+
+                host.Run();
                 return 0;
             }
 #pragma warning disable CA1031 // Catch all exceptions

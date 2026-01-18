@@ -1,10 +1,13 @@
 using Fitz.Api.Attributes;
+using Fitz.Api.Extensions;
 using Fitz.Api.Models.Responses;
 using Fitz.Features.Accounts;
 using Fitz.Features.Bank;
 using Fitz.Metrics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace Fitz.Api.Controllers.Bank
 {
@@ -15,17 +18,20 @@ namespace Fitz.Api.Controllers.Bank
         private readonly BankService _bankService;
         private readonly AccountService _accountService;
         private readonly FitzMetrics? _fitzMetrics;
+        private readonly ILogger<GetBalanceController>? _logger;
 
-        public GetBalanceController(BankService bankService, AccountService accountService, FitzMetrics? fitzMetrics = null)
+        public GetBalanceController(BankService bankService, AccountService accountService, FitzMetrics? fitzMetrics = null, ILogger<GetBalanceController>? logger = null)
         {
             _bankService = bankService;
             _accountService = accountService;
             _fitzMetrics = fitzMetrics;
+            _logger = logger;
         }
 
         [HttpGet("balance/{userId}")]
         [RequireDiscordAuth]
-        public IActionResult GetBalance(ulong userId)
+        [RequireOwnData]
+        public async Task<IActionResult> GetBalance(ulong userId)
         {
             var stopwatch = Stopwatch.StartNew();
             var endpoint = "/api/bank/balance";
@@ -37,12 +43,33 @@ namespace Fitz.Api.Controllers.Bank
                 var account = _accountService.FindAccount(userId);
                 if (account == null)
                 {
-                    _fitzMetrics?.RecordApiError(endpoint, "not_found");
-                    return NotFound(new ApiResponse<BalanceResponse>
+                    var username = User.GetDiscordUsername();
+                    _logger?.LogInformation("Account not found for user {UserId} in balance request, creating new account with username {Username}", userId, username);
+                    
+                    var createResult = await _accountService.CreateAccountAsync(userId, username);
+                    if (!createResult.Success)
                     {
-                        Success = false,
-                        Message = "Account not found"
-                    });
+                        _fitzMetrics?.RecordApiError(endpoint, "account_creation_failed");
+                        _logger?.LogError("Failed to create account for user {UserId}", userId);
+                        return StatusCode(500, new ApiResponse<BalanceResponse>
+                        {
+                            Success = false,
+                            Message = "Failed to create account"
+                        });
+                    }
+
+                    account = createResult.Data as Fitz.Database.Entities.Account;
+                    if (account == null)
+                    {
+                        _fitzMetrics?.RecordApiError(endpoint, "account_creation_invalid");
+                        return StatusCode(500, new ApiResponse<BalanceResponse>
+                        {
+                            Success = false,
+                            Message = "Account creation returned invalid data"
+                        });
+                    }
+
+                    _logger?.LogInformation("Successfully created account for user {UserId} in balance request", userId);
                 }
 
                 var response = new BalanceResponse

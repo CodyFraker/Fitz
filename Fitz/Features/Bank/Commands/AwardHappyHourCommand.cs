@@ -1,9 +1,10 @@
-using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Core.Discord;
 using Fitz.Core.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts;
-using Fitz.Features.Accounts.Models;
-using Fitz.Features.Bank.Models;
+using Fitz.Database.Entities;
+using Fitz.Database.Entities;
 using Fitz.Features.Settings;
 using Fitz.Metrics;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +33,11 @@ namespace Fitz.Features.Bank.Commands
                 if (account == null)
                 {
                     return new Result(false, $"{userId} did not have an account.", null);
+                }
+
+                if (account.Favorability < settings.FavorabilityLowThreshold)
+                {
+                    return new Result(false, $"User favorability ({account.Favorability}) is below threshold ({settings.FavorabilityLowThreshold}). Skipping happy hour award.", null);
                 }
 
                 account.Beer += settings.BaseHappyHourAmount;

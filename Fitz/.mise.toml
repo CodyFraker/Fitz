@@ -1,0 +1,3 @@
+[tasks.dev]
+description = "Run Fitz Discord bot in development mode"
+run = "dotnet run Fitz.csproj"

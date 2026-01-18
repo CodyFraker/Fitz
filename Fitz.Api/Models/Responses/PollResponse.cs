@@ -1,4 +1,4 @@
-using Fitz.Features.Polls.Models;
+using Fitz.Database.Entities;
 
 namespace Fitz.Api.Models.Responses
 {
@@ -12,5 +12,8 @@ namespace Fitz.Api.Models.Responses
         public PollStatus Status { get; set; }
         public DateTime? EvaluatedOn { get; set; }
         public DateTime SubmittedOn { get; set; }
+        public List<PollOptionResponse>? Options { get; set; }
+        public int TotalVotes { get; set; }
+        public Dictionary<int, int>? OptionVoteCounts { get; set; }
     }
 }

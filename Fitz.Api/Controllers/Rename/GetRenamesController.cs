@@ -1,7 +1,7 @@
 using Fitz.Api.Attributes;
 using Fitz.Api.Models.Responses;
 using Fitz.Features.Rename;
-using Fitz.Features.Rename.Models;
+using Fitz.Database.Entities;
 using Fitz.Metrics;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;

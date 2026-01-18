@@ -1,9 +1,10 @@
 using DSharpPlus;
-using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Core.Discord;
 using Fitz.Core.Services;
 using Fitz.Core.Services.Features;
 using Fitz.Features.Bank;
+using Fitz.Features.Favorability;
 using Hangfire;
 using Hangfire.MySql;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +22,7 @@ namespace Fitz.Core
             ServerVersion? version = null;
             try
             {
-                version = ServerVersion.AutoDetect(BotContext.ConnectionString);
+                version = ServerVersion.AutoDetect(DatabaseConnection.ConnectionString);
             }
             catch
             {
@@ -32,7 +33,7 @@ namespace Fitz.Core
             {
                 services.AddDbContext<BotContext>(
                     DbContextOptions => DbContextOptions
-                    .UseMySql(BotContext.ConnectionString, version));
+                    .UseMySql(DatabaseConnection.ConnectionString, version));
             }
             else
             {
@@ -41,8 +42,46 @@ namespace Fitz.Core
                     .UseInMemoryDatabase("TestDb"));
             }
 
-            services.AddSingleton<BotLog>()
-                .AddSingleton<ActivityManager>();
+            var botToken = Environment.GetEnvironmentVariable("BOT_TOKEN");
+            if (string.IsNullOrEmpty(botToken))
+            {
+                Log.Fatal("BOT_TOKEN environment variable is not set. The bot cannot start without a Discord token.");
+                throw new InvalidOperationException("BOT_TOKEN environment variable is required but not set.");
+            }
+
+            try
+            {
+#pragma warning disable CA2000 // Dispose objects before losing scope
+                services.AddSingleton(new DiscordClient(new DiscordConfiguration
+                {
+                    Intents = DiscordIntents.All,
+                    LoggerFactory = new SerilogLoggerFactory(Log.Logger),
+                    AlwaysCacheMembers = false,
+                    AutoReconnect = true,
+                    MessageCacheSize = 0,
+                    Token = botToken,
+                    TokenType = TokenType.Bot,
+                }));
+#pragma warning restore CA2000 // Dispose objects before losing scope
+                Log.Information("DiscordClient registered successfully");
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Failed to register DiscordClient. The bot cannot start.");
+                throw;
+            }
+
+            services.AddSingleton<BotLog>(sp =>
+            {
+                var client = sp.GetService<DiscordClient>();
+                return new BotLog(client ?? throw new InvalidOperationException("DiscordClient is required for BotLog"));
+            });
+
+            services.AddSingleton<ActivityManager>(sp =>
+            {
+                var client = sp.GetService<DiscordClient>();
+                return new ActivityManager(client ?? throw new InvalidOperationException("DiscordClient is required for ActivityManager"));
+            });
 
             if (version != null)
             {
@@ -52,7 +91,7 @@ namespace Fitz.Core
                         config.UseSimpleAssemblyNameTypeSerializer()
                         .UseRecommendedSerializerSettings()
                         .UseStorage(
-                            new MySqlStorage(BotContext.ConnectionString,
+                            new MySqlStorage(DatabaseConnection.ConnectionString,
                             new MySqlStorageOptions
                             {
                                 TransactionIsolationLevel = System.Transactions.IsolationLevel.ReadCommitted,
@@ -69,25 +108,9 @@ namespace Fitz.Core
                 catch { }
             }
 
-            try
-            {
-#pragma warning disable CA2000 // Dispose objects before losing scope
-                services.AddSingleton(new DiscordClient(new DiscordConfiguration
-                {
-                    Intents = DiscordIntents.All,
-                    LoggerFactory = new SerilogLoggerFactory(Log.Logger),
-                    AlwaysCacheMembers = false,
-                    AutoReconnect = true,
-                    MessageCacheSize = 0,
-                    Token = Environment.GetEnvironmentVariable("BOT_TOKEN"),
-                    TokenType = TokenType.Bot,
-                }));
-#pragma warning restore CA2000 // Dispose objects before losing scope
-            }
-            catch { }
-
             services.AddSingleton<FeatureManager>()
-                .AddSingleton<BankService>();
+                .AddSingleton<BankService>()
+                .AddTransient<FavorabilityService>();
         }
     }
 }

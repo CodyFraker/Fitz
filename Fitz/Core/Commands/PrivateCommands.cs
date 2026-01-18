@@ -1,4 +1,4 @@
-﻿namespace Fitz.Core.Commands
+namespace Fitz.Core.Commands
 {
     using System;
     using System.Diagnostics;
@@ -10,7 +10,7 @@
     using DSharpPlus.CommandsNext;
     using DSharpPlus.CommandsNext.Attributes;
     using DSharpPlus.Entities;
-    using Fitz.Features.Accounts.Models;
+    using Fitz.Database.Entities;
     using Fitz.Variables.Emojis;
 
     public class PrivateCommands : BaseCommandModule

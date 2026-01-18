@@ -1,0 +1,15 @@
+[tools]
+node = "20"
+npm = "latest"
+
+[env]
+NODE_ENV = "development"
+PORT = "5173"
+
+[tasks.dev]
+description = "Run Next.js frontend in development mode"
+run = "npm run dev"
+
+[settings]
+# Automatically install tools when entering the directory
+auto_install = true

@@ -1,5 +1,6 @@
-﻿using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Core.Models;
+using Fitz.Database.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
@@ -20,7 +21,7 @@ namespace Fitz.Core.Services.Settings
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                Models.Settings settings = db.Settings.FirstOrDefault();
+                var settings = db.Settings.FirstOrDefault();
 
                 if (settings != null)
                 {
@@ -28,7 +29,7 @@ namespace Fitz.Core.Services.Settings
                 }
                 else
                 {
-                    settings = new Models.Settings();
+                    settings = new Database.Entities.Settings();
                     settings.LotteryDuration = 7;
                     settings.BaseLotteryPool = 36;
                     settings.LotteryPoolRollover = true;
@@ -43,6 +44,10 @@ namespace Fitz.Core.Services.Settings
                     settings.PollVote = 12;
                     settings.PollCreatorTip = 6;
                     settings.MaxPendingPolls = 10;
+                    settings.FavorabilityBeerRatioThreshold = 2.0m;
+                    settings.FavorabilityLowThreshold = 10;
+                    settings.FavorabilityBaseDropPercent = 1.0m;
+                    settings.FavorabilityDropMultiplier = 1.5m;
 
                     db.Settings.Add(settings);
                     await db.SaveChangesAsync();
@@ -66,7 +71,7 @@ namespace Fitz.Core.Services.Settings
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                Models.Settings settings = db.Settings.FirstOrDefault();
+                var settings = db.Settings.FirstOrDefault();
 
                 if (settings == null)
                 {
@@ -105,7 +110,7 @@ namespace Fitz.Core.Services.Settings
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                Models.Settings settings = db.Settings.FirstOrDefault();
+                var settings = db.Settings.FirstOrDefault();
 
                 if (settings == null)
                 {
@@ -140,7 +145,7 @@ namespace Fitz.Core.Services.Settings
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                Models.Settings settings = db.Settings.FirstOrDefault();
+                var settings = db.Settings.FirstOrDefault();
 
                 if (settings == null)
                 {
@@ -170,7 +175,7 @@ namespace Fitz.Core.Services.Settings
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                Models.Settings settings = db.Settings.FirstOrDefault();
+                var settings = db.Settings.FirstOrDefault();
 
                 if (settings == null)
                 {
@@ -205,7 +210,7 @@ namespace Fitz.Core.Services.Settings
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                Models.Settings settings = db.Settings.FirstOrDefault();
+                var settings = db.Settings.FirstOrDefault();
 
                 if (settings == null)
                 {
@@ -240,7 +245,7 @@ namespace Fitz.Core.Services.Settings
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                Models.Settings settings = db.Settings.FirstOrDefault();
+                var settings = db.Settings.FirstOrDefault();
 
                 if (settings == null)
                 {
@@ -275,7 +280,7 @@ namespace Fitz.Core.Services.Settings
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                Models.Settings settings = db.Settings.FirstOrDefault();
+                var settings = db.Settings.FirstOrDefault();
 
                 if (settings == null)
                 {
@@ -310,7 +315,7 @@ namespace Fitz.Core.Services.Settings
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                Models.Settings settings = db.Settings.FirstOrDefault();
+                var settings = db.Settings.FirstOrDefault();
 
                 if (settings == null)
                 {
@@ -338,12 +343,12 @@ namespace Fitz.Core.Services.Settings
 
         #region Get Settings
 
-        public Models.Settings GetSettings()
+        public Fitz.Database.Entities.Settings GetSettings()
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-            Models.Settings settings = db.Settings.FirstOrDefault();
+            var settings = db.Settings.FirstOrDefault();
 
             if (settings == null)
             {

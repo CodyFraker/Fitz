@@ -7,7 +7,7 @@ using Fitz.Core.Discord;
 using Fitz.Core.Services.Features;
 using Fitz.Features.Accounts.Commands;
 using Fitz.Features.Accounts.Jobs;
-using Fitz.Features.Accounts.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts.Queries;
 using Fitz.Variables;
 using Hangfire;

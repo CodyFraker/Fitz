@@ -1,11 +1,11 @@
-using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Core.Discord;
 using Fitz.Core.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts;
-using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank.Commands;
-using Fitz.Features.Bank.Models;
 using Fitz.Features.Bank.Queries;
+using Fitz.Features.Favorability;
 using Fitz.Features.Settings;
 using Fitz.Metrics;
 using Fitz.Variables;
@@ -15,17 +15,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Transaction = Fitz.Features.Bank.Models.Transaction;
+using Transaction = Fitz.Database.Entities.Transaction;
 
 namespace Fitz.Features.Bank
 {
-    public class BankService(IServiceScopeFactory scopeFactory, AccountService accountService, SettingsService settingsService, BotLog botLog, FitzMetrics? fitzMetrics = null)
+    public class BankService(IServiceScopeFactory scopeFactory, AccountService accountService, SettingsService settingsService, FavorabilityService favorabilityService, BotLog botLog, FitzMetrics? fitzMetrics = null)
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly AccountService accountService = accountService;
         private readonly SettingsService settingsService = settingsService;
+        private readonly FavorabilityService favorabilityService = favorabilityService;
         private readonly BotLog botLog = botLog;
-        private readonly FitzMetrics? fitzMetrics = fitzMetrics;
+        private readonly FitzMetrics fitzMetrics = fitzMetrics;
 
         public async Task<Result> AwardAccountCreationBonusAsync(Account account)
         {
@@ -132,7 +133,7 @@ namespace Fitz.Features.Bank
 
         public async Task<Result> PurchaseLotteryTicket(Account user, int amount)
         {
-            var command = new PurchaseLotteryTicketCommand(scopeFactory, botLog, fitzMetrics);
+            var command = new PurchaseLotteryTicketCommand(scopeFactory, accountService, settingsService, botLog, fitzMetrics);
             return await command.ExecuteAsync(user, amount);
         }
 
@@ -150,7 +151,7 @@ namespace Fitz.Features.Bank
 
         public async Task<Result> TransferToFitz(ulong userId, int amount, Reason reason)
         {
-            var command = new TransferToFitzCommand(scopeFactory, botLog, fitzMetrics);
+            var command = new Commands.TransferToFitzCommand(scopeFactory, accountService, settingsService, favorabilityService, botLog, fitzMetrics);
             return await command.ExecuteAsync(userId, amount, reason);
         }
 
@@ -213,6 +214,12 @@ namespace Fitz.Features.Bank
             return query.Execute(limit);
         }
 
+        public (List<Account> Accounts, int TotalCount) GetBalances(int skip = 0, int take = 10)
+        {
+            var query = new GetBalancesQuery(scopeFactory);
+            return query.Execute(skip, take);
+        }
+
         public List<Transaction> GetTransactions(int take)
         {
             var query = new GetTransactionsQuery(scopeFactory);
@@ -223,6 +230,12 @@ namespace Fitz.Features.Bank
         {
             var query = new GetTransactionsQuery(scopeFactory);
             return query.Execute(userId);
+        }
+
+        public (List<Transaction> Transactions, int TotalCount) GetTransactions(ulong userId, int skip, int take)
+        {
+            var query = new GetTransactionsQuery(scopeFactory);
+            return query.Execute(userId, skip, take);
         }
     }
 }

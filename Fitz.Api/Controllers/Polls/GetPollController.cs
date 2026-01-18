@@ -1,7 +1,7 @@
 using Fitz.Api.Attributes;
 using Fitz.Api.Models.Responses;
-using Fitz.Core.Contexts;
-using Fitz.Features.Polls.Models;
+using Fitz.Database;
+using Fitz.Database.Entities;
 using Fitz.Metrics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

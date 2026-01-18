@@ -1,4 +1,4 @@
-using Fitz.Features.Accounts.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts.Queries;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;

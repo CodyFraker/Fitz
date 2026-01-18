@@ -1,21 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
 using DSharpPlus.Entities;
-using Fitz.Core.Contexts;
 using Fitz.Core.Discord;
 using Fitz.Core.Models;
+using Fitz.Database;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts;
-using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Fitz.Features.Blackjack.Modals;
 using Fitz.Variables;
 using Fitz.Variables.Emojis;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace Fitz.Features.Blackjack
 {
@@ -135,20 +133,25 @@ namespace Fitz.Features.Blackjack
         {
             game.Deck = JsonSerializer.Deserialize<Deck>(game.DeckJson);
 
-            if (game.Deck.Cards.Count < 2)
+            if (game.Deck is not Modals.Deck deck)
+            {
+                return game;
+            }
+
+            if (deck.Cards.Count < 2)
             {
                 // Can't continue, not enough cards.
+                return game;
             }
 
             foreach (BlackjackPlayers player in game.Players)
             {
-                var card = game.Deck.Cards.FirstOrDefault();
-                player.Hand.AddCard(card);
-                game.Deck.cards.Remove(card);
-
-                card = game.Deck.cards.FirstOrDefault();
-                player.Hand.AddCard(card);
-                game.Deck.cards.Remove(card);
+                var card = deck.Cards.FirstOrDefault();
+                if (player.Hand is Modals.Hand hand)
+                {
+                    hand.AddCard(card);
+                    deck.cards.Remove(card);
+                }
             }
             return game;
         }
@@ -156,13 +159,18 @@ namespace Fitz.Features.Blackjack
         public void Hit(BlackjackGame game, Account playerAccount)
         {
             BlackjackPlayers player = game.Players.FirstOrDefault(p => p.Account.Id == playerAccount.Id);
-            var card = game.Deck.cards.FirstOrDefault();
-            player.Hand.AddCard(card);
-            game.Deck.cards.Remove(card);
-
-            if (PlayerHasBusted(game, playerAccount))
+            if (game.Deck is Modals.Deck deck)
             {
-                player.IsWinner = false;
+                var card = deck.Cards.FirstOrDefault();
+                if (player.Hand is Modals.Hand hand)
+                {
+                    hand.AddCard(card);
+                }
+
+                if (PlayerHasBusted(game, playerAccount))
+                {
+                    player.IsWinner = false;
+                }
             }
         }
 
@@ -175,7 +183,7 @@ namespace Fitz.Features.Blackjack
         {
             BlackjackPlayers player = game.Players.FirstOrDefault(p => p.Account.Id == playerAccount.Id);
 
-            if (player.Hand.TotalValue > 21)
+            if (player.Hand is Modals.Hand hand && hand.TotalValue > 21)
             {
                 player.IsBusted = true;
                 return true;

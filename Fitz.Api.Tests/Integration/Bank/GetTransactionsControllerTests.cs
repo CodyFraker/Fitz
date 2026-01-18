@@ -1,6 +1,6 @@
 using Fitz.Api.Tests;
-using Fitz.Core.Contexts;
-using Fitz.Features.Bank.Models;
+using Fitz.Database;
+using Fitz.Database.Entities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;

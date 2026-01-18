@@ -27,7 +27,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Fitz\Fitz.csproj" />
+    <ProjectReference Include="..\Fitz.Database\Fitz.Database.csproj" />
     <ProjectReference Include="..\Fitz.Metrics\Fitz.Metrics.csproj" />
+    <ProjectReference Include="..\Fitz.Seeds\Fitz.Seeds.csproj" />
   </ItemGroup>
 
   <ItemGroup>

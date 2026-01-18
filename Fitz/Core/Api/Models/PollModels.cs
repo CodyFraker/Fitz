@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Fitz.Features.Polls.Models;
+using Fitz.Database.Entities;
 
 namespace Fitz.Core.Api.Models
 {

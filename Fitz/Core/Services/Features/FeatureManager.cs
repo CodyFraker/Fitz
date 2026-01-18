@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System;
@@ -7,7 +7,8 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using Fitz.Core.Contexts;
+using Fitz.Database;
+using Fitz.Database.Entities;
 
 namespace Fitz.Core.Services.Features
 {

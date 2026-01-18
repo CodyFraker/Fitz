@@ -5,6 +5,7 @@ using DSharpPlus.SlashCommands;
 using Fitz.Core.Api;
 using Fitz.Core.Api.Models;
 using Fitz.Core.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Polls.Models;
 using Fitz.Features.Settings;
 using Fitz.Variables;
@@ -21,7 +22,7 @@ namespace Fitz.Features.Polls.Polls
     public class PollModalCommands(FitzApiClient apiClient, SettingsService settingsService) : ModalCommandModule
     {
         private readonly FitzApiClient apiClient = apiClient;
-        private readonly Core.Models.Settings settings = settingsService.GetSettings();
+        private readonly Fitz.Database.Entities.Settings settings = settingsService.GetSettings();
 
         #region Number
 
@@ -641,6 +642,11 @@ namespace Fitz.Features.Polls.Polls
                     // If custom emoji
                     description += $"{DiscordEmoji.FromGuildEmote(ctx.Client, option.EmojiId.Value)} **{option.Answer}**\n";
                 }
+            }
+
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                description = "No options available";
             }
 
             DiscordEmbed pollEmbed = new DiscordEmbedBuilder

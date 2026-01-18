@@ -22,6 +22,7 @@ namespace Fitz.Api.Controllers.Rename
 
         [HttpGet("user/{userId}")]
         [RequireDiscordAuth]
+        [RequireOwnData]
         public IActionResult GetRenamesByUser(ulong userId)
         {
             var stopwatch = Stopwatch.StartNew();

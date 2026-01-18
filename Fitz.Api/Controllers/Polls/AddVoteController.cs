@@ -1,7 +1,7 @@
 using Fitz.Api.Attributes;
 using Fitz.Api.Models.Requests;
 using Fitz.Api.Models.Responses;
-using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Features.Accounts;
 using Fitz.Features.Polls;
 using Fitz.Metrics;

@@ -1,8 +1,9 @@
 using DSharpPlus.Entities;
-using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Core.Discord;
 using Fitz.Core.Models;
-using Fitz.Features.Accounts.Models;
+using Fitz.Database.Entities;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts.Queries;
 using Fitz.Metrics;
 using Fitz.Variables.Emojis;

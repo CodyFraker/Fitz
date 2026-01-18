@@ -13,7 +13,7 @@ using Fitz.Core.Commands.Settings;
 using Fitz.Core.Services.Features;
 using Fitz.Features.Accounts;
 using Fitz.Features.Accounts.Commands;
-using Fitz.Features.Accounts.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Bank;
 using Fitz.Features.Blackjack.Commands;
 using Fitz.Features.Lottery.Commands;

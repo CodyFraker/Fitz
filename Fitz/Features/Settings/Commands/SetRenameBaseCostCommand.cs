@@ -1,5 +1,6 @@
-using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Core.Models;
+using Fitz.Database.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;

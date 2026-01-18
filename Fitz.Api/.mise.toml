@@ -1,0 +1,3 @@
+[tasks.dev]
+description = "Run Fitz API in development mode"
+run = "dotnet run"

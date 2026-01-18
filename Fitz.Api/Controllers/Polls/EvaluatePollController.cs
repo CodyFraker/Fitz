@@ -1,7 +1,7 @@
 using Fitz.Api.Attributes;
 using Fitz.Api.Models.Requests;
 using Fitz.Api.Models.Responses;
-using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Features.Polls;
 using Fitz.Metrics;
 using Microsoft.AspNetCore.Mvc;
@@ -28,6 +28,7 @@ namespace Fitz.Api.Controllers.Polls
 
         [HttpPatch("{id}/evaluate")]
         [RequireDiscordAuth]
+        [RequireAdmin]
         public async Task<IActionResult> EvaluatePoll(int id, [FromBody] EvaluatePollRequest request)
         {
             var stopwatch = Stopwatch.StartNew();
@@ -73,7 +74,7 @@ namespace Fitz.Api.Controllers.Polls
                     });
                 }
 
-                var updatedPoll = result.Data as Fitz.Features.Polls.Models.Poll;
+                var updatedPoll = result.Data as Fitz.Database.Entities.Poll;
                 if (updatedPoll == null)
                 {
                     updatedPoll = await db.Polls.FindAsync(id);

@@ -1,10 +1,10 @@
-﻿using DSharpPlus;
+using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Commands.Attributes;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts;
-using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Fitz.Features.Blackjack.Modals;
 using Fitz.Variables.Emojis;
@@ -220,25 +220,28 @@ namespace Fitz.Features.Blackjack.Commands
 
             string dealerHand = string.Empty;
 
-            foreach (Card card in dealer.Hand.Cards)
+            if (dealer.Hand is Modals.Hand hand)
             {
-                switch (card.Suite)
+                foreach (Card card in hand.Cards)
                 {
-                    case Suite.Spades:
-                        dealerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":spades:")}\n";
-                        break;
+                    switch (card.Suite)
+                    {
+                        case Suite.Spades:
+                            dealerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":spades:")}\n";
+                            break;
 
-                    case Suite.Diamond:
-                        dealerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":diamonds:")}\n";
-                        break;
+                        case Suite.Diamond:
+                            dealerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":diamonds:")}\n";
+                            break;
 
-                    case Suite.Club:
-                        dealerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":clubs:")}\n";
-                        break;
+                        case Suite.Club:
+                            dealerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":clubs:")}\n";
+                            break;
 
-                    case Suite.Heart:
-                        dealerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":heart:")}\n";
-                        break;
+                        case Suite.Heart:
+                            dealerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":heart:")}\n";
+                            break;
+                    }
                 }
             }
 
@@ -261,46 +264,50 @@ namespace Fitz.Features.Blackjack.Commands
             foreach (BlackjackPlayers player in game.Players)
             {
                 string playerHand = string.Empty;
-                foreach (Card card in player.Hand.Cards)
+                if (player.Hand is Modals.Hand playerHandObj)
                 {
-                    switch (card.Suite)
+                    foreach (Card card in playerHandObj.Cards)
                     {
-                        case Suite.Spades:
-                            playerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":spades:")}\n";
-                            break;
+                        switch (card.Suite)
+                        {
+                            case Suite.Spades:
+                                playerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":spades:")}\n";
+                                break;
 
-                        case Suite.Diamond:
-                            playerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":diamonds:")}\n";
-                            break;
+                            case Suite.Diamond:
+                                playerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":diamonds:")}\n";
+                                break;
 
-                        case Suite.Club:
-                            playerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":clubs:")}\n";
-                            break;
+                            case Suite.Club:
+                                playerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":clubs:")}\n";
+                                break;
 
-                        case Suite.Heart:
-                            playerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":heart:")}\n";
-                            break;
+                            case Suite.Heart:
+                                playerHand += $"{card.Rank}{DiscordEmoji.FromName(dClient, ":heart:")}\n";
+                                break;
+                        }
                     }
-                }
-                if (player.IsBusted)
-                {
-                    embed.AddField($"~~{player.Account.Username}'s Hand: {player.Hand.TotalValue}~~{DiscordEmoji.FromName(dClient, ":x:")}", playerHand);
-                }
-                else
-                {
-                    if (player.HasTurn)
+
+                    if (player.IsBusted)
                     {
-                        embed.AddField($"{DiscordEmoji.FromName(dClient, ":arrow_right:")}{player.Account.Username}'s Hand: {player.Hand.TotalValue}", playerHand);
+                        embed.AddField($"~~{player.Account.Username}'s Hand: {playerHandObj.TotalValue}~~{DiscordEmoji.FromName(dClient, ":x:")}", playerHand);
                     }
                     else
                     {
-                        if (!player.IsBusted)
+                        if (player.HasTurn)
                         {
-                            embed.AddField($"{player.Account.Username}'s Hand: {player.Hand.TotalValue}{DiscordEmoji.FromName(dClient, ":star:")}", playerHand);
+                            embed.AddField($"{DiscordEmoji.FromName(dClient, ":arrow_right:")}{player.Account.Username}'s Hand: {playerHandObj.TotalValue}", playerHand);
                         }
                         else
                         {
-                            embed.AddField($"{player.Account.Username}'s Hand: {player.Hand.TotalValue}", playerHand);
+                            if (!player.IsBusted)
+                            {
+                                embed.AddField($"{player.Account.Username}'s Hand: {playerHandObj.TotalValue}{DiscordEmoji.FromName(dClient, ":star:")}", playerHand);
+                            }
+                            else
+                            {
+                                embed.AddField($"{player.Account.Username}'s Hand: {playerHandObj.TotalValue}", playerHand);
+                            }
                         }
                     }
                 }

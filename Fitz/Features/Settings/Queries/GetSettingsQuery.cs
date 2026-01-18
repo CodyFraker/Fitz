@@ -1,5 +1,4 @@
-using Fitz.Core.Contexts;
-using Fitz.Core.Models;
+using Fitz.Database;
 using Microsoft.Extensions.DependencyInjection;
 using System.Linq;
 
@@ -9,7 +8,7 @@ namespace Fitz.Features.Settings.Queries
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
 
-        public Core.Models.Settings Execute()
+        public Database.Entities.Settings Execute()
         {
             using var scope = scopeFactory.CreateScope();
             using var db = scope.ServiceProvider.GetRequiredService<BotContext>();

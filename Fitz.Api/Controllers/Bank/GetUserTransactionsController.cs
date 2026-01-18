@@ -22,7 +22,8 @@ namespace Fitz.Api.Controllers.Bank
 
         [HttpGet("transactions/{userId}")]
         [RequireDiscordAuth]
-        public IActionResult GetUserTransactions(ulong userId)
+        [RequireOwnData]
+        public IActionResult GetUserTransactions(ulong userId, [FromQuery] int skip = 0, [FromQuery] int take = 10)
         {
             var stopwatch = Stopwatch.StartNew();
             var endpoint = "/api/bank/transactions";
@@ -31,19 +32,45 @@ namespace Fitz.Api.Controllers.Bank
             
             try
             {
-                var transactions = _bankService.GetTransactions(userId);
-                
-                var response = transactions.Select(t => new TransactionResponse
+                if (take < 1 || take > 100)
                 {
-                    Id = t.Id,
-                    Sender = t.Sender,
-                    Recipient = t.Recipient,
-                    Amount = t.Amount,
-                    Reason = t.Reason.ToString(),
-                    Timestamp = t.Timestamp
-                }).ToList();
+                    _fitzMetrics?.RecordApiError(endpoint, "validation_error");
+                    return BadRequest(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Take must be between 1 and 100"
+                    });
+                }
 
-                return Ok(new ApiResponse<List<TransactionResponse>>
+                if (skip < 0)
+                {
+                    _fitzMetrics?.RecordApiError(endpoint, "validation_error");
+                    return BadRequest(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = "Skip must be greater than or equal to 0"
+                    });
+                }
+
+                var (transactions, totalCount) = _bankService.GetTransactions(userId, skip, take);
+                
+                var response = new TransactionsResponse
+                {
+                    Transactions = transactions.Select(t => new TransactionResponse
+                    {
+                        Id = t.Id,
+                        Sender = t.Sender,
+                        Recipient = t.Recipient,
+                        Amount = t.Amount,
+                        Reason = t.Reason.ToString(),
+                        Timestamp = t.Timestamp
+                    }).ToList(),
+                    TotalCount = totalCount,
+                    Skip = skip,
+                    Take = take
+                };
+
+                return Ok(new ApiResponse<TransactionsResponse>
                 {
                     Success = true,
                     Data = response

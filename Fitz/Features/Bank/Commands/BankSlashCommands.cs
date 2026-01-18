@@ -1,9 +1,9 @@
-﻿using DSharpPlus.Entities;
+using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Commands.Attributes;
-using Fitz.Core.Contexts;
+using Fitz.Database;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts;
-using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank.Commands.Attributes;
 using Fitz.Features.Bank.Models;
 using Fitz.Variables.Emojis;
@@ -67,9 +67,14 @@ namespace Fitz.Features.Bank.Commands
                 }
             }
 
+            if (string.IsNullOrWhiteSpace(transactionsField))
+            {
+                transactionsField = "No transactions yet";
+            }
+
             balanceEmbed.AddField("Beer", $"`{account.Beer}`", true);
             balanceEmbed.AddField("Lifetime Beer", $"`{account.LifetimeBeer}`", true);
-            balanceEmbed.AddField("Transactions", $"{transactionsField}", false);
+            balanceEmbed.AddField("Transactions", transactionsField, false);
 
             await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().AddEmbed(balanceEmbed.Build()).AsEphemeral(true));
 

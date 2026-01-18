@@ -278,6 +278,20 @@ FakesAssemblies/
 .ntvs_analysis.dat
 node_modules/
 
+# Next.js
+Fitz.Web/.next/
+Fitz.Web/out/
+Fitz.Web/build
+Fitz.Web/.env*.local
+Fitz.Web/coverage/
+
+# Next.js
+Fitz.Web/.next/
+Fitz.Web/out/
+Fitz.Web/build
+Fitz.Web/.env*.local
+Fitz.Web/coverage/
+
 # Visual Studio 6 build log
 *.plg
 
@@ -353,3 +367,6 @@ MigrationBackup/
 .ionide/
 .env
 *.env
+
+# mise
+.mise/

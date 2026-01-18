@@ -1,7 +1,6 @@
-using Fitz.Core.Contexts;
 using Fitz.Core.Models;
-using Fitz.Features.Accounts.Models;
-using Fitz.Features.Lottery.Models;
+using Fitz.Database;
+using Fitz.Database.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
 using System.Linq;

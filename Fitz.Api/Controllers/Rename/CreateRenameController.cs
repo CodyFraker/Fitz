@@ -1,10 +1,10 @@
 using Fitz.Api.Attributes;
 using Fitz.Api.Models.Requests;
 using Fitz.Api.Models.Responses;
-using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Features.Accounts;
 using Fitz.Features.Rename;
-using Fitz.Features.Rename.Models;
+using Fitz.Database.Entities;
 using Fitz.Metrics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

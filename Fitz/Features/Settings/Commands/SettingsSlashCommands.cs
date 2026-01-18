@@ -3,6 +3,7 @@ using DSharpPlus.Entities;
 using DSharpPlus.ModalCommands;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Settings.Commands;
 using Fitz.Features.Settings.Queries;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,7 +42,7 @@ namespace Fitz.Features.Settings.Commands
             }
         }
 
-        private DiscordEmbed SettingsEmbed(Core.Models.Settings settings)
+        private DiscordEmbed SettingsEmbed(Fitz.Database.Entities.Settings settings)
         {
             DiscordEmbedBuilder settingsEmbed = new()
             {

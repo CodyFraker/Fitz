@@ -1,9 +1,9 @@
-﻿namespace Fitz.Core.Commands
+namespace Fitz.Core.Commands
 {
     using System.Threading.Tasks;
     using DSharpPlus.CommandsNext;
     using DSharpPlus.CommandsNext.Attributes;
-    using Fitz.Core.Contexts;
+    using Fitz.Database;
 
     /// <summary>
     /// This class pertains to the commands that can be ran practically anywhere. They're typically short and simple commands to run.

@@ -3,11 +3,11 @@ using DSharpPlus.Entities;
 using DSharpPlus.ModalCommands;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Commands.Attributes;
-using Fitz.Core.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts;
-using Fitz.Features.Accounts.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Bank;
-using Fitz.Features.Lottery.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Settings;
 using Fitz.Variables.Emojis;
 using System;
@@ -49,9 +49,9 @@ namespace Fitz.Features.Lottery.Commands
                 }
             }
             // Get settings for lottery
-            Core.Models.Settings settings = settingsService.GetSettings();
+            Fitz.Database.Entities.Settings settings = settingsService.GetSettings();
 
-            Models.Lottery lottery = lotteryService.GetCurrentLottery();
+            var lottery = lotteryService.GetCurrentLottery();
 
             // Get account
             Account account = accountService.FindAccount(ctx.User.Id);
@@ -131,7 +131,7 @@ namespace Fitz.Features.Lottery.Commands
         [RequireAccount]
         public async Task LotteryTickets(InteractionContext ctx, [Option("Tickets", "How many tickets do you want?")] long tickets)
         {
-            Core.Models.Settings settings = settingsService.GetSettings();
+            Fitz.Database.Entities.Settings settings = settingsService.GetSettings();
             Account account = accountService.FindAccount(ctx.User.Id);
             if (account == null)
             {
@@ -191,7 +191,7 @@ namespace Fitz.Features.Lottery.Commands
                 ticketNumbers += $"{ticket.Number}\n";
             }
 
-            Models.Lottery lottery = lotteryService.GetCurrentLottery();
+            var lottery = lotteryService.GetCurrentLottery();
             int daysLeft = (int)this.lotteryService.GetRemainingHoursUntilNextDrawing().Data;
 
             //using var qrGenerator = new QRCodeGenerator();
@@ -251,7 +251,7 @@ namespace Fitz.Features.Lottery.Commands
         public async Task MyTickets(InteractionContext ctx)
         {
             Account account = accountService.FindAccount(ctx.User.Id);
-            Models.Lottery drawing = lotteryService.GetCurrentLottery();
+            Database.Entities.Lottery drawing = lotteryService.GetCurrentLottery();
 
             if (lotteryService.GetUserTickets(account).Data is not List<Ticket> userTickets || userTickets.Count == 0)
             {

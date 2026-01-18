@@ -42,10 +42,30 @@ namespace Fitz.Api.Controllers.Lottery
                     });
                 }
 
-                return Ok(new ApiResponse<object>
+                var totalTicketsResult = _lotteryService.GetTotalTickets();
+                var totalParticipantsResult = _lotteryService.GetTotalLotteryParticipant();
+                
+                int totalTickets = totalTicketsResult.Success ? (int)totalTicketsResult.Data : 0;
+                int totalParticipants = totalParticipantsResult.Success ? (int)totalParticipantsResult.Data : 0;
+                
+                double odds = totalTickets > 0 ? (1.0 / totalTickets) * 100 : 0;
+
+                var response = new CurrentLotteryResponse
+                {
+                    Id = lottery.Id,
+                    StartDate = lottery.StartDate,
+                    EndDate = lottery.EndDate,
+                    Pool = lottery.Pool,
+                    TotalTickets = totalTickets,
+                    TotalParticipants = totalParticipants,
+                    Odds = odds,
+                    WinningTicket = lottery.WinningTicket
+                };
+
+                return Ok(new ApiResponse<CurrentLotteryResponse>
                 {
                     Success = true,
-                    Data = lottery
+                    Data = response
                 });
             }
             finally

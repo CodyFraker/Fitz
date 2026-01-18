@@ -8,7 +8,7 @@ using Fitz.Core.Api.Models;
 using Fitz.Core.Discord;
 using Fitz.Core.Services.Features;
 using Fitz.Features.Accounts;
-using Fitz.Features.Polls.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Polls.Polls;
 using Fitz.Variables;
 using Fitz.Variables.Channels;

@@ -1,4 +1,5 @@
 using Fitz.Api.Authentication;
+using Fitz.Variables;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -19,11 +20,12 @@ namespace Fitz.Api.Tests
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
+            var adminId = Users.Spy.ToString();
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, "123456789"),
+                new Claim(ClaimTypes.NameIdentifier, adminId),
                 new Claim(ClaimTypes.Name, "TestUser"),
-                new Claim("discord_id", "123456789")
+                new Claim("discord_id", adminId)
             };
 
             var identity = new ClaimsIdentity(claims, Scheme.Name);

@@ -1,12 +1,13 @@
 using DSharpPlus;
 using DSharpPlus.Entities;
-using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Core.Discord;
 using Fitz.Core.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts;
-using Fitz.Features.Accounts.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Bank;
-using Fitz.Features.Polls.Models;
+using Fitz.Database.Entities;
 using Fitz.Metrics;
 using Fitz.Variables.Emojis;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Fitz.Features.Polls.Models;
 
 namespace Fitz.Features.Polls
 {
@@ -335,6 +337,11 @@ namespace Fitz.Features.Polls
                 }
             }
 
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                description = "No options available";
+            }
+
             switch (poll.Type)
             {
                 case PollType.Number:
@@ -404,6 +411,16 @@ namespace Fitz.Features.Polls
                 }
             }
 
+            if (pollMessage != null)
+            {
+                description += $"\nView Poll -> {pollMessage.JumpLink}\n";
+            }
+
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                description = "No options available";
+            }
+
             string embedTitle = string.Empty;
             if (poll.Status == PollStatus.Approved)
             {
@@ -412,11 +429,6 @@ namespace Fitz.Features.Polls
             if (poll.Status == PollStatus.Declined)
             {
                 embedTitle = $"~~__{poll.Question}__~~ - Denied";
-            }
-
-            if (pollMessage != null)
-            {
-                description += $"\nView Poll -> {pollMessage.JumpLink}\n";
             }
 
             DiscordEmbed pollEmbed = new DiscordEmbedBuilder

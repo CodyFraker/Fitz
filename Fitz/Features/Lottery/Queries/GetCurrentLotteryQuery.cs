@@ -1,5 +1,5 @@
-using Fitz.Core.Contexts;
-using Fitz.Features.Lottery.Models;
+using Fitz.Database;
+using Fitz.Database.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using System.Linq;
 
@@ -9,7 +9,7 @@ namespace Fitz.Features.Lottery.Queries
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
 
-        public Models.Lottery Execute()
+        public Database.Entities.Lottery Execute()
         {
             using var scope = scopeFactory.CreateScope();
             using var db = scope.ServiceProvider.GetRequiredService<BotContext>();

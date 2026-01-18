@@ -1,6 +1,7 @@
 using DSharpPlus;
 using DSharpPlus.Entities;
 using Fitz.Core.Services.Jobs;
+using Fitz.Database.Entities;
 using Fitz.Features.Bank;
 using Fitz.Metrics;
 using Fitz.Variables;

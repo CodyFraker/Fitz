@@ -1,9 +1,11 @@
-using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Core.Discord;
 using Fitz.Core.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts;
-using Fitz.Features.Accounts.Models;
-using Fitz.Features.Bank.Models;
+using Fitz.Database.Entities;
+using Fitz.Database.Entities;
+using Fitz.Features.Favorability;
 using Fitz.Features.Settings;
 using Fitz.Metrics;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,7 +36,8 @@ namespace Fitz.Features.Bank.Commands
                     return new Result(false, $"{userId} did not have an account.", null);
                 }
 
-                var transferToFitzCommand = new TransferToFitzCommand(scopeFactory, botLog, fitzMetrics);
+                var favorabilityService = new FavorabilityService(scopeFactory, accountService, settingsService);
+                var transferToFitzCommand = new TransferToFitzCommand(scopeFactory, accountService, settingsService, favorabilityService, botLog, fitzMetrics);
                 await transferToFitzCommand.ExecuteAsync(account.Id, settings.PollDeclinedPenalty, Reason.PollDeclined);
 
                 fitzMetrics?.RecordTransaction("poll_declined_penalty");

@@ -1,4 +1,5 @@
 using Fitz.Core.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Settings.Commands;
 using Fitz.Features.Settings.Queries;
 using Microsoft.Extensions.DependencyInjection;
@@ -64,7 +65,7 @@ namespace Fitz.Features.Settings
             return await command.ExecuteAsync(cost);
         }
 
-        public Core.Models.Settings GetSettings()
+        public Fitz.Database.Entities.Settings GetSettings()
         {
             var query = new GetSettingsQuery(scopeFactory);
             return query.Execute();

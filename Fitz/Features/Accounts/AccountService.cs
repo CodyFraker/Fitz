@@ -1,11 +1,14 @@
 using DSharpPlus.Entities;
+using Fitz.Database;
 using Fitz.Core.Discord;
 using Fitz.Core.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts.Commands;
-using Fitz.Features.Accounts.Models;
 using Fitz.Features.Accounts.Queries;
 using Fitz.Metrics;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -31,6 +34,53 @@ namespace Fitz.Features.Accounts
             }
             
             return result;
+        }
+
+        public async Task<Result> CreateAccountAsync(ulong userId, string username)
+        {
+            var findAccountQuery = new FindAccountQuery(scopeFactory);
+            if (findAccountQuery.Execute(userId) != null)
+            {
+                return new Result(true, "Account already exists.", findAccountQuery.Execute(userId));
+            }
+
+            var account = new Account
+            {
+                Id = userId,
+                Username = username,
+                Beer = 0,
+                LifetimeBeer = 0,
+                safeBalance = 128,
+                Favorability = 50,
+                CreatedDate = DateTime.Now,
+                LastSeenDate = DateTime.Now,
+                LastActivityDate = DateTime.Now,
+                Deactivated = false,
+                subscribeToLottery = false,
+                SubscribeTickets = 1,
+            };
+
+            try
+            {
+                using var scope = scopeFactory.CreateScope();
+                using var db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+                db.Accounts.Add(account);
+                await db.SaveChangesAsync();
+
+                fitzMetrics?.RecordAccountCreated();
+                
+                var accounts = this.QueryAccounts();
+                var activeAccounts = accounts.Where(a => !a.Deactivated).Count();
+                fitzMetrics?.SetAccountsActive(activeAccounts);
+                
+                return new Result(true, "Account created successfully.", account);
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, $"Couldn't add new account! {username} | {userId}");
+                return new Result(false, "Failed to create account.", account);
+            }
         }
 
         public async Task<Result> CreateFitzAccountAsync()

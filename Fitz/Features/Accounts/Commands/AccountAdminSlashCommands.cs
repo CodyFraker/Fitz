@@ -1,5 +1,6 @@
-﻿using DSharpPlus.Entities;
+using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
 using Fitz.Variables;

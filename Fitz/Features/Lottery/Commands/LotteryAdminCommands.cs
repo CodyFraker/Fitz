@@ -1,11 +1,11 @@
-﻿using DSharpPlus.CommandsNext;
+using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
-using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Features.Accounts;
-using Fitz.Features.Accounts.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Lottery.Attributes;
-using Fitz.Features.Lottery.Models;
+using Fitz.Database.Entities;
 using Fitz.Variables;
 using Fitz.Variables.Emojis;
 using System;
@@ -35,7 +35,7 @@ namespace Fitz.Features.Lottery.Commands
         [Description("Ends a lottery.")]
         public async Task StopCurrentLottery(CommandContext ctx)
         {
-            Models.Lottery drawing = lotteryService.GetCurrentLottery();
+            Database.Entities.Lottery drawing = lotteryService.GetCurrentLottery();
             if (drawing == null)
             {
                 await ctx.RespondAsync("There is no active lottery.");
@@ -54,7 +54,7 @@ namespace Fitz.Features.Lottery.Commands
             {
                 await ctx.RespondAsync("Prize pool must be greater than 0.");
             }
-            Models.Lottery drawing = lotteryService.GetCurrentLottery();
+            Database.Entities.Lottery drawing = lotteryService.GetCurrentLottery();
             if (drawing == null)
             {
                 await ctx.RespondAsync("There is no active lottery.");
@@ -70,7 +70,7 @@ namespace Fitz.Features.Lottery.Commands
         [Description("Buys Fitz lottery tickets.")]
         public async Task BuyFitzLotteryTickets(CommandContext ctx, int tickets)
         {
-            Models.Lottery drawing = lotteryService.GetCurrentLottery();
+            var drawing = lotteryService.GetCurrentLottery();
             if (drawing == null)
             {
                 await ctx.RespondAsync("There is no active lottery.");
@@ -86,7 +86,7 @@ namespace Fitz.Features.Lottery.Commands
         [Description("Sends you a DM that looks like you won the current lottery.")]
         public async Task MockWinnerLottery(CommandContext ctx)
         {
-            Models.Lottery lottery = new Models.Lottery()
+            var lottery = new Database.Entities.Lottery()
             {
                 Id = 138,
                 Pool = 3600,
@@ -127,7 +127,7 @@ namespace Fitz.Features.Lottery.Commands
         {
             Account account = this.accountService.FindAccount(ctx.User.Id);
             List<Ticket> userTickets = lotteryService.GetUserTickets(account).Data as List<Ticket>;
-            Models.Lottery drawing = this.lotteryService.GetCurrentLottery();
+            var drawing = this.lotteryService.GetCurrentLottery();
             DiscordEmbedBuilder lotteryEmbed = new DiscordEmbedBuilder
             {
                 Footer = new DiscordEmbedBuilder.EmbedFooter

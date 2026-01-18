@@ -1,12 +1,10 @@
 using DSharpPlus;
 using DSharpPlus.Entities;
 using Fitz.Core.Discord;
-using Fitz.Core.Models;
 using Fitz.Core.Services.Jobs;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts;
-using Fitz.Features.Accounts.Models;
 using Fitz.Features.Bank;
-using Fitz.Features.Lottery.Models;
 using Fitz.Features.Settings;
 using Fitz.Metrics;
 using Fitz.Variables;
@@ -54,10 +52,10 @@ namespace Fitz.Features.Lottery
                 fitzMetrics?.SetLotterySubscriptionsActive(subscribers.Count);
 
                 // Get Current Lottery
-                Models.Lottery currentDrawing = this.lotteryService.GetCurrentLottery();
+                Database.Entities.Lottery currentDrawing = this.lotteryService.GetCurrentLottery();
 
                 // Get current settings
-                Core.Models.Settings settings = this.settingsService.GetSettings();
+                Database.Entities.Settings settings = this.settingsService.GetSettings();
 
                 if (currentDrawing == null)
                 {
@@ -174,7 +172,7 @@ namespace Fitz.Features.Lottery
 
         private async Task HandleLotterySubscriptions()
         {
-            Core.Models.Settings settings = this.settingsService.GetSettings();
+            var settings = this.settingsService.GetSettings();
             List<Account> lotterySubscribers = this.accountService.GetLotterySubscribers();
             foreach (Account subscriber in lotterySubscribers)
             {
@@ -232,7 +230,7 @@ namespace Fitz.Features.Lottery
                 DiscordUser user = await this.dClient.GetUserAsync(account.Id);
 
                 // Get current lottery
-                Models.Lottery drawing = this.lotteryService.GetCurrentLottery();
+                Database.Entities.Lottery drawing = this.lotteryService.GetCurrentLottery();
 
                 DiscordEmbedBuilder lotteryEmbed = new DiscordEmbedBuilder
                 {
@@ -265,7 +263,7 @@ namespace Fitz.Features.Lottery
             }
         }
 
-        private async Task MessageWinner(ulong userId, Models.Lottery drawing)
+        private async Task MessageWinner(ulong userId, Database.Entities.Lottery drawing)
         {
             if (userId == 0)
             {

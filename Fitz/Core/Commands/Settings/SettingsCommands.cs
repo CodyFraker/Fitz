@@ -1,10 +1,11 @@
-﻿using DSharpPlus;
+using DSharpPlus;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
 using DSharpPlus.ModalCommands;
 using DSharpPlus.SlashCommands;
-using Fitz.Core.Contexts;
 using Fitz.Core.Models;
+using Fitz.Database;
+using Fitz.Database.Entities;
 using Fitz.Core.Services.Settings;
 using System;
 using System.Threading.Tasks;
@@ -20,7 +21,7 @@ namespace Fitz.Core.Commands.Settings
         public async Task SettingsCommand(InteractionContext ctx,
             [Option("Setting", "Which setting do you wish to modify?")] SettingsAction settingsAction = SettingsAction.AccountCreationBonusAmount)
         {
-            Models.Settings settings = settingsService.GetSettings();
+            Fitz.Database.Entities.Settings settings = settingsService.GetSettings();
 
             switch (settingsAction)
             {
@@ -40,7 +41,7 @@ namespace Fitz.Core.Commands.Settings
             }
         }
 
-        private DiscordEmbed SettingsEmbed(Models.Settings settings)
+        private DiscordEmbed SettingsEmbed(Fitz.Database.Entities.Settings settings)
         {
             DiscordEmbedBuilder settingsEmbed = new()
             {

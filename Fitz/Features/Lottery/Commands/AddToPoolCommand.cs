@@ -1,7 +1,8 @@
-using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Core.Discord;
 using Fitz.Core.Models;
-using Fitz.Features.Lottery.Models;
+using Fitz.Database.Entities;
+using Fitz.Database.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System;

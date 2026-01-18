@@ -1,10 +1,11 @@
 using Fitz.Api.Attributes;
 using Fitz.Api.Models.Requests;
 using Fitz.Api.Models.Responses;
-using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Features.Accounts;
 using Fitz.Features.Polls;
-using Fitz.Features.Polls.Models;
+using Fitz.Database.Entities;
+using Fitz.Features.Settings;
 using Fitz.Metrics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,13 +20,15 @@ namespace Fitz.Api.Controllers.Polls
     {
         private readonly PollService _pollService;
         private readonly AccountService _accountService;
+        private readonly SettingsService _settingsService;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly FitzMetrics? _fitzMetrics;
 
-        public CreatePollController(PollService pollService, AccountService accountService, IServiceScopeFactory scopeFactory, FitzMetrics? fitzMetrics = null)
+        public CreatePollController(PollService pollService, AccountService accountService, SettingsService settingsService, IServiceScopeFactory scopeFactory, FitzMetrics? fitzMetrics = null)
         {
             _pollService = pollService;
             _accountService = accountService;
+            _settingsService = settingsService;
             _scopeFactory = scopeFactory;
             _fitzMetrics = fitzMetrics;
         }
@@ -62,6 +65,98 @@ namespace Fitz.Api.Controllers.Polls
                     });
                 }
 
+                var settings = _settingsService.GetSettings();
+
+                if (account.Beer < (settings.PollSubmittedPenalty + settings.PollDeclinedPenalty))
+                {
+                    _fitzMetrics?.RecordApiError(endpoint, "insufficient_beer");
+                    return BadRequest(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = $"You need at least {settings.PollSubmittedPenalty + settings.PollDeclinedPenalty} beer to create a poll."
+                    });
+                }
+
+                using var scope = _scopeFactory.CreateScope();
+                using var db = scope.ServiceProvider.GetRequiredService<BotContext>();
+
+                var pendingPolls = await db.Polls
+                    .Where(p => p.AccountId == request.AccountId && p.Status == PollStatus.Pending)
+                    .CountAsync();
+
+                if (pendingPolls >= settings.MaxPendingPolls)
+                {
+                    _fitzMetrics?.RecordApiError(endpoint, "max_pending_polls");
+                    return BadRequest(new ApiResponse<object>
+                    {
+                        Success = false,
+                        Message = $"You have reached the maximum number of polls you can submit. You can have a maximum of {settings.MaxPendingPolls} polls submitted at a time."
+                    });
+                }
+
+                switch (request.Type)
+                {
+                    case PollType.Number:
+                        if (request.Options.Count < 2 || request.Options.Count > 10)
+                        {
+                            _fitzMetrics?.RecordApiError(endpoint, "invalid_option_count");
+                            return BadRequest(new ApiResponse<object>
+                            {
+                                Success = false,
+                                Message = "Number polls require between 2 and 10 options."
+                            });
+                        }
+                        break;
+
+                    case PollType.Color:
+                        if (request.Options.Count < 1 || request.Options.Count > 9)
+                        {
+                            _fitzMetrics?.RecordApiError(endpoint, "invalid_option_count");
+                            return BadRequest(new ApiResponse<object>
+                            {
+                                Success = false,
+                                Message = "Color polls require between 1 and 9 options."
+                            });
+                        }
+                        break;
+
+                    case PollType.YesOrNo:
+                        if (request.Options.Count != 2)
+                        {
+                            _fitzMetrics?.RecordApiError(endpoint, "invalid_option_count");
+                            return BadRequest(new ApiResponse<object>
+                            {
+                                Success = false,
+                                Message = "Yes/No polls require exactly 2 options (Yes and No)."
+                            });
+                        }
+                        break;
+
+                    case PollType.ThisOrThat:
+                        if (request.Options.Count != 2)
+                        {
+                            _fitzMetrics?.RecordApiError(endpoint, "invalid_option_count");
+                            return BadRequest(new ApiResponse<object>
+                            {
+                                Success = false,
+                                Message = "This or That polls require exactly 2 options."
+                            });
+                        }
+                        break;
+
+                    case PollType.HotTake:
+                        if (request.Options.Count != 2)
+                        {
+                            _fitzMetrics?.RecordApiError(endpoint, "invalid_option_count");
+                            return BadRequest(new ApiResponse<object>
+                            {
+                                Success = false,
+                                Message = "Hot Take polls require exactly 2 options (Agree and Shit Take)."
+                            });
+                        }
+                        break;
+                }
+
                 var poll = new Poll
                 {
                     AccountId = request.AccountId,
@@ -87,9 +182,8 @@ namespace Fitz.Api.Controllers.Polls
                 var savedPoll = result.Data as Poll;
                 if (savedPoll == null)
                 {
-                    using var scope = _scopeFactory.CreateScope();
-                    using var db = scope.ServiceProvider.GetRequiredService<BotContext>();
-                    savedPoll = await db.Polls
+                    using var dbContext = scope.ServiceProvider.GetRequiredService<BotContext>();
+                    savedPoll = await dbContext.Polls
                         .Where(p => p.MessageId == request.MessageId)
                         .OrderByDescending(p => p.SubmittedOn)
                         .FirstOrDefaultAsync();

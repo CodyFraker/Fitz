@@ -1,5 +1,6 @@
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Models;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts.Queries;
 using Fitz.Features.Settings.Queries;
 using Microsoft.Extensions.DependencyInjection;

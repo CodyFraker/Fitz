@@ -1,6 +1,6 @@
 using Fitz.Api.Attributes;
 using Fitz.Api.Models.Responses;
-using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Features.Polls;
 using Fitz.Metrics;
 using Microsoft.AspNetCore.Mvc;

@@ -2,7 +2,8 @@ using DSharpPlus.Entities;
 using DSharpPlus.SlashCommands;
 using Fitz.Core.Discord;
 using Fitz.Core.Models;
-using Fitz.Features.Accounts.Models;
+using Fitz.Database.Entities;
+using Fitz.Database.Entities;
 using Fitz.Features.Accounts.Queries;
 using Fitz.Features.Bank;
 using Microsoft.Extensions.DependencyInjection;
@@ -64,7 +65,7 @@ namespace Fitz.Features.Accounts.Commands
 
             var setFavorabilityCommand = new SetFavorabilityCommand(scopeFactory, botLog);
             await setFavorabilityCommand.ExecuteAsync(account, int.Parse(Math.Floor(newFavorability).ToString()));
-            await this.bankService.TransferToFitz(account.Id, int.Parse(amount.ToString()), reason: Features.Bank.Models.Reason.Donated);
+            await this.bankService.TransferToFitz(account.Id, int.Parse(amount.ToString()), reason: Reason.Donated);
 
             return new Result(true, "Thanks for the beer.", null);
         }

@@ -1,12 +1,12 @@
-using Fitz.Core.Contexts;
+using Fitz.Database;
 using Fitz.Core.Discord;
-using Fitz.Features.Accounts.Models;
-using Fitz.Features.Bank.Models;
+using Fitz.Database.Entities;
+using Fitz.Database.Entities;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System;
 using System.Threading.Tasks;
-using Transaction = Fitz.Features.Bank.Models.Transaction;
+using Transaction = Fitz.Database.Entities.Transaction;
 
 namespace Fitz.Features.Bank.Commands
 {
