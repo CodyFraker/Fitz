@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { apiClient } from '@/lib/api/client'
 import { useAuth } from '@/contexts/AuthContext'
+import { AuthTokenResponse } from '@/types/api'
 import { Loader2, AlertCircle, LogIn } from 'lucide-react'
 
 const DISCORD_REDIRECT_URI = process.env.NEXT_PUBLIC_DISCORD_REDIRECT_URI || 'http://localhost:5173/callback'
@@ -30,7 +31,7 @@ function CallbackContent() {
 
     const exchangeToken = async () => {
       try {
-        const response = await apiClient.post('/api/auth/exchange-token', {
+        const response = await apiClient.post<AuthTokenResponse>('/api/auth/exchange-token', {
           code,
           redirectUri: DISCORD_REDIRECT_URI,
         })

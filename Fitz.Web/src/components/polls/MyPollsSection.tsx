@@ -87,7 +87,7 @@ export function MyPollsSection() {
           <div className="flex flex-col items-center justify-center py-4">
             <Inbox className="h-8 w-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground mt-2">
-              You haven't created any polls yet. Create your first poll to get started!
+              You haven&apos;t created any polls yet. Create your first poll to get started!
             </p>
           </div>
         </CardContent>

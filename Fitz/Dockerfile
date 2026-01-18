@@ -7,6 +7,8 @@ FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Fitz/Fitz.csproj", "Fitz/"]
+COPY ["Fitz.Database/Fitz.Database.csproj", "Fitz.Database/"]
+COPY ["Fitz.Metrics/Fitz.Metrics.csproj", "Fitz.Metrics/"]
 RUN dotnet restore "Fitz/Fitz.csproj"
 COPY . .
 WORKDIR "/src/Fitz"

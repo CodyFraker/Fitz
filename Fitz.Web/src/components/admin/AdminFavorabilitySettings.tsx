@@ -163,7 +163,7 @@ export function AdminFavorabilitySettings() {
               }
             />
             <p className="text-xs text-muted-foreground">
-              Default: 2.0 (user has 2x bot's beer)
+              Default: 2.0 (user has 2x bot&apos;s beer)
             </p>
           </div>
 
@@ -171,7 +171,7 @@ export function AdminFavorabilitySettings() {
             <Label htmlFor="lowThreshold">
               Low Favorability Threshold
               <span className="text-muted-foreground text-xs ml-2">
-                (Below this, users won't receive happy hour beer)
+                (Below this, users won&apos;t receive happy hour beer)
               </span>
             </Label>
             <Input
@@ -267,7 +267,7 @@ export function AdminFavorabilitySettings() {
                 <li>Favorability drops after each command that costs beer</li>
                 <li>Drop percentage increases based on beer ratio and multiplier</li>
                 <li>Users with 0 favorability cannot use commands</li>
-                <li>Users below low threshold won't receive happy hour beer</li>
+                <li>Users below low threshold won&apos;t receive happy hour beer</li>
               </ul>
             </div>
           </div>

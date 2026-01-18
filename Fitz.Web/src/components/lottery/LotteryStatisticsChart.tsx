@@ -94,11 +94,11 @@ export function LotteryStatisticsChart() {
             <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
             <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
             <Tooltip
-              formatter={(value: number, name: string) => {
+              formatter={(value: number | undefined, name: string | undefined) => {
                 if (name === 'prizePool') {
-                  return [`${value} 🍺`, 'Prize Pool']
+                  return [`${value ?? 0} 🍺`, 'Prize Pool']
                 }
-                return [value, 'Total Tickets']
+                return [value ?? 0, 'Total Tickets']
               }}
               labelStyle={{ color: '#000' }}
             />

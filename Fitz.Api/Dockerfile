@@ -8,6 +8,9 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Fitz.Api/Fitz.Api.csproj", "Fitz.Api/"]
 COPY ["Fitz/Fitz.csproj", "Fitz/"]
+COPY ["Fitz.Database/Fitz.Database.csproj", "Fitz.Database/"]
+COPY ["Fitz.Metrics/Fitz.Metrics.csproj", "Fitz.Metrics/"]
+COPY ["Fitz.Seeds/Fitz.Seeds.csproj", "Fitz.Seeds/"]
 RUN dotnet restore "Fitz.Api/Fitz.Api.csproj"
 COPY . .
 WORKDIR "/src/Fitz.Api"

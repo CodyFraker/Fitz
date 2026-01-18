@@ -1,4 +1,4 @@
-name: build-and-push-docker-image
+name: build-and-push-docker-images
 
 on:
   push:
@@ -10,12 +10,11 @@ on:
 
 env:
     GITHUB_REGISTRY: ghcr.io
-    DOCKER_IMAGE: ${{ github.repository }}
     DOCKER_BUILDKIT: 1
     DOCKER_CLI_AGGREGATE: 1
 
 jobs:
-    build-push-docker-image:
+    build-bot:
         runs-on: ubuntu-latest
         permissions:
             contents: read
@@ -26,14 +25,51 @@ jobs:
             - name: login to ghcr.io
               run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login -u ${{ github.actor }} --password-stdin ${{ env.GITHUB_REGISTRY }}
             - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v1
-            - name: build and push docker image using buildx
+              uses: docker/setup-buildx-action@v3
+            - name: build and push bot image
               run: |
-                docker buildx create --use
-                docker buildx inspect
-                cd Fitz/
                 docker buildx build \
                 --platform linux/arm64,linux/amd64 \
-                -t ${{ env.GITHUB_REGISTRY }}/codyfraker/fitz:latest \
-                -f Dockerfile \
+                -t ${{ env.GITHUB_REGISTRY }}/codyfraker/fitz-bot:latest \
+                -f Fitz/Dockerfile \
                 --push .
+
+    build-api:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: write
+        steps:
+            - name: checkout the repo
+              uses: actions/checkout@v4
+            - name: login to ghcr.io
+              run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login -u ${{ github.actor }} --password-stdin ${{ env.GITHUB_REGISTRY }}
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+            - name: build and push api image
+              run: |
+                docker buildx build \
+                --platform linux/arm64,linux/amd64 \
+                -t ${{ env.GITHUB_REGISTRY }}/codyfraker/fitz-api:latest \
+                -f Fitz.Api/Dockerfile \
+                --push .
+
+    build-web:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: write
+        steps:
+            - name: checkout the repo
+              uses: actions/checkout@v4
+            - name: login to ghcr.io
+              run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login -u ${{ github.actor }} --password-stdin ${{ env.GITHUB_REGISTRY }}
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+            - name: build and push web image
+              run: |
+                docker buildx build \
+                --platform linux/arm64,linux/amd64 \
+                -t ${{ env.GITHUB_REGISTRY }}/codyfraker/fitz-web:latest \
+                -f Fitz.Web/Dockerfile \
+                --push Fitz.Web/

@@ -8,7 +8,7 @@ import { http, HttpResponse } from 'msw'
 describe('useAuth', () => {
   beforeEach(() => {
     if (typeof window !== 'undefined') {
-      localStorage.clear()
+    localStorage.clear()
     }
   })
 

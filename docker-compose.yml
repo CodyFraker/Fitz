@@ -1,8 +1,6 @@
 services:
   bot:
-    build:
-      context: .
-      dockerfile: Fitz/Dockerfile
+    image: ghcr.io/codyfraker/fitz-bot:latest
     container_name: fitz-bot
     restart: unless-stopped
     environment:
@@ -17,9 +15,7 @@ services:
       - fitz-network
 
   api:
-    build:
-      context: .
-      dockerfile: Fitz.Api/Dockerfile
+    image: ghcr.io/codyfraker/fitz-api:latest
     container_name: fitz-api
     restart: unless-stopped
     ports:
@@ -37,6 +33,17 @@ services:
       ASPNETCORE_HTTPS_PORTS: 8081
     env_file:
       - .env
+    networks:
+      - fitz-network
+
+  web:
+    image: ghcr.io/codyfraker/fitz-web:latest
+    container_name: fitz-web
+    restart: unless-stopped
+    ports:
+      - "3000:5173"
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:8080}
     networks:
       - fitz-network
 

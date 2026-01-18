@@ -108,7 +108,7 @@ export function MyRenamesSection() {
           <div className="flex flex-col items-center justify-center py-4">
             <Inbox className="h-8 w-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground mt-2">
-              You don't have any rename requests yet. Create one to get started!
+              You don&apos;t have any rename requests yet. Create one to get started!
             </p>
           </div>
         </CardContent>

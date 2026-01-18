@@ -456,7 +456,7 @@ export function CreateRenameDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={loading || !isValid || !cost || (account && account.beer < cost)}
+                disabled={loading || !isValid || !cost || (account ? account.beer < cost : false)}
               >
                 {loading ? (
                   <>
@@ -560,7 +560,7 @@ export function CreateRenameDialog({
                 <Button
                   type="button"
                   onClick={handleCreateActive}
-                  disabled={loading || !cost || (account && account.beer < cost)}
+                  disabled={loading || !cost || (account ? account.beer < cost : false)}
                 >
                   {loading ? (
                     <>

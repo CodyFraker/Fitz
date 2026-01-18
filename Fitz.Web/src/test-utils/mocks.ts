@@ -3,6 +3,7 @@ import { CurrentUserResponse, BalanceResponse, AccountResponse } from '@/types/a
 export const mockUser: CurrentUserResponse = {
   id: '123456789',
   username: 'TestUser',
+  isAdmin: false,
 }
 
 export const mockBalance: BalanceResponse = {
