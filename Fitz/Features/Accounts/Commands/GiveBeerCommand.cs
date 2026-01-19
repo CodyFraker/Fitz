@@ -21,7 +21,7 @@ namespace Fitz.Features.Accounts.Commands
         public async Task<Result> ExecuteAsync(InteractionContext ctx, double amount)
         {
             var findAccountQuery = new FindAccountQuery(scopeFactory);
-            Account account = findAccountQuery.Execute(ctx.User.Id);
+            AccountEntity account = findAccountQuery.Execute(ctx.User.Id);
 
             if (account == null)
             {

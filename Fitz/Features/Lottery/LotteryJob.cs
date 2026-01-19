@@ -122,14 +122,14 @@ namespace Fitz.Features.Lottery
                 };
 
                 string winnerNames = string.Empty;
-                List<Account> priorWinners = this.lotteryService.GetLastLotteryWinnerAccounts();
+                List<AccountEntity> priorWinners = this.lotteryService.GetLastLotteryWinnerAccounts();
                 if (priorWinners.Count == 0)
                 {
                     winnerNames = "No prior winners.";
                 }
                 else
                 {
-                    foreach (Account winner in priorWinners)
+                    foreach (AccountEntity winner in priorWinners)
                     {
                         winnerNames += $"{winner.Username}\n";
                     }
@@ -173,8 +173,8 @@ namespace Fitz.Features.Lottery
         private async Task HandleLotterySubscriptions()
         {
             var settings = this.settingsService.GetSettings();
-            List<Account> lotterySubscribers = this.accountService.GetLotterySubscribers();
-            foreach (Account subscriber in lotterySubscribers)
+            List<AccountEntity> lotterySubscribers = this.accountService.GetLotterySubscribers();
+            foreach (AccountEntity subscriber in lotterySubscribers)
             {
                 if (subscriber == null)
                 {
@@ -222,7 +222,7 @@ namespace Fitz.Features.Lottery
             }
         }
 
-        private async Task MessageEnrolleeSuccess(Account account, List<Ticket> userTickets)
+        private async Task MessageEnrolleeSuccess(AccountEntity account, List<Ticket> userTickets)
         {
             try
             {
@@ -271,7 +271,7 @@ namespace Fitz.Features.Lottery
             }
             else
             {
-                List<Account> winners = this.lotteryService.GetLastLotteryWinnerAccounts();
+                List<AccountEntity> winners = this.lotteryService.GetLastLotteryWinnerAccounts();
                 DiscordGuild guild = await this.dClient.GetGuildAsync(Guilds.Waterbear);
                 DiscordMember member = await guild.GetMemberAsync(userId);
                 if (member == null || member.IsBot)

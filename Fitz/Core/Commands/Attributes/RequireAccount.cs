@@ -12,7 +12,7 @@ namespace Fitz.Core.Commands.Attributes
         {
             AccountService accountService = ctx.Services.GetService<AccountService>();
 
-            Account account = accountService.FindAccount(ctx.User.Id);
+            AccountEntity account = accountService.FindAccount(ctx.User.Id);
 
             if (account != null)
             {

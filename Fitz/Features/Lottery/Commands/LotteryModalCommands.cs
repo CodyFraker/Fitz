@@ -43,7 +43,7 @@ namespace Fitz.Features.Lottery.Commands
                 Database.Entities.Lottery lottery = lotteryService.GetCurrentLottery();
 
                 // Get account
-                Account account = accountService.FindAccount(ctx.User.Id);
+                AccountEntity account = accountService.FindAccount(ctx.User.Id);
                 if (account == null)
                 {
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder()

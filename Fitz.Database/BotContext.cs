@@ -14,7 +14,7 @@ namespace Fitz.Database
         public BotContext(DbContextOptions<BotContext> options) : base(options)
         { }
 
-        public DbSet<Account> Accounts { get; set; }
+        public DbSet<AccountEntity> Accounts { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<BlackjackGame> BlackjackGame { get; set; }
         public DbSet<BlackjackPlayers> BlackjackPlayers { get; set; }

@@ -28,7 +28,7 @@ namespace Fitz.Features.Accounts.Commands
                 return new Result(true, "You already have an account.", findAccountQuery.Execute(user.Id));
             }
 
-            var account = new Account
+            var account = new AccountEntity
             {
                 Id = user.Id,
                 Username = user.Username,

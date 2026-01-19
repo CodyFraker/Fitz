@@ -60,8 +60,8 @@ namespace Fitz.Features.Rename.Commands
 
             #region Check Accounts
 
-            Account affectedUser = accountService.FindAccount(user.Id);
-            Account requestingUser = accountService.FindAccount(ctx.User.Id);
+            AccountEntity affectedUser = accountService.FindAccount(user.Id);
+            AccountEntity requestingUser = accountService.FindAccount(ctx.User.Id);
 
             // Check to see if user account exists.
             if (affectedUser == null)

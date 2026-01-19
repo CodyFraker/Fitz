@@ -183,7 +183,7 @@ namespace Fitz.Features.Polls
 
         #region Add Vote to Poll
 
-        public async Task AddVote(Poll poll, PollOptions option, Account account)
+        public async Task AddVote(Poll poll, PollOptions option, AccountEntity account)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
@@ -224,7 +224,7 @@ namespace Fitz.Features.Polls
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-            Account account = accountService.FindAccount(accountId);
+            AccountEntity account = accountService.FindAccount(accountId);
 
             await this.AddVote(poll, option, account);
         }
@@ -233,7 +233,7 @@ namespace Fitz.Features.Polls
 
         #region Update Polls and Votes
 
-        public async Task UpdateVote(Vote vote, int newOptionId, Account account)
+        public async Task UpdateVote(Vote vote, int newOptionId, AccountEntity account)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();

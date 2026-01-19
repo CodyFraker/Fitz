@@ -28,7 +28,7 @@ namespace Fitz.Features.Bank
         private readonly BotLog botLog = botLog;
         private readonly FitzMetrics fitzMetrics = fitzMetrics;
 
-        public async Task<Result> AwardAccountCreationBonusAsync(Account account)
+        public async Task<Result> AwardAccountCreationBonusAsync(AccountEntity account)
         {
             var command = new AwardAccountCreationBonusCommand(scopeFactory, botLog, fitzMetrics);
             return await command.ExecuteAsync(account);
@@ -131,7 +131,7 @@ namespace Fitz.Features.Bank
 
         #region Lottery
 
-        public async Task<Result> PurchaseLotteryTicket(Account user, int amount)
+        public async Task<Result> PurchaseLotteryTicket(AccountEntity user, int amount)
         {
             var command = new PurchaseLotteryTicketCommand(scopeFactory, accountService, settingsService, botLog, fitzMetrics);
             return await command.ExecuteAsync(user, amount);
@@ -139,7 +139,7 @@ namespace Fitz.Features.Bank
 
         #region Deposit Lottery Winnings
 
-        public async Task<Result> DepositLotteryWinningsAsync(Account account, int amount)
+        public async Task<Result> DepositLotteryWinningsAsync(AccountEntity account, int amount)
         {
             var command = new DepositLotteryWinningsCommand(scopeFactory, botLog, fitzMetrics);
             return await command.ExecuteAsync(account, amount);
@@ -163,7 +163,7 @@ namespace Fitz.Features.Bank
 
         #region Renames
 
-        public async Task PurchaseRenameAsync(Account user, int amount)
+        public async Task PurchaseRenameAsync(AccountEntity user, int amount)
         {
             try
             {
@@ -185,7 +185,7 @@ namespace Fitz.Features.Bank
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                Account account = accountService.FindAccount(accountId);
+                AccountEntity account = accountService.FindAccount(accountId);
                 if (account == null)
                 {
                     Log.Error($"Account not found. {accountId}");
@@ -208,13 +208,13 @@ namespace Fitz.Features.Bank
             return query.Execute(userId);
         }
 
-        public List<Account> GetTopBeerBalances(int limit = 10)
+        public List<AccountEntity> GetTopBeerBalances(int limit = 10)
         {
             var query = new GetTopBeerBalancesQuery(scopeFactory);
             return query.Execute(limit);
         }
 
-        public (List<Account> Accounts, int TotalCount) GetBalances(int skip = 0, int take = 10)
+        public (List<AccountEntity> Accounts, int TotalCount) GetBalances(int skip = 0, int take = 10)
         {
             var query = new GetBalancesQuery(scopeFactory);
             return query.Execute(skip, take);

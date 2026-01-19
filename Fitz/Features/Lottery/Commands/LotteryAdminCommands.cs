@@ -93,9 +93,9 @@ namespace Fitz.Features.Lottery.Commands
                 WinningTicket = 1,
             };
 
-            List<Account> winners =
+            List<AccountEntity> winners =
             [
-                new Account()
+                new AccountEntity()
                 {
                     Id = ctx.User.Id,
                     Beer = 1000,
@@ -125,7 +125,7 @@ namespace Fitz.Features.Lottery.Commands
         [Description("Sends you a DM that looks like you were subscribed to the lottery.")]
         public async Task MockLotterySubscription(CommandContext ctx)
         {
-            Account account = this.accountService.FindAccount(ctx.User.Id);
+            AccountEntity account = this.accountService.FindAccount(ctx.User.Id);
             List<Ticket> userTickets = lotteryService.GetUserTickets(account).Data as List<Ticket>;
             var drawing = this.lotteryService.GetCurrentLottery();
             DiscordEmbedBuilder lotteryEmbed = new DiscordEmbedBuilder

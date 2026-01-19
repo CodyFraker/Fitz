@@ -28,7 +28,7 @@ namespace Fitz.Features.Bank.Commands
         public async Task Balance(InteractionContext ctx)
         {
             // Check to see if user has an account
-            Account account = AccountService.FindAccount(ctx.User.Id);
+            AccountEntity account = AccountService.FindAccount(ctx.User.Id);
 
             if (account == null)
             {
@@ -89,7 +89,7 @@ namespace Fitz.Features.Bank.Commands
         [RequireAccount]
         public async Task Balances(InteractionContext ctx)
         {
-            List<Account> accounts = bankService.GetTopBeerBalances();
+            List<AccountEntity> accounts = bankService.GetTopBeerBalances();
             string table = accounts.Select(account => new
             {
                 User = account.Username,
@@ -168,7 +168,7 @@ namespace Fitz.Features.Bank.Commands
             {
                 await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("No user was provided.").AsEphemeral(true));
             }
-            Account account = AccountService.FindAccount(discordUser.Id);
+            AccountEntity account = AccountService.FindAccount(discordUser.Id);
             if (account == null)
             {
                 await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent("No user account was found for that user. Try signing them up instead.").AsEphemeral(true));

@@ -33,7 +33,7 @@ namespace Fitz.Database.Entities
         public bool IsBusted { get; set; }
 
         [NotMapped]
-        public Account Account { get; set; }
+        public AccountEntity Account { get; set; }
 
         [Column("cards_json")]
         public string? CardsJson { get; set; }

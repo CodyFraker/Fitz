@@ -10,7 +10,7 @@ namespace Fitz.Features.Bank.Queries
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
 
-        public List<Account> Execute(int limit = 10)
+        public List<AccountEntity> Execute(int limit = 10)
         {
             using var scope = scopeFactory.CreateScope();
             using var db = scope.ServiceProvider.GetRequiredService<BotContext>();

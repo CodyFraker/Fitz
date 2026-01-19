@@ -18,7 +18,7 @@ namespace Fitz.Seeds.Seeds
                     return;
                 }
 
-                var account = new Account
+                var account = new AccountEntity
                 {
                     Id = Users.Fitz,
                     Username = "Fitz",

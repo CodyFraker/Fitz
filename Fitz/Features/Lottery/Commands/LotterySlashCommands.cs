@@ -54,7 +54,7 @@ namespace Fitz.Features.Lottery.Commands
             var lottery = lotteryService.GetCurrentLottery();
 
             // Get account
-            Account account = accountService.FindAccount(ctx.User.Id);
+            AccountEntity account = accountService.FindAccount(ctx.User.Id);
 
             // Get user tickets
             List<Ticket> userTickets = lotteryService.GetUserTickets(account).Data as List<Ticket>;
@@ -132,7 +132,7 @@ namespace Fitz.Features.Lottery.Commands
         public async Task LotteryTickets(InteractionContext ctx, [Option("Tickets", "How many tickets do you want?")] long tickets)
         {
             Fitz.Database.Entities.Settings settings = settingsService.GetSettings();
-            Account account = accountService.FindAccount(ctx.User.Id);
+            AccountEntity account = accountService.FindAccount(ctx.User.Id);
             if (account == null)
             {
                 await ctx.EditResponseAsync(new DiscordWebhookBuilder()
@@ -250,7 +250,7 @@ namespace Fitz.Features.Lottery.Commands
         [RequireAccount]
         public async Task MyTickets(InteractionContext ctx)
         {
-            Account account = accountService.FindAccount(ctx.User.Id);
+            AccountEntity account = accountService.FindAccount(ctx.User.Id);
             Database.Entities.Lottery drawing = lotteryService.GetCurrentLottery();
 
             if (lotteryService.GetUserTickets(account).Data is not List<Ticket> userTickets || userTickets.Count == 0)

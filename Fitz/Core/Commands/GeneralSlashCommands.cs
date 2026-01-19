@@ -19,7 +19,7 @@ namespace Fitz.Core.Commands
         [RequireAccount]
         public async Task GiveBeer(InteractionContext ctx, [Option("Beer", "How much beer do you want to give Fitz?", false)] double amount = 0)
         {
-            Account account = accountService.FindAccount(ctx.User.Id);
+            AccountEntity account = accountService.FindAccount(ctx.User.Id);
 
             if (account == null)
             {

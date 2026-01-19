@@ -199,7 +199,7 @@ namespace Fitz.Features.Rename
 
         #region Generate Rename Cost
 
-        public int GenerateRenameCost(Account affectedUser, Account requestedUser, double daysOfRename, string newName)
+        public int GenerateRenameCost(AccountEntity affectedUser, AccountEntity requestedUser, double daysOfRename, string newName)
         {
             if (affectedUser.Username == "Fitz")
             {

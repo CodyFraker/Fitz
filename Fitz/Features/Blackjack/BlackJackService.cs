@@ -72,7 +72,7 @@ namespace Fitz.Features.Blackjack
 
         #region Add Player to Blackjack Game
 
-        public async Task<Result> AddPlayerToGameAsync(BlackjackGame game, Account account)
+        public async Task<Result> AddPlayerToGameAsync(BlackjackGame game, AccountEntity account)
         {
             try
             {
@@ -156,7 +156,7 @@ namespace Fitz.Features.Blackjack
             return game;
         }
 
-        public void Hit(BlackjackGame game, Account playerAccount)
+        public void Hit(BlackjackGame game, AccountEntity playerAccount)
         {
             BlackjackPlayers player = game.Players.FirstOrDefault(p => p.Account.Id == playerAccount.Id);
             if (game.Deck is Modals.Deck deck)
@@ -174,12 +174,12 @@ namespace Fitz.Features.Blackjack
             }
         }
 
-        private void Stand(BlackjackGame game, Account playerAccount)
+        private void Stand(BlackjackGame game, AccountEntity playerAccount)
         {
             BlackjackPlayers player = game.Players.FirstOrDefault(p => p.Account.Id == playerAccount.Id);
         }
 
-        private bool PlayerHasBusted(BlackjackGame game, Account playerAccount)
+        private bool PlayerHasBusted(BlackjackGame game, AccountEntity playerAccount)
         {
             BlackjackPlayers player = game.Players.FirstOrDefault(p => p.Account.Id == playerAccount.Id);
 

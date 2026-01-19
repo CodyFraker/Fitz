@@ -49,7 +49,7 @@ namespace Fitz.Features.Rename.Jobs
 
                 foreach (Renames rename in renames.Where(x => x.Notified == false && x.Status == RenameStatus.Active))
                 {
-                    Account affectedUser = accountService.FindAccount(rename.AffectedUserId);
+                    AccountEntity affectedUser = accountService.FindAccount(rename.AffectedUserId);
                     DiscordMember discordMember;
                     try
                     {
@@ -108,7 +108,7 @@ namespace Fitz.Features.Rename.Jobs
 
                     foreach (Renames pendingRename in pendingRenamesToActivate)
                     {
-                        Account affectedUser = accountService.FindAccount(pendingRename.AffectedUserId);
+                        AccountEntity affectedUser = accountService.FindAccount(pendingRename.AffectedUserId);
                         Renames activeRename = renameService.GetActiveRenameByAccountId(affectedUser.Id);
                         
                         if (activeRename == null)
@@ -152,7 +152,7 @@ namespace Fitz.Features.Rename.Jobs
             }
         }
 
-        private DiscordEmbed renameEmbed(Renames rename, Account affectedUser)
+        private DiscordEmbed renameEmbed(Renames rename, AccountEntity affectedUser)
         {
             DiscordEmbedBuilder embed = new()
             {

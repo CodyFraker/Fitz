@@ -58,7 +58,7 @@ namespace Fitz.Features.Accounts
         {
             // Check to see if the user has an account. If so, mark as active.
             var findAccountQuery = new FindAccountQuery(scopeFactory);
-            Account account = findAccountQuery.Execute(args.Member.Id);
+            AccountEntity account = findAccountQuery.Execute(args.Member.Id);
             if (account != null)
             {
                 var setDeactivatedCommand = new SetDeactivatedCommand(scopeFactory, botLog);
@@ -83,7 +83,7 @@ namespace Fitz.Features.Accounts
         {
             // Check to see if the user has an account. If so, mark as inactive.
             var findAccountQuery = new FindAccountQuery(scopeFactory);
-            Account account = findAccountQuery.Execute(args.Member.Id);
+            AccountEntity account = findAccountQuery.Execute(args.Member.Id);
             if (account != null)
             {
                 var setDeactivatedCommand = new SetDeactivatedCommand(scopeFactory, botLog);

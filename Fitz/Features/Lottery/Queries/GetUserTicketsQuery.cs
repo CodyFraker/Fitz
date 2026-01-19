@@ -11,7 +11,7 @@ namespace Fitz.Features.Lottery.Queries
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
 
-        public Result Execute(Account account)
+        public Result Execute(AccountEntity account)
         {
             try
             {

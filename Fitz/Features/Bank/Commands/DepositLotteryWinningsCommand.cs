@@ -17,7 +17,7 @@ namespace Fitz.Features.Bank.Commands
         private readonly BotLog botLog = botLog;
         private readonly FitzMetrics? fitzMetrics = fitzMetrics;
 
-        public async Task<Result> ExecuteAsync(Account account, int amount)
+        public async Task<Result> ExecuteAsync(AccountEntity account, int amount)
         {
             try
             {

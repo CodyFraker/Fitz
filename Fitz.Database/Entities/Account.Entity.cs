@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Fitz.Database.Entities
 {
     [Table("accounts")]
-    public class Account
+    public class AccountEntity
     {
         [Key]
         [Column("id")]

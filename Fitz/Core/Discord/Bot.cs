@@ -268,10 +268,10 @@ namespace Fitz.Core.Discord
                                     {
                                         // Give user account creation beer
                                         BankService bankService = args.Context.Services.GetService<BankService>();
-                                        await bankService.AwardAccountCreationBonusAsync(accountCreationResult.Data as Account);
+                                        await bankService.AwardAccountCreationBonusAsync(accountCreationResult.Data as AccountEntity);
 
                                         // Get account details from db.
-                                        Account account = accountService.FindAccount(args.Context.User.Id);
+                                        AccountEntity account = accountService.FindAccount(args.Context.User.Id);
                                         DiscordEmbedBuilder accountEmbed = new()
                                         {
                                             Footer = new DiscordEmbedBuilder.EmbedFooter

@@ -26,7 +26,7 @@ namespace Fitz.Features.Bank.Commands
                 using var scope = scopeFactory.CreateScope();
                 using var db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                Account account = accountService.FindAccount(userId);
+                AccountEntity account = accountService.FindAccount(userId);
                 if (account == null)
                 {
                     return new Result(false, $"{userId} did not have an account.", null);

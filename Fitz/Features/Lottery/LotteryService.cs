@@ -163,7 +163,7 @@ namespace Fitz.Features.Lottery
         /// </summary>
         /// <param name="account">User's Account</param>
         /// <returns>List of tickets purchased by a user. If zero, it'll return null.</returns>
-        public Result GetUserTickets(Account account)
+        public Result GetUserTickets(AccountEntity account)
         {
             try
             {
@@ -253,9 +253,9 @@ namespace Fitz.Features.Lottery
 
         #region Get Last Lottery Winner Accounts
 
-        public List<Account> GetLastLotteryWinnerAccounts()
+        public List<AccountEntity> GetLastLotteryWinnerAccounts()
         {
-            List<Account> accounts = new List<Account>();
+            List<AccountEntity> accounts = new List<AccountEntity>();
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
@@ -270,7 +270,7 @@ namespace Fitz.Features.Lottery
             List<Winners> winners = [.. db.Winners.Where((x) => x.Drawing == drawing.Id)];
             foreach (Winners winner in winners)
             {
-                Account account = db.Accounts.Where((x) => x.Id == winner.AccountId).FirstOrDefault();
+                AccountEntity account = db.Accounts.Where((x) => x.Id == winner.AccountId).FirstOrDefault();
                 if (accounts.Contains(account) == false)
                 {
                     accounts.Add(account);
@@ -458,15 +458,15 @@ namespace Fitz.Features.Lottery
             if (winningTickets.Count > 0)
             {
                 // Get all accounts who has a winning ticket
-                List<Account> accounts = new List<Account>();
+                List<AccountEntity> accounts = new List<AccountEntity>();
                 foreach (Ticket ticket in winningTickets)
                 {
-                    Account account = db.Accounts.Where((x) => x.Id == ticket.AccountId).FirstOrDefault();
+                    AccountEntity account = db.Accounts.Where((x) => x.Id == ticket.AccountId).FirstOrDefault();
                     accounts.Add(account);
                 }
                 int payout = (drawing.Pool ?? 0) / accounts.Count;
 
-                foreach (Account account in accounts)
+                foreach (AccountEntity account in accounts)
                 {
                     // stupid and bad code. I'm sorry.
                     Winners winner = new Winners()
@@ -531,7 +531,7 @@ namespace Fitz.Features.Lottery
 
         #region Buy Tickets for User
 
-        public async Task<Result> BuyTicketsForUser(Account account, int tickets)
+        public async Task<Result> BuyTicketsForUser(AccountEntity account, int tickets)
         {
             try
             {
@@ -607,7 +607,7 @@ namespace Fitz.Features.Lottery
 
         #endregion Buy Tickets for User
 
-        public async Task<Result> CreateTicket(Account account, int totalTickets)
+        public async Task<Result> CreateTicket(AccountEntity account, int totalTickets)
         {
             try
             {
@@ -706,7 +706,7 @@ namespace Fitz.Features.Lottery
         {
             try
             {
-                Account fitz = accountService.FindAccount(Users.Fitz);
+                AccountEntity fitz = accountService.FindAccount(Users.Fitz);
                 if (fitz.Beer < totalTickets)
                 {
                     return new Result(false, "Fitz does not have enough beer to buy tickets.", fitz);
@@ -750,7 +750,7 @@ namespace Fitz.Features.Lottery
 
         #region Embeds
 
-        public DiscordEmbed WinnerEmbed(DiscordClient dClient, Database.Entities.Lottery lottery, List<Account> winners, ulong userId)
+        public DiscordEmbed WinnerEmbed(DiscordClient dClient, Database.Entities.Lottery lottery, List<AccountEntity> winners, ulong userId)
         {
             string multiWinners = string.Empty;
             if (winners.Count() > 1)
@@ -758,7 +758,7 @@ namespace Fitz.Features.Lottery
                 multiWinners = $"With a total of {winners.Count()} winner(s), you've won `{lottery.Pool / winners.Count()}`\n";
             }
 
-            Account winnerAccount = this.accountService.FindAccount(userId);
+            AccountEntity winnerAccount = this.accountService.FindAccount(userId);
 
             DiscordEmbedBuilder lotteryEmbed = new()
             {
@@ -844,7 +844,7 @@ namespace Fitz.Features.Lottery
             return lotteryEmbed;
         }
 
-        public DiscordEmbed LotteryCommandEmbed(DiscordClient dClient, Database.Entities.Lottery lottery, Fitz.Database.Entities.Settings settings, Account account, List<Ticket> userTickets = null)
+        public DiscordEmbed LotteryCommandEmbed(DiscordClient dClient, Database.Entities.Lottery lottery, Fitz.Database.Entities.Settings settings, AccountEntity account, List<Ticket> userTickets = null)
         {
             DiscordEmbedBuilder lotteryEmbed = new()
             {

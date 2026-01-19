@@ -37,7 +37,7 @@ namespace Fitz.Features.Accounts.Jobs
                 botLog.Information(LogConsoleSettings.Jobs, ManageRoleEmojis.Warning, $"Checking account members & their roles...");
                 // Get all accounts
                 var queryAccountsQuery = new QueryAccountsQuery(scopeFactory);
-                List<Account> accounts = queryAccountsQuery.Execute();
+                List<AccountEntity> accounts = queryAccountsQuery.Execute();
                 
                 var activeAccounts = accounts.Where(a => !a.Deactivated).Count();
                 fitzMetrics?.SetAccountsActive(activeAccounts);

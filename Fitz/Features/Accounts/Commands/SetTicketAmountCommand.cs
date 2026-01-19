@@ -16,7 +16,7 @@ namespace Fitz.Features.Accounts.Commands
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly BotLog botLog = botLog;
 
-        public async Task<Result> ExecuteAsync(Account account, int amount)
+        public async Task<Result> ExecuteAsync(AccountEntity account, int amount)
         {
             try
             {

@@ -37,7 +37,7 @@ namespace Fitz.Database.Entities
         public List<BlackjackPlayers> Players { get; set; }
 
         [NotMapped]
-        public Account Dealer { get; set; }
+        public AccountEntity Dealer { get; set; }
 
         [Column("deck_json")]
         public string? DeckJson { get; set; }

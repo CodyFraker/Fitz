@@ -62,7 +62,7 @@ namespace Fitz.Features.Accounts
             var accountCreationResult = await createAccountCommand.ExecuteAsync(ctx.User);
             if (accountCreationResult.Success)
             {
-                Account account = accountCreationResult.Data as Account;
+                AccountEntity account = accountCreationResult.Data as AccountEntity;
                 await this.bankService.AwardAccountCreationBonusAsync(account);
 
                 await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
@@ -110,7 +110,7 @@ namespace Fitz.Features.Accounts
         public async Task Profile(InteractionContext ctx)
         {
             var findAccountQuery = new FindAccountQuery(scopeFactory);
-            Account account = findAccountQuery.Execute(ctx.User.Id);
+            AccountEntity account = findAccountQuery.Execute(ctx.User.Id);
             if (account != null)
             {
                 await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
@@ -132,7 +132,7 @@ namespace Fitz.Features.Accounts
         public async Task ProfileLookup(InteractionContext ctx, [Option("User", "Whose profile do you want to see?")] DiscordUser user = null)
         {
             var findAccountQuery = new FindAccountQuery(scopeFactory);
-            Account account = findAccountQuery.Execute(user.Id);
+            AccountEntity account = findAccountQuery.Execute(user.Id);
             if (account != null)
             {
                 await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
@@ -154,7 +154,7 @@ namespace Fitz.Features.Accounts
         public async Task AccountSettings(InteractionContext ctx)
         {
             var findAccountQuery = new FindAccountQuery(scopeFactory);
-            Account account = findAccountQuery.Execute(ctx.User.Id);
+            AccountEntity account = findAccountQuery.Execute(ctx.User.Id);
             DiscordButtonComponent subscribeBtn;
             if (account.subscribeToLottery)
             {
@@ -206,7 +206,7 @@ namespace Fitz.Features.Accounts
 
         #region Embeds
 
-        private DiscordEmbed accountEmbed(DiscordUser user, Account account)
+        private DiscordEmbed accountEmbed(DiscordUser user, AccountEntity account)
         {
             List<Poll> userPolls = this.pollService.GetPollsSubmittedByUser(account.Id);
             List<Ticket> userTickets = this.lotteryService.GetTicketsByUserId(account.Id);
@@ -251,7 +251,7 @@ namespace Fitz.Features.Accounts
             return accountEmbed.Build();
         }
 
-        private DiscordEmbed settingsEmbed(DiscordUser user, Account account)
+        private DiscordEmbed settingsEmbed(DiscordUser user, AccountEntity account)
         {
             DiscordEmbedBuilder settingsEmbed = new DiscordEmbedBuilder
             {
@@ -295,7 +295,7 @@ namespace Fitz.Features.Accounts
 
             // Get the account who is interacting
             var findAccountQuery = new FindAccountQuery(scopeFactory);
-            Account account = findAccountQuery.Execute(args.User.Id);
+            AccountEntity account = findAccountQuery.Execute(args.User.Id);
 
             // If the subscribe button was pressed.
             if (args.Id == $"subscribe_button" && args.User.Id == account.Id)

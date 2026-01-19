@@ -70,7 +70,7 @@ namespace Fitz.Api.Controllers.Admin
 
                 var totalCount = accountsQuery.Count();
 
-                IQueryable<Fitz.Database.Entities.Account> sortedQuery = sortBy?.ToLower() switch
+                IQueryable<Fitz.Database.Entities.AccountEntity> sortedQuery = sortBy?.ToLower() switch
                 {
                     "favorability" => sortOrder?.ToLower() == "desc" 
                         ? accountsQuery.OrderByDescending(a => a.Favorability)

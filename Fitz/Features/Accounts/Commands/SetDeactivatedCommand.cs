@@ -16,7 +16,7 @@ namespace Fitz.Features.Accounts.Commands
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
         private readonly BotLog botLog = botLog;
 
-        public async Task<Result> ExecuteAsync(Account account, bool deactivated)
+        public async Task<Result> ExecuteAsync(AccountEntity account, bool deactivated)
         {
             try
             {

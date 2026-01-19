@@ -30,7 +30,7 @@ namespace Fitz.Features.Bank.Commands
                 using var db = scope.ServiceProvider.GetRequiredService<BotContext>();
                 var settings = settingsService.GetSettings();
 
-                Account account = accountService.FindAccount(userId);
+                AccountEntity account = accountService.FindAccount(userId);
                 if (account == null)
                 {
                     return new Result(false, $"{userId} did not have an account.", null);

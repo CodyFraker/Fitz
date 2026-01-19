@@ -55,7 +55,7 @@ namespace Fitz.Api.Controllers.Account
                         });
                     }
 
-                    account = createResult.Data as Fitz.Database.Entities.Account;
+                    account = createResult.Data as Fitz.Database.Entities.AccountEntity;
                     if (account == null)
                     {
                         _fitzMetrics?.RecordApiError(endpoint, "account_creation_invalid");

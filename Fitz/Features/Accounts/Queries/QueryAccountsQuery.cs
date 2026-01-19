@@ -12,9 +12,9 @@ namespace Fitz.Features.Accounts.Queries
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
 
-        public List<Account> Execute()
+        public List<AccountEntity> Execute()
         {
-            var dbAccounts = new List<Account>();
+            var dbAccounts = new List<AccountEntity>();
 
             using var scope = scopeFactory.CreateScope();
             using var db = scope.ServiceProvider.GetRequiredService<BotContext>();

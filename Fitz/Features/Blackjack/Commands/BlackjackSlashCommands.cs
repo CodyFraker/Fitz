@@ -51,7 +51,7 @@ namespace Fitz.Features.Blackjack.Commands
                 }
                 else
                 {
-                    Account newPlayer = accountService.FindAccount(args.User.Id);
+                    AccountEntity newPlayer = accountService.FindAccount(args.User.Id);
                     var addPlayerResult = await this.blackJackService.AddPlayerToGameAsync(game, newPlayer);
 
                     if (addPlayerResult.Success)
