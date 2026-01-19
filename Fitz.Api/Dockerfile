@@ -18,14 +18,15 @@ RUN dotnet build "Fitz.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build --no-re
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 WORKDIR "/src/Fitz.Api"
-RUN dotnet publish "Fitz.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false --no-restore
+RUN dotnet publish "Fitz.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM --platform=$TARGETPLATFORM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
+COPY --from=publish --chown=app:app /app/publish .
+
 USER app
 
-COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Fitz.Api.dll"]
