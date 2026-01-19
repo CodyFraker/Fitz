@@ -69,7 +69,7 @@ namespace Fitz.Features.Lottery
                 if (currentDrawing.EndDate < DateTime.UtcNow)
                 {
                     // Determine lottery winner(s)
-                    List<Winners> winners = await this.lotteryService.DecideWinners(currentDrawing);
+                    List<WinnersEntity> winners = await this.lotteryService.DecideWinners(currentDrawing);
                     if (winners.Count == 0 || winners == null)
                     {
                         // End lottery
@@ -86,7 +86,7 @@ namespace Fitz.Features.Lottery
                         // End lottery
                         await this.lotteryService.EndLotteryAsync(currentDrawing);
 
-                        foreach (Winners winner in winners)
+                        foreach (WinnersEntity winner in winners)
                         {
                             // DM the winner
                             await this.MessageWinner(winner.AccountId, currentDrawing);
@@ -194,7 +194,7 @@ namespace Fitz.Features.Lottery
                         if (subscriber.Beer >= (subscriber.SubscribeTickets * settings.TicketCost))
                         {
                             // Check to see if the user has already bought tickets.
-                            List<Ticket> userTickets = lotteryService.GetUserTickets(subscriber).Data as List<Ticket>;
+                            List<TicketEntity> userTickets = lotteryService.GetUserTickets(subscriber).Data as List<TicketEntity>;
                             if (userTickets.Count == settings.MaxTickets)
                             {
                                 // TODO: DM the user that the lottery tried to buy tickets for them but they were at the limit.
@@ -213,7 +213,7 @@ namespace Fitz.Features.Lottery
                                 await lotteryService.CreateTicket(subscriber, subscriber.SubscribeTickets);
 
                                 await lotteryService.AddToPool(subscriber.SubscribeTickets);
-                                userTickets = lotteryService.GetUserTickets(subscriber).Data as List<Ticket>;
+                                userTickets = lotteryService.GetUserTickets(subscriber).Data as List<TicketEntity>;
                                 await MessageEnrolleeSuccess(subscriber, userTickets);
                             }
                         }
@@ -222,7 +222,7 @@ namespace Fitz.Features.Lottery
             }
         }
 
-        private async Task MessageEnrolleeSuccess(AccountEntity account, List<Ticket> userTickets)
+        private async Task MessageEnrolleeSuccess(AccountEntity account, List<TicketEntity> userTickets)
         {
             try
             {

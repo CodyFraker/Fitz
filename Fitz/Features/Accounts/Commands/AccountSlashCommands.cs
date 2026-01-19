@@ -209,7 +209,7 @@ namespace Fitz.Features.Accounts
         private DiscordEmbed accountEmbed(DiscordUser user, AccountEntity account)
         {
             List<Poll> userPolls = this.pollService.GetPollsSubmittedByUser(account.Id);
-            List<Ticket> userTickets = this.lotteryService.GetTicketsByUserId(account.Id);
+            List<TicketEntity> userTickets = this.lotteryService.GetTicketsByUserId(account.Id);
 
             string subscribe = account.subscribeToLottery ? "Active" : "Inactive";
             DiscordEmbedBuilder accountEmbed = new DiscordEmbedBuilder

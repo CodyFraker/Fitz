@@ -57,8 +57,8 @@ namespace Fitz.Features.Lottery.Commands
             AccountEntity account = accountService.FindAccount(ctx.User.Id);
 
             // Get user tickets
-            List<Ticket> userTickets = lotteryService.GetUserTickets(account).Data as List<Ticket>;
-            userTickets ??= new List<Ticket>();
+            List<TicketEntity> userTickets = lotteryService.GetUserTickets(account).Data as List<TicketEntity>;
+            userTickets ??= new List<TicketEntity>();
 
             DiscordButtonComponent cancelBtn = new(DiscordButtonStyle.Danger, $"lottery_cancel_{unique_id}", "Cancel", false);
             DiscordButtonComponent helpBtn = new(DiscordButtonStyle.Secondary, $"lottery_help_{unique_id}", "Help", false);
@@ -101,7 +101,7 @@ namespace Fitz.Features.Lottery.Commands
                                                        .WithContent(buyTicketsResult.Message));
                     }
 
-                    userTickets = lotteryService.GetUserTickets(account).Data as List<Ticket>;
+                    userTickets = lotteryService.GetUserTickets(account).Data as List<TicketEntity>;
 
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder()
                         .AddEmbed(this.lotteryService.LotteryInfoEmbed(ctx.Client, lottery, (int)this.lotteryService.GetRemainingHoursUntilNextDrawing().Data, userTickets)));
@@ -165,8 +165,8 @@ namespace Fitz.Features.Lottery.Commands
             }
 
             // If the user has already bought settings.MaxTickets tickets for the current lottery, don't let them buy more
-            List<Ticket> userTickets = lotteryService.GetUserTickets(account).Data as List<Ticket>;
-            userTickets ??= new List<Ticket>();
+            List<TicketEntity> userTickets = lotteryService.GetUserTickets(account).Data as List<TicketEntity>;
+            userTickets ??= new List<TicketEntity>();
             if (userTickets.Count + tickets > settings.MaxTickets)
             {
                 await ctx.EditResponseAsync(
@@ -183,7 +183,7 @@ namespace Fitz.Features.Lottery.Commands
             await lotteryService.AddToPool(totalCost);
 
             // Recall service to get updated lottery ticket info.
-            userTickets = lotteryService.GetUserTickets(account).Data as List<Ticket>;
+            userTickets = lotteryService.GetUserTickets(account).Data as List<TicketEntity>;
 
             string ticketNumbers = string.Empty;
             foreach (var ticket in userTickets)
@@ -253,7 +253,7 @@ namespace Fitz.Features.Lottery.Commands
             AccountEntity account = accountService.FindAccount(ctx.User.Id);
             Database.Entities.LotteryEntity drawing = lotteryService.GetCurrentLottery();
 
-            if (lotteryService.GetUserTickets(account).Data is not List<Ticket> userTickets || userTickets.Count == 0)
+            if (lotteryService.GetUserTickets(account).Data is not List<TicketEntity> userTickets || userTickets.Count == 0)
             {
                 await ctx.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
                                        new DiscordInteractionResponseBuilder()

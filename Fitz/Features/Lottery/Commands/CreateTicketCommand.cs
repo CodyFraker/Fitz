@@ -34,7 +34,7 @@ namespace Fitz.Features.Lottery.Commands
                     return new Result(false, "No active lottery found.", null);
                 }
 
-                List<Ticket> tickets = new List<Ticket>();
+                List<TicketEntity> tickets = new List<TicketEntity>();
 
                 for (int i = 0; i < totalTickets; i++)
                 {
@@ -51,7 +51,7 @@ namespace Fitz.Features.Lottery.Commands
                         }
                     }
 
-                    Ticket ticket = new Ticket
+                    TicketEntity ticket = new TicketEntity
                     {
                         AccountId = account.Id,
                         Drawing = lottery.Id,

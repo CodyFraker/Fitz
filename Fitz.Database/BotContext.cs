@@ -19,8 +19,8 @@ namespace Fitz.Database
         public DbSet<BlackjackGame> BlackjackGame { get; set; }
         public DbSet<BlackjackPlayers> BlackjackPlayers { get; set; }
         public DbSet<LotteryEntity> Drawing { get; set; }
-        public DbSet<Ticket> Ticket { get; set; }
-        public DbSet<Winners> Winners { get; set; }
+        public DbSet<TicketEntity> Ticket { get; set; }
+        public DbSet<WinnersEntity> Winners { get; set; }
         public DbSet<Poll> Polls { get; set; }
         public DbSet<Vote> Votes { get; set; }
         public DbSet<PollOptions> PollsOptions { get; set; }

@@ -126,7 +126,7 @@ namespace Fitz.Features.Lottery.Commands
         public async Task MockLotterySubscription(CommandContext ctx)
         {
             AccountEntity account = this.accountService.FindAccount(ctx.User.Id);
-            List<Ticket> userTickets = lotteryService.GetUserTickets(account).Data as List<Ticket>;
+            List<TicketEntity> userTickets = lotteryService.GetUserTickets(account).Data as List<TicketEntity>;
             var drawing = this.lotteryService.GetCurrentLottery();
             DiscordEmbedBuilder lotteryEmbed = new DiscordEmbedBuilder
             {

@@ -4,21 +4,18 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Fitz.Database.Entities
 {
-    [Table("winners")]
-    public class Winners
+    [Table("tickets")]
+    public class TicketEntity
     {
         [Key]
         [Column("id")]
         public int Id { get; set; }
 
-        [Column("drawing_id")]
+        [Column("drawing")]
         public int Drawing { get; set; }
 
-        [Column("winning_ticket")]
-        public int WinningTicketId { get; set; }
-
-        [Column("payout")]
-        public int Payout { get; set; }
+        [Column("number")]
+        public int Number { get; set; }
 
         [Column("account_id")]
         public ulong AccountId { get; set; }

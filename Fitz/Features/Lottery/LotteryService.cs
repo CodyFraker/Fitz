@@ -127,7 +127,7 @@ namespace Fitz.Features.Lottery
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
                 Database.Entities.LotteryEntity drawing = this.GetCurrentLottery();
-                List<Ticket> tickets = [.. db.Ticket.Where((x) => x.Drawing == drawing.Id)];
+                List<TicketEntity> tickets = [.. db.Ticket.Where((x) => x.Drawing == drawing.Id)];
                 List<ulong> users = tickets.Select((x) => x.AccountId).Distinct().ToList();
                 return new Result(true, $"Database returned {users.Count} back", users.Count);
             }
@@ -144,7 +144,7 @@ namespace Fitz.Features.Lottery
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                List<Ticket> tickets = [.. db.Ticket.Where((x) => x.Drawing == lottery.Id)];
+                List<TicketEntity> tickets = [.. db.Ticket.Where((x) => x.Drawing == lottery.Id)];
                 List<ulong> users = tickets.Select((x) => x.AccountId).Distinct().ToList();
                 return new Result(true, $"Database returned {users.Count} back", users.Count);
             }
@@ -172,10 +172,10 @@ namespace Fitz.Features.Lottery
 
                 Database.Entities.LotteryEntity drawing = this.GetCurrentLottery();
 
-                List<Ticket> userTickets = [.. db.Ticket.Where((x) => x.AccountId == account.Id && x.Drawing == drawing.Id)];
+                List<TicketEntity> userTickets = [.. db.Ticket.Where((x) => x.AccountId == account.Id && x.Drawing == drawing.Id)];
                 if (userTickets == null || userTickets.Count == 0)
                 {
-                    return new Result(true, "User has no tickets.", new List<Ticket>());
+                    return new Result(true, "User has no tickets.", new List<TicketEntity>());
                 }
                 return new Result(true, $"User has {userTickets.Count} tickets.", userTickets);
             }
@@ -190,12 +190,12 @@ namespace Fitz.Features.Lottery
         /// </summary>
         /// <param name="userId">Account ID</param>
         /// <returns>List of tickets a user has purchased for all lotteries.</returns>
-        public List<Ticket> GetTicketsByUserId(ulong userId)
+        public List<TicketEntity> GetTicketsByUserId(ulong userId)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-            List<Ticket> tickets = db.Ticket.Where((x) => x.AccountId == userId).ToList();
+            List<TicketEntity> tickets = db.Ticket.Where((x) => x.AccountId == userId).ToList();
             return tickets;
         }
 
@@ -205,7 +205,7 @@ namespace Fitz.Features.Lottery
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-            List<Ticket> tickets = db.Ticket.Where((x) => x.AccountId == userId).ToList();
+            List<TicketEntity> tickets = db.Ticket.Where((x) => x.AccountId == userId).ToList();
             List<int> drawings = tickets.Select((x) => x.Drawing).Distinct().ToList();
             return drawings.Count;
         }
@@ -215,7 +215,7 @@ namespace Fitz.Features.Lottery
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-            List<Winners> winners = db.Winners.Where((x) => x.AccountId == userId).ToList();
+            List<WinnersEntity> winners = db.Winners.Where((x) => x.AccountId == userId).ToList();
             if (winners.Count == 0)
             {
                 return 0;
@@ -267,8 +267,8 @@ namespace Fitz.Features.Lottery
                 return accounts;
             }
 
-            List<Winners> winners = [.. db.Winners.Where((x) => x.Drawing == drawing.Id)];
-            foreach (Winners winner in winners)
+            List<WinnersEntity> winners = [.. db.Winners.Where((x) => x.Drawing == drawing.Id)];
+            foreach (WinnersEntity winner in winners)
             {
                 AccountEntity account = db.Accounts.Where((x) => x.Id == winner.AccountId).FirstOrDefault();
                 if (accounts.Contains(account) == false)
@@ -410,7 +410,7 @@ namespace Fitz.Features.Lottery
         /// <returns></returns>
         public async Task EndLotteryAndDecideWinnersAsync(Database.Entities.LotteryEntity currentLottery)
         {
-            List<Winners> winners = await this.DecideWinners(currentLottery);
+            List<WinnersEntity> winners = await this.DecideWinners(currentLottery);
             await this.EndLotteryAsync(currentLottery);
             
             if (winners.Count > 0)
@@ -430,20 +430,20 @@ namespace Fitz.Features.Lottery
         /// </summary>
         /// <param name="drawing"></param>
         /// <returns>List of Winners.</returns>
-        public async Task<List<Winners>> DecideWinners(Database.Entities.LotteryEntity drawing)
+        public async Task<List<WinnersEntity>> DecideWinners(Database.Entities.LotteryEntity drawing)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
             // Get all tickets from DB for this current lottery.
-            List<Ticket> tickets = db.Ticket.Where((x) => x.Drawing == drawing.Id).ToList();
-            List<Winners> winners = new List<Winners>();
+            List<TicketEntity> tickets = db.Ticket.Where((x) => x.Drawing == drawing.Id).ToList();
+            List<WinnersEntity> winners = new List<WinnersEntity>();
 
             int winningTicket = 0;
 
             // For every ticket we have in the current lottery, generate a winning ticket number.
             // After X amount of tickets, we will have decided a winning ticket number.
-            foreach (Ticket ticket in tickets)
+            foreach (TicketEntity ticket in tickets)
             {
                 winningTicket = GenerateTicketNumber();
             }
@@ -453,13 +453,13 @@ namespace Fitz.Features.Lottery
             await db.SaveChangesAsync();
 
             // Check to see if any tickets in the current lottery match our winning ticket number.
-            List<Ticket> winningTickets = tickets.Where(tickets => tickets.Number == winningTicket).ToList();
+            List<TicketEntity> winningTickets = tickets.Where(tickets => tickets.Number == winningTicket).ToList();
 
             if (winningTickets.Count > 0)
             {
                 // Get all accounts who has a winning ticket
                 List<AccountEntity> accounts = new List<AccountEntity>();
-                foreach (Ticket ticket in winningTickets)
+                foreach (TicketEntity ticket in winningTickets)
                 {
                     AccountEntity account = db.Accounts.Where((x) => x.Id == ticket.AccountId).FirstOrDefault();
                     accounts.Add(account);
@@ -469,7 +469,7 @@ namespace Fitz.Features.Lottery
                 foreach (AccountEntity account in accounts)
                 {
                     // stupid and bad code. I'm sorry.
-                    Winners winner = new Winners()
+                    WinnersEntity winner = new WinnersEntity()
                     {
                         Drawing = drawing.Id,
                         AccountId = account.Id,
@@ -543,13 +543,13 @@ namespace Fitz.Features.Lottery
                 }
 
                 // Retrieve user tickets for the current lottery.
-                List<Ticket> userTickets = new List<Ticket>();
+                List<TicketEntity> userTickets = new List<TicketEntity>();
                 var getUserTicketsResult = this.GetUserTickets(account);
                 if (!getUserTicketsResult.Success)
                 {
                     return new Result(false, "Failed to get user tickets.", getUserTicketsResult.Message);
                 }
-                userTickets = getUserTicketsResult.Data as List<Ticket>;
+                userTickets = getUserTicketsResult.Data as List<TicketEntity>;
 
                 // Check to see if the user already has the max amount of tickets.
                 if (userTickets.Count >= settings.MaxTickets)
@@ -595,7 +595,7 @@ namespace Fitz.Features.Lottery
 
                 fitzMetrics?.RecordLotteryTicketPurchase(tickets, totalTicketCost);
 
-                userTickets = this.GetUserTickets(account).Data as List<Ticket>;
+                userTickets = this.GetUserTickets(account).Data as List<TicketEntity>;
 
                 return new Result(true, "Successfully bought max tickets for user.", userTickets);
             }
@@ -620,17 +620,17 @@ namespace Fitz.Features.Lottery
                 // Get account tickets for this current lottery.
                 var accountTicketsResult = this.GetUserTickets(account);
 
-                List<Ticket> accountTickets = new List<Ticket>();
+                List<TicketEntity> accountTickets = new List<TicketEntity>();
 
                 if (accountTicketsResult.Success == true)
                 {
                     if (accountTickets == null)
                     {
-                        accountTickets = new List<Ticket>();
+                        accountTickets = new List<TicketEntity>();
                     }
                     else
                     {
-                        accountTickets = this.GetUserTickets(account).Data as List<Ticket>;
+                        accountTickets = this.GetUserTickets(account).Data as List<TicketEntity>;
                     }
                 }
                 else
@@ -652,7 +652,7 @@ namespace Fitz.Features.Lottery
                     // Check to see if we've already generated a unique ticket number for this user.
                     if (!accountTickets.Any((x) => x.Number == ticketNumber))
                     {
-                        Ticket newTicket = new Ticket()
+                        TicketEntity newTicket = new TicketEntity()
                         {
                             Drawing = drawing.Id,
                             Number = ticketNumber,
@@ -683,13 +683,13 @@ namespace Fitz.Features.Lottery
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
             // Get account tickets for this current lottery.
-            List<Ticket> accountTickets = this.GetUserTickets(accountService.FindAccount(Users.Fitz)).Data as List<Ticket>;
+            List<TicketEntity> accountTickets = this.GetUserTickets(accountService.FindAccount(Users.Fitz)).Data as List<TicketEntity>;
 
             Database.Entities.LotteryEntity drawing = this.GetCurrentLottery();
             int ticketNumber = GenerateTicketNumber();
             if (!accountTickets.Any((x) => x.Number == ticketNumber))
             {
-                Ticket newTicket = new Ticket()
+                TicketEntity newTicket = new TicketEntity()
                 {
                     Drawing = drawing.Id,
                     Number = ticketNumber,
@@ -784,7 +784,7 @@ namespace Fitz.Features.Lottery
             return lotteryEmbed;
         }
 
-        public DiscordEmbed LotteryInfoEmbed(DiscordClient dClient, Database.Entities.LotteryEntity lottery, int daysLeft, List<Ticket> userTickets = null)
+        public DiscordEmbed LotteryInfoEmbed(DiscordClient dClient, Database.Entities.LotteryEntity lottery, int daysLeft, List<TicketEntity> userTickets = null)
         {
             DiscordEmbedBuilder lotteryEmbed;
             if (userTickets == null)
@@ -844,7 +844,7 @@ namespace Fitz.Features.Lottery
             return lotteryEmbed;
         }
 
-        public DiscordEmbed LotteryCommandEmbed(DiscordClient dClient, Database.Entities.LotteryEntity lottery, Fitz.Database.Entities.Settings settings, AccountEntity account, List<Ticket> userTickets = null)
+        public DiscordEmbed LotteryCommandEmbed(DiscordClient dClient, Database.Entities.LotteryEntity lottery, Fitz.Database.Entities.Settings settings, AccountEntity account, List<TicketEntity> userTickets = null)
         {
             DiscordEmbedBuilder lotteryEmbed = new()
             {

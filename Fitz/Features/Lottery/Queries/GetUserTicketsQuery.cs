@@ -26,7 +26,7 @@ namespace Fitz.Features.Lottery.Queries
                     return new Result(false, "No active lottery found.", null);
                 }
 
-                List<Ticket> userTickets = db.Ticket.Where(x => x.AccountId == account.Id && x.Drawing == lottery.Id).ToList();
+                List<TicketEntity> userTickets = db.Ticket.Where(x => x.AccountId == account.Id && x.Drawing == lottery.Id).ToList();
                 return new Result(true, $"Got {userTickets.Count} ticket(s) for {account.Username}.", userTickets);
             }
             catch (System.Exception ex)

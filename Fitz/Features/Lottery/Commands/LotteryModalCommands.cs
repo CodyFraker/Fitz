@@ -65,7 +65,7 @@ namespace Fitz.Features.Lottery.Commands
                 }
                 else
                 {
-                    List<Ticket> userTickets = buyTicketResult.Data as List<Ticket>;
+                    List<TicketEntity> userTickets = buyTicketResult.Data as List<TicketEntity>;
 
                     int daysLeft = (int)this.lotteryService.GetRemainingHoursUntilNextDrawing().Data;
 
