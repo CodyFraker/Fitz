@@ -83,12 +83,6 @@ namespace Fitz.Features.Accounts
             }
         }
 
-        public async Task<Result> CreateFitzAccountAsync()
-        {
-            var command = new CreateFitzAccountCommand(scopeFactory, botLog);
-            return await command.ExecuteAsync();
-        }
-
         public async Task<Result> SetSafeBalanceAsync(Account account, int safeBalance)
         {
             var command = new SetSafeBalanceCommand(scopeFactory, botLog);

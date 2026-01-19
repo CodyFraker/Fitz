@@ -26,7 +26,6 @@ namespace Fitz.Features.Rename
         {
             RecurringJob.RemoveIfExists("CheckForExpiredRenames");
             RecurringJob.RemoveIfExists("CheckForNicknames");
-            this.cNext.UnregisterCommands<RenameAdminCommands>();
             return base.Disable();
         }
 
@@ -35,7 +34,6 @@ namespace Fitz.Features.Rename
             RecurringJob.AddOrUpdate("CheckForExpiredRenames", () => this.renameJob.Execute(), this.renameJob.Interval);
             RecurringJob.AddOrUpdate("CheckForNicknames", () => this.checkForNicknames.Execute(), this.checkForNicknames.Interval);
             this.slash.RegisterCommands<RenameSlashCommands>();
-            this.cNext.RegisterCommands<RenameAdminCommands>();
             return base.Enable();
         }
     }

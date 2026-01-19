@@ -33,7 +33,6 @@ namespace Fitz.Features.Accounts
         public override Task Disable()
         {
             RecurringJob.RemoveIfExists("AccountJob");
-            this.cNext.UnregisterCommands<AccountAdminSlashCommands>();
             return base.Disable();
         }
 
@@ -44,16 +43,10 @@ namespace Fitz.Features.Accounts
             // For some reason, discord isn't wanting to register the command globally.
             // Hence why I register the commands in two guilds here.
             this.slash.RegisterCommands<AccountSlashCommands>(Guilds.Waterbear);
-            //this.slash.RegisterCommands<AccountSlashCommands>(Guilds.DodeDuke);
-            this.slash.RegisterCommands<AccountAdminSlashCommands>();
+            this.slash.RegisterCommands<AccountSlashCommands>(Guilds.DodeDuke);
 
             // Check to see if Fitz has an account registered in the database.
             var findAccountQuery = new FindAccountQuery(scopeFactory);
-            if (findAccountQuery.Execute(Users.Fitz) == null)
-            {
-                var createFitzAccountCommand = new CreateFitzAccountCommand(scopeFactory, botLog);
-                createFitzAccountCommand.ExecuteAsync();
-            }
 
             this.dClient.GuildMemberRemoved += this.GuildMemberRemoved;
             this.dClient.GuildMemberAdded += this.GuildMemberAdded;

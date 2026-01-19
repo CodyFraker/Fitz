@@ -5,7 +5,6 @@ using Fitz.Core.Api.Models;
 using Fitz.Core.Commands.Attributes;
 using Fitz.Features.Accounts;
 using Fitz.Database.Entities;
-using Fitz.Database.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
