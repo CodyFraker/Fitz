@@ -16,7 +16,7 @@ namespace Fitz.Api.Models.Requests
         public string Question { get; set; } = string.Empty;
 
         [Required]
-        public PollType Type { get; set; }
+        public PollTypeEnum Type { get; set; }
 
         [Required]
         [MinLength(1)]

@@ -62,8 +62,8 @@ namespace Fitz.Api.Tests.Integration.Polls
                 AccountId = 123456789,
                 MessageId = 987654321,
                 Question = "Test Question?",
-                Type = PollType.YesOrNo,
-                Status = PollStatus.Pending,
+                Type = PollTypeEnum.YesOrNo,
+                Status = PollStatusEnum.Pending,
                 SubmittedOn = DateTime.UtcNow
             };
             
@@ -86,8 +86,8 @@ namespace Fitz.Api.Tests.Integration.Polls
                 AccountId = 123456789,
                 MessageId = 0,
                 Question = "Test Question?",
-                Type = PollType.YesOrNo,
-                Status = PollStatus.Approved,
+                Type = PollTypeEnum.YesOrNo,
+                Status = PollStatusEnum.Approved,
                 SubmittedOn = DateTime.UtcNow
             };
             
@@ -110,8 +110,8 @@ namespace Fitz.Api.Tests.Integration.Polls
                 AccountId = 123456789,
                 MessageId = 0,
                 Question = "Test Question?",
-                Type = PollType.YesOrNo,
-                Status = PollStatus.Pending,
+                Type = PollTypeEnum.YesOrNo,
+                Status = PollStatusEnum.Pending,
                 SubmittedOn = DateTime.UtcNow
             };
             
@@ -134,8 +134,8 @@ namespace Fitz.Api.Tests.Integration.Polls
                 AccountId = 123456789,
                 MessageId = 0,
                 Question = "Test Question?",
-                Type = PollType.YesOrNo,
-                Status = PollStatus.Pending,
+                Type = PollTypeEnum.YesOrNo,
+                Status = PollStatusEnum.Pending,
                 SubmittedOn = DateTime.UtcNow
             };
             

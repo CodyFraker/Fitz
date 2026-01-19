@@ -25,7 +25,7 @@ namespace Fitz.Api.Controllers.Polls
 
         [HttpGet]
         [RequireDiscordAuth]
-        public IActionResult GetPolls([FromQuery] PollStatus? status, [FromQuery] ulong? userId)
+        public IActionResult GetPolls([FromQuery] PollStatusEnum? status, [FromQuery] ulong? userId)
         {
             var stopwatch = Stopwatch.StartNew();
             var endpoint = "/api/polls";
@@ -34,7 +34,7 @@ namespace Fitz.Api.Controllers.Polls
             
             try
             {
-                List<Poll> polls;
+                List<PollEntity> polls;
 
                 if (userId.HasValue)
                 {

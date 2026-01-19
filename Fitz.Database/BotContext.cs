@@ -21,9 +21,9 @@ namespace Fitz.Database
         public DbSet<LotteryEntity> Drawing { get; set; }
         public DbSet<TicketEntity> Ticket { get; set; }
         public DbSet<WinnersEntity> Winners { get; set; }
-        public DbSet<Poll> Polls { get; set; }
+        public DbSet<PollEntity> Polls { get; set; }
         public DbSet<Vote> Votes { get; set; }
-        public DbSet<PollOptions> PollsOptions { get; set; }
+        public DbSet<PollOptionsEntity> PollsOptions { get; set; }
         public DbSet<Renames> Renames { get; set; }
         public DbSet<Job> Jobs { get; set; }
         public DbSet<FeatureStatus> FeatureStatuses { get; set; }
@@ -35,13 +35,13 @@ namespace Fitz.Database
                 .Property(s => s.Reason)
                 .HasConversion(new EnumToStringConverter<Reason>());
 
-            modelBuilder.Entity<Poll>()
+            modelBuilder.Entity<PollEntity>()
                 .Property(s => s.Type)
-                .HasConversion(new EnumToStringConverter<PollType>());
+                .HasConversion(new EnumToStringConverter<PollTypeEnum>());
 
-            modelBuilder.Entity<Poll>()
+            modelBuilder.Entity<PollEntity>()
                 .Property(s => s.Status)
-                .HasConversion(new EnumToStringConverter<PollStatus>());
+                .HasConversion(new EnumToStringConverter<PollStatusEnum>());
 
             modelBuilder.Entity<BlackjackGame>()
                 .Property(s => s.Type)

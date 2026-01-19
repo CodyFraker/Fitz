@@ -71,7 +71,7 @@ namespace Fitz.Features.Polls
                 }
 
                 var pollData = pollResponse.Data;
-                var poll = new Poll
+                var poll = new PollEntity
                 {
                     Id = pollData.Id,
                     AccountId = pollData.AccountId,
@@ -85,7 +85,7 @@ namespace Fitz.Features.Polls
 
                 var optionsResponse = await apiClient.GetAsync<ApiResponse<List<PollOptionResponse>>>($"/api/polls/{poll.Id}/options");
                 var pollOptionsData = optionsResponse?.Data ?? new List<PollOptionResponse>();
-                var pollOptions = pollOptionsData.Select(o => new PollOptions
+                var pollOptions = pollOptionsData.Select(o => new PollOptionsEntity
                 {
                     Id = o.Id,
                     PollId = o.PollId,
@@ -96,7 +96,7 @@ namespace Fitz.Features.Polls
 
                 #region Pending Polls
 
-                if (poll.Status == PollStatus.Pending)
+                if (poll.Status == PollStatusEnum.Pending)
                 {
                     List<DiscordMember> pollApprovers = reaction.Message.Channel.Users.Where(DiscordMember => !DiscordMember.IsBot).ToList();
                     IReadOnlyList<DiscordUser> approvalReactions = await reaction.Message.GetReactionsAsync(DiscordEmoji.FromGuildEmote(dClient, PollEmojis.Yes));
@@ -106,7 +106,7 @@ namespace Fitz.Features.Polls
                     // Approved
                     if (approvalReactions.Where(x => !x.IsBot).Count() >= 2)
                     {
-                        var evaluateRequest = new EvaluatePollRequest { Status = PollStatus.Approved };
+                        var evaluateRequest = new EvaluatePollRequest { Status = PollStatusEnum.Approved };
                         var approvalResponse = await apiClient.PatchAsync<EvaluatePollRequest, ApiResponse<PollResponse>>($"/api/polls/{poll.Id}/evaluate", evaluateRequest);
                         if (approvalResponse != null && approvalResponse.Success && approvalResponse.Data != null)
                         {
@@ -116,7 +116,7 @@ namespace Fitz.Features.Polls
                             {
                                 // Send the poll to the poll channel
                                 DiscordMessage pollMessage = await pollChannel.SendMessageAsync(this.pollService.GeneratePollEmbed(dClient, poll, pollOptions));
-                                foreach (PollOptions option in pollOptions)
+                                foreach (PollOptionsEntity option in pollOptions)
                                 {
                                     if (option.EmojiId == 0)
                                     {
@@ -149,7 +149,7 @@ namespace Fitz.Features.Polls
                     // Denied
                     else if (denyReactions.Where(x => !x.IsBot).Count() >= 2)
                     {
-                        var evaluateRequest = new EvaluatePollRequest { Status = PollStatus.Declined };
+                        var evaluateRequest = new EvaluatePollRequest { Status = PollStatusEnum.Declined };
                         var denyResponse = await apiClient.PatchAsync<EvaluatePollRequest, ApiResponse<PollResponse>>($"/api/polls/{poll.Id}/evaluate", evaluateRequest);
                         if (denyResponse != null && denyResponse.Success && denyResponse.Data != null)
                         {
@@ -177,12 +177,12 @@ namespace Fitz.Features.Polls
 
                 #region Poll Vote
 
-                if (reaction.Message.ChannelId == Waterbear.Polls && poll.Status == PollStatus.Approved)
+                if (reaction.Message.ChannelId == Waterbear.Polls && poll.Status == PollStatusEnum.Approved)
                 {
                     // Check to see if we're adding a valid poll emoji.
                     if (pollOptions.Any((x) => x.EmojiId == reaction.Emoji.Id) || pollOptions.Any((x) => x.EmojiName == reaction.Emoji.Name))
                     {
-                        PollOptions userOption = new();
+                        PollOptionsEntity userOption = new();
                         if (reaction.Emoji.Id == 0)
                         {
                             userOption = pollOptions.FirstOrDefault((x) => x.EmojiName == reaction.Emoji.GetDiscordName());
@@ -232,7 +232,7 @@ namespace Fitz.Features.Polls
                             {
                                 // If the user has already voted, we need to remove their previous vote and update their vote with the new one.
                                 // Remove their original reaction
-                                PollOptions userOldOption = pollOptions.FirstOrDefault((x) => x.Id == vote.Choice.Value);
+                                PollOptionsEntity userOldOption = pollOptions.FirstOrDefault((x) => x.Id == vote.Choice.Value);
                                 if (userOldOption == null)
                                 {
                                     return;
@@ -273,21 +273,21 @@ namespace Fitz.Features.Polls
             }
         }
 
-        private DiscordEmbed NotifyPollCreatorEmbed(DiscordClient dClient, Poll poll, DiscordMessage? pollMessage)
+        private DiscordEmbed NotifyPollCreatorEmbed(DiscordClient dClient, PollEntity poll, DiscordMessage? pollMessage)
         {
             // Set base embed color to white.
             DiscordColor embedColor = new DiscordColor(250, 250, 250);
             string embedTitle = string.Empty;
             string description = string.Empty;
 
-            if (poll.Status == PollStatus.Approved)
+            if (poll.Status == PollStatusEnum.Approved)
             {
                 embedColor = new DiscordColor(34, 206, 131);
                 embedTitle = $"Poll #{poll.Id} was approved!";
                 description += $"Question: {poll.Question}\n";
                 description += $"When users react to your poll, you will obtain beer for their votes.\n";
             }
-            if (poll.Status == PollStatus.Declined)
+            if (poll.Status == PollStatusEnum.Declined)
             {
                 embedColor = new DiscordColor(255, 95, 31);
                 embedTitle = $"Poll #{poll.Id} was denied...";

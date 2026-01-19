@@ -208,7 +208,7 @@ namespace Fitz.Features.Accounts
 
         private DiscordEmbed accountEmbed(DiscordUser user, AccountEntity account)
         {
-            List<Poll> userPolls = this.pollService.GetPollsSubmittedByUser(account.Id);
+            List<PollEntity> userPolls = this.pollService.GetPollsSubmittedByUser(account.Id);
             List<TicketEntity> userTickets = this.lotteryService.GetTicketsByUserId(account.Id);
 
             string subscribe = account.subscribeToLottery ? "Active" : "Inactive";
@@ -235,9 +235,9 @@ namespace Fitz.Features.Accounts
             };
 
             accountEmbed.AddField($"**Polls**", $"Submitted: `{userPolls.Count()}`\n" +
-                $"Approved: `{userPolls.Where(poll => poll.Status == PollStatus.Approved).Count()}`\n" +
-                $"Pending: `{userPolls.Where(poll => poll.Status == PollStatus.Pending).Count()}`\n" +
-                $"Declined: `{userPolls.Where(poll => poll.Status == PollStatus.Declined).Count()}`", true);
+                $"Approved: `{userPolls.Where(poll => poll.Status == PollStatusEnum.Approved).Count()}`\n" +
+                $"Pending: `{userPolls.Where(poll => poll.Status == PollStatusEnum.Pending).Count()}`\n" +
+                $"Declined: `{userPolls.Where(poll => poll.Status == PollStatusEnum.Declined).Count()}`", true);
 
             accountEmbed.AddField($"**Lottery**", $"Partcipated: `{this.lotteryService.GetTotalLotteryPartipationsByUserId(account.Id)}`\n" +
                 $"Lifetime Entries: `{userTickets.Count()}`\n" +

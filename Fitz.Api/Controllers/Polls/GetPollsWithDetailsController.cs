@@ -26,7 +26,7 @@ namespace Fitz.Api.Controllers.Polls
         [HttpGet("with-details")]
         [RequireDiscordAuth]
         public async Task<IActionResult> GetPollsWithDetails(
-            [FromQuery] PollStatus? status,
+            [FromQuery] PollStatusEnum? status,
             [FromQuery] ulong? userId,
             [FromQuery] int skip = 0,
             [FromQuery] int take = 10,
@@ -51,7 +51,7 @@ namespace Fitz.Api.Controllers.Polls
                 }
                 else
                 {
-                    query = query.Where(p => p.Status == PollStatus.Approved);
+                    query = query.Where(p => p.Status == PollStatusEnum.Approved);
                 }
 
                 if (userId.HasValue)

@@ -81,7 +81,7 @@ namespace Fitz.Api.Controllers.Polls
                 using var db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
                 var pendingPolls = await db.Polls
-                    .Where(p => p.AccountId == request.AccountId && p.Status == PollStatus.Pending)
+                    .Where(p => p.AccountId == request.AccountId && p.Status == PollStatusEnum.Pending)
                     .CountAsync();
 
                 if (pendingPolls >= settings.MaxPendingPolls)
@@ -96,7 +96,7 @@ namespace Fitz.Api.Controllers.Polls
 
                 switch (request.Type)
                 {
-                    case PollType.Number:
+                    case PollTypeEnum.Number:
                         if (request.Options.Count < 2 || request.Options.Count > 10)
                         {
                             _fitzMetrics?.RecordApiError(endpoint, "invalid_option_count");
@@ -108,7 +108,7 @@ namespace Fitz.Api.Controllers.Polls
                         }
                         break;
 
-                    case PollType.Color:
+                    case PollTypeEnum.Color:
                         if (request.Options.Count < 1 || request.Options.Count > 9)
                         {
                             _fitzMetrics?.RecordApiError(endpoint, "invalid_option_count");
@@ -120,7 +120,7 @@ namespace Fitz.Api.Controllers.Polls
                         }
                         break;
 
-                    case PollType.YesOrNo:
+                    case PollTypeEnum.YesOrNo:
                         if (request.Options.Count != 2)
                         {
                             _fitzMetrics?.RecordApiError(endpoint, "invalid_option_count");
@@ -132,7 +132,7 @@ namespace Fitz.Api.Controllers.Polls
                         }
                         break;
 
-                    case PollType.ThisOrThat:
+                    case PollTypeEnum.ThisOrThat:
                         if (request.Options.Count != 2)
                         {
                             _fitzMetrics?.RecordApiError(endpoint, "invalid_option_count");
@@ -144,7 +144,7 @@ namespace Fitz.Api.Controllers.Polls
                         }
                         break;
 
-                    case PollType.HotTake:
+                    case PollTypeEnum.HotTake:
                         if (request.Options.Count != 2)
                         {
                             _fitzMetrics?.RecordApiError(endpoint, "invalid_option_count");
@@ -157,13 +157,13 @@ namespace Fitz.Api.Controllers.Polls
                         break;
                 }
 
-                var poll = new Poll
+                var poll = new PollEntity
                 {
                     AccountId = request.AccountId,
                     MessageId = request.MessageId,
                     Question = request.Question,
                     Type = request.Type,
-                    Status = PollStatus.Pending,
+                    Status = PollStatusEnum.Pending,
                     SubmittedOn = DateTime.UtcNow
                 };
 
@@ -179,7 +179,7 @@ namespace Fitz.Api.Controllers.Polls
                     });
                 }
 
-                var savedPoll = result.Data as Poll;
+                var savedPoll = result.Data as PollEntity;
                 if (savedPoll == null)
                 {
                     using var dbContext = scope.ServiceProvider.GetRequiredService<BotContext>();
@@ -199,7 +199,7 @@ namespace Fitz.Api.Controllers.Polls
                     });
                 }
 
-                var pollOptions = request.Options.Select(o => new PollOptions
+                var pollOptions = request.Options.Select(o => new PollOptionsEntity
                 {
                     PollId = savedPoll.Id,
                     Answer = o.Answer,

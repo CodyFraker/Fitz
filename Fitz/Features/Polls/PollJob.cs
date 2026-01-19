@@ -34,7 +34,7 @@ namespace Fitz.Features.Polls
                 this.botLog.Information(LogConsoleSettings.Jobs, PollEmojis.InfoIcon, $"Starting Poll Job...");
                 
                 var polls = this.PollService.GetPolls();
-                var activePolls = polls.Where(p => p.Status == PollStatus.Approved).Count();
+                var activePolls = polls.Where(p => p.Status == PollStatusEnum.Approved).Count();
                 fitzMetrics?.SetPollsActive(activePolls);
             // Get poll channel
             DiscordChannel PollChannel = await dClient.GetChannelAsync(Variables.Channels.Waterbear.Polls);
@@ -46,7 +46,7 @@ namespace Fitz.Features.Polls
             await foreach (DiscordMessage message in pollChannelMessages)
             {
                 // Retrive poll from database by message ID
-                Poll poll = this.PollService.GetPoll(message.Id);
+                PollEntity poll = this.PollService.GetPoll(message.Id);
 
                 if (poll == null)
                 {
@@ -59,11 +59,11 @@ namespace Fitz.Features.Polls
                 else
                 {
                     // Retrieve all poll options from the database for this poll.
-                    List<PollOptions> pollOptions = this.PollService.GetPollOptions(poll);
+                    List<PollOptionsEntity> pollOptions = this.PollService.GetPollOptions(poll);
                     // Check to see if all poll options were added to the message
                     if (message.Reactions == null || message.Reactions.Count == 0)
                     {
-                        foreach (PollOptions option in pollOptions)
+                        foreach (PollOptionsEntity option in pollOptions)
                         {
                             if (!message.Reactions.Any(x => x.Emoji.Name.Contains(option.EmojiName)))
                             {

@@ -71,7 +71,7 @@ namespace Fitz.Api.Tests.Integration.Polls
                 AccountId = 123456789UL,
                 MessageId = 987654321UL,
                 Question = "Test Question?",
-                Type = PollType.YesOrNo,
+                Type = PollTypeEnum.YesOrNo,
                 Options = new[]
                 {
                     new { Answer = "Yes", EmojiName = ":white_check_mark:", EmojiId = (ulong?)0 },
@@ -93,7 +93,7 @@ namespace Fitz.Api.Tests.Integration.Polls
                 AccountId = 999999999UL,
                 MessageId = 987654321UL,
                 Question = "Test Question?",
-                Type = PollType.YesOrNo,
+                Type = PollTypeEnum.YesOrNo,
                 Options = new[]
                 {
                     new { Answer = "Yes", EmojiName = ":white_check_mark:", EmojiId = (ulong?)0 }

@@ -1,6 +1,6 @@
 namespace Fitz.Database.Entities
 {
-    public enum PollType
+    public enum PollTypeEnum
     {
         Number = 1,
         YesOrNo = 2,

@@ -10,8 +10,8 @@ namespace Fitz.Core.Api.Models
         public ulong AccountId { get; set; }
         public ulong MessageId { get; set; }
         public string Question { get; set; } = string.Empty;
-        public PollType Type { get; set; }
-        public PollStatus Status { get; set; }
+        public PollTypeEnum Type { get; set; }
+        public PollStatusEnum Status { get; set; }
         public DateTime? EvaluatedOn { get; set; }
         public DateTime SubmittedOn { get; set; }
     }
@@ -39,7 +39,7 @@ namespace Fitz.Core.Api.Models
         public ulong AccountId { get; set; }
         public ulong MessageId { get; set; }
         public string Question { get; set; } = string.Empty;
-        public PollType Type { get; set; }
+        public PollTypeEnum Type { get; set; }
         public List<PollOptionRequest> Options { get; set; } = new();
     }
 
@@ -52,7 +52,7 @@ namespace Fitz.Core.Api.Models
 
     public class EvaluatePollRequest
     {
-        public PollStatus Status { get; set; }
+        public PollStatusEnum Status { get; set; }
     }
 
     public class AddVoteRequest

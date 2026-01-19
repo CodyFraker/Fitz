@@ -74,7 +74,7 @@ namespace Fitz.Api.Controllers.Polls
                     });
                 }
 
-                var updatedPoll = result.Data as Fitz.Database.Entities.Poll;
+                var updatedPoll = result.Data as Fitz.Database.Entities.PollEntity;
                 if (updatedPoll == null)
                 {
                     updatedPoll = await db.Polls.FindAsync(id);

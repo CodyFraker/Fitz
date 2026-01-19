@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Fitz.Database.Entities
 {
     [Table("polls")]
-    public class Poll
+    public class PollEntity
     {
         [Key]
         [Column("id")]
@@ -21,10 +21,10 @@ namespace Fitz.Database.Entities
         public string Question { get; set; }
 
         [Column("type")]
-        public PollType Type { get; set; }
+        public PollTypeEnum Type { get; set; }
 
         [Column("status")]
-        public PollStatus Status { get; set; }
+        public PollStatusEnum Status { get; set; }
 
         [Column("evaluated_on")]
         public DateTime? EvaluatedOn { get; set; }

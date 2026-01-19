@@ -22,7 +22,7 @@ namespace Fitz.Features.Polls.Polls
 
         [SlashCommand("poll", "Generate a poll.")]
         public async Task GeneratePoll(InteractionContext ctx,
-            [Option("Type", "pollType")] PollType pollType = PollType.Number)
+            [Option("Type", "pollType")] PollTypeEnum pollType = PollTypeEnum.Number)
         {
             var account = accountService.FindAccount(ctx.User.Id);
             if (account == null)
@@ -50,7 +50,7 @@ namespace Fitz.Features.Polls.Polls
 
             switch (pollType)
             {
-                case PollType.Number:
+                case PollTypeEnum.Number:
                     var numberModal = ModalBuilder.Create("gen_number")
                         .WithTitle("Create Number Poll")
                         .AddComponents(new DiscordTextInputComponent($"{DiscordEmoji.FromName(ctx.Client, ":bar_chart:")}Poll Title", "genNumberPollTitle", "Number Poll Title", required: true, max_length: 128))
@@ -63,14 +63,14 @@ namespace Fitz.Features.Polls.Polls
                     await ctx.CreateResponseAsync(DiscordInteractionResponseType.Modal, numberModal);
                     break;
 
-                case PollType.YesOrNo:
+                case PollTypeEnum.YesOrNo:
                     var yesOrNoModal = ModalBuilder.Create("gen_yesno")
                         .WithTitle("Create Yes/No Poll")
                         .AddComponents(new DiscordTextInputComponent($"{DiscordEmoji.FromName(ctx.Client, ":bar_chart:")}Poll Title", "yesnoPollTitle", "Yes or No Poll Title", required: true, max_length: 128));
                     await ctx.CreateResponseAsync(DiscordInteractionResponseType.Modal, yesOrNoModal);
                     break;
 
-                case PollType.Color:
+                case PollTypeEnum.Color:
                     var colorModal = ModalBuilder.Create("generate_color_poll")
                         .WithTitle("Create Color Poll")
                         .AddComponents(new DiscordTextInputComponent($"{DiscordEmoji.FromName(ctx.Client, ":bar_chart:")}Poll Title", "colorPollTitle", "Color Poll Title", required: true, max_length: 128))
@@ -82,7 +82,7 @@ namespace Fitz.Features.Polls.Polls
                     await ctx.CreateResponseAsync(DiscordInteractionResponseType.Modal, colorModal);
                     break;
 
-                case PollType.ThisOrThat:
+                case PollTypeEnum.ThisOrThat:
                     var thisOrThatModal = ModalBuilder.Create("gen_thisorthat")
                         .WithTitle("Create This or That Poll")
                         .AddComponents(new DiscordTextInputComponent($"{DiscordEmoji.FromName(ctx.Client, ":bar_chart:")}Poll Title", "thisOrThatPollTitle", "", required: true, max_length: 128))
@@ -91,7 +91,7 @@ namespace Fitz.Features.Polls.Polls
                     await ctx.CreateResponseAsync(DiscordInteractionResponseType.Modal, thisOrThatModal);
                     break;
 
-                case PollType.HotTake:
+                case PollTypeEnum.HotTake:
                     var hotTakeModal = ModalBuilder.Create("gen_hottake")
                         .WithTitle("Create Hot Take")
                         .AddComponents(new DiscordTextInputComponent($"{DiscordEmoji.FromName(ctx.Client, ":bar_chart:")}Poll Title", "Poll Title", "Poll Title", required: true, max_length: 128));

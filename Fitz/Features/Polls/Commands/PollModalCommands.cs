@@ -44,7 +44,7 @@ namespace Fitz.Features.Polls.Polls
             string[] answerOptions = choices.Split(',');
             answerOptions = answerOptions.Where(x => !string.IsNullOrEmpty(x)).ToArray();
 
-            List<PollOptions> pollOptions = new List<PollOptions>();
+            List<PollOptionsEntity> pollOptions = new List<PollOptionsEntity>();
 
             if (answerOptions.Length > 10 || answerOptions.Length <= 1)
             {
@@ -60,7 +60,7 @@ namespace Fitz.Features.Polls.Polls
                 switch (i)
                 {
                     case 0:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":one:",
@@ -69,7 +69,7 @@ namespace Fitz.Features.Polls.Polls
                         break;
 
                     case 1:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":two:",
@@ -78,7 +78,7 @@ namespace Fitz.Features.Polls.Polls
                         break;
 
                     case 2:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":three:",
@@ -87,7 +87,7 @@ namespace Fitz.Features.Polls.Polls
                         break;
 
                     case 3:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":four:",
@@ -96,7 +96,7 @@ namespace Fitz.Features.Polls.Polls
                         break;
 
                     case 4:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":five:",
@@ -105,7 +105,7 @@ namespace Fitz.Features.Polls.Polls
                         break;
 
                     case 5:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":six:",
@@ -114,7 +114,7 @@ namespace Fitz.Features.Polls.Polls
                         break;
 
                     case 6:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":seven:",
@@ -123,7 +123,7 @@ namespace Fitz.Features.Polls.Polls
                         break;
 
                     case 7:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":eight:",
@@ -132,7 +132,7 @@ namespace Fitz.Features.Polls.Polls
                         break;
 
                     case 8:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":nine:",
@@ -141,7 +141,7 @@ namespace Fitz.Features.Polls.Polls
                         break;
 
                     case 9:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":keycap_ten:",
@@ -157,7 +157,7 @@ namespace Fitz.Features.Polls.Polls
             await ctx.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
                 new DiscordInteractionResponseBuilder()
                 .WithContent($"Here is what the poll will look like. If everything looks good, hit 'Confirm' and you will be charged {settings.PollSubmittedPenalty} beer for the poll submission. Clicking cancel will *NOT* submit the poll and you will be forced to start over.")
-                .AddEmbed(GeneratePollEmbed(ctx, question, pollOptions, PollType.Number))
+                .AddEmbed(GeneratePollEmbed(ctx, question, pollOptions, PollTypeEnum.Number))
                 .AddComponents(cancelBtn, accpetBtn).AsEphemeral(true));
 
             ctx.Client.ComponentInteractionCreated += async (s, e) =>
@@ -167,7 +167,7 @@ namespace Fitz.Features.Polls.Polls
                 {
                     // Notify the user that the poll is being submitted.
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Submitting number poll..."));
-                    var sendPendingPoll = await SendPendingPoll(ctx, question, pollOptions, PollType.Number);
+                    var sendPendingPoll = await SendPendingPoll(ctx, question, pollOptions, PollTypeEnum.Number);
                     if (sendPendingPoll.Success)
                     {
                         await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("I will evaluate if the poll is worthy of posting. If so, you will gain beer."));
@@ -208,7 +208,7 @@ namespace Fitz.Features.Polls.Polls
             }
             string[] answerOptions = choices.Split(',');
             answerOptions = answerOptions.Where(x => !string.IsNullOrEmpty(x)).ToArray();
-            List<PollOptions> pollOptions = new List<PollOptions>();
+            List<PollOptionsEntity> pollOptions = new List<PollOptionsEntity>();
 
             if (answerOptions.Length > 9)
             {
@@ -224,7 +224,7 @@ namespace Fitz.Features.Polls.Polls
                 switch (i)
                 {
                     case 0:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":blue_circle:",
@@ -233,7 +233,7 @@ namespace Fitz.Features.Polls.Polls
                         break;
 
                     case 1:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":green_circle:",
@@ -242,7 +242,7 @@ namespace Fitz.Features.Polls.Polls
                         break;
 
                     case 2:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":orange_circle:",
@@ -251,7 +251,7 @@ namespace Fitz.Features.Polls.Polls
                         break;
 
                     case 3:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":purple_circle:",
@@ -260,7 +260,7 @@ namespace Fitz.Features.Polls.Polls
                         break;
 
                     case 4:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":red_circle:",
@@ -269,7 +269,7 @@ namespace Fitz.Features.Polls.Polls
                         break;
 
                     case 5:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":yellow_circle:",
@@ -278,7 +278,7 @@ namespace Fitz.Features.Polls.Polls
                         break;
 
                     case 6:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":brown_circle:",
@@ -287,7 +287,7 @@ namespace Fitz.Features.Polls.Polls
                         break;
 
                     case 7:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":black_circle:",
@@ -296,7 +296,7 @@ namespace Fitz.Features.Polls.Polls
                         break;
 
                     case 8:
-                        pollOptions.Add(new PollOptions
+                        pollOptions.Add(new PollOptionsEntity
                         {
                             Answer = answerOptions[i],
                             EmojiName = ":white_circle:",
@@ -312,7 +312,7 @@ namespace Fitz.Features.Polls.Polls
             await ctx.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
                 new DiscordInteractionResponseBuilder()
                 .WithContent($"Here is what the poll will look like. If everything looks good, hit 'Confirm' and you will be charged {settings.PollSubmittedPenalty} beer for the poll submission. Clicking cancel will *NOT* submit the poll and you will be forced to start over.")
-                .AddEmbed(GeneratePollEmbed(ctx, question, pollOptions, PollType.Color))
+                .AddEmbed(GeneratePollEmbed(ctx, question, pollOptions, PollTypeEnum.Color))
                 .AddComponents(cancelBtn, accpetBtn).AsEphemeral(true));
 
             ctx.Client.ComponentInteractionCreated += async (s, e) =>
@@ -321,7 +321,7 @@ namespace Fitz.Features.Polls.Polls
                 if (e.Id == $"color_poll_confirm_{unique_id}")
                 {
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Submitting color poll.."));
-                    var sendPoll = await this.SendPendingPoll(ctx, question, pollOptions, PollType.Color);
+                    var sendPoll = await this.SendPendingPoll(ctx, question, pollOptions, PollTypeEnum.Color);
                     if (sendPoll.Success)
                     {
                         await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll Created."));
@@ -365,15 +365,15 @@ namespace Fitz.Features.Polls.Polls
             DiscordButtonComponent accpetBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, $"yesno_poll_confirm_{unique_id}", "Confirm", false);
             DiscordButtonComponent cancelBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, $"yesno_poll_cancel_{unique_id}", "Cancel", false);
 
-            List<PollOptions> pollOptions =
+            List<PollOptionsEntity> pollOptions =
             [
-                new PollOptions
+                new PollOptionsEntity
                 {
                     Answer = "Yes",
                     EmojiName = DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.Yes).Name,
                     EmojiId = DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.Yes).Id,
                 },
-                new PollOptions
+                new PollOptionsEntity
                 {
                     Answer = "No",
                     EmojiName = DiscordEmoji.FromGuildEmote(ctx.Client, PollEmojis.No).Name,
@@ -384,7 +384,7 @@ namespace Fitz.Features.Polls.Polls
             await ctx.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
                 new DiscordInteractionResponseBuilder()
                 .WithContent($"Here is what the poll will look like. If everything looks good, hit 'Confirm' and you will be charged {settings.PollSubmittedPenalty} beer for the poll submission. Clicking cancel will *NOT* submit the poll and you will be forced to start over.")
-                .AddEmbed(GeneratePollEmbed(ctx, question, pollOptions, PollType.YesOrNo))
+                .AddEmbed(GeneratePollEmbed(ctx, question, pollOptions, PollTypeEnum.YesOrNo))
                 .AddComponents(cancelBtn, accpetBtn).AsEphemeral(true));
 
             ctx.Client.ComponentInteractionCreated += async (s, e) =>
@@ -394,7 +394,7 @@ namespace Fitz.Features.Polls.Polls
                 {
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Posting poll.."));
 
-                    var sendPoll = await SendPendingPoll(ctx, question, pollOptions, PollType.YesOrNo);
+                    var sendPoll = await SendPendingPoll(ctx, question, pollOptions, PollTypeEnum.YesOrNo);
                     if (sendPoll.Success)
                     {
                         await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll Created."));
@@ -438,15 +438,15 @@ namespace Fitz.Features.Polls.Polls
             DiscordButtonComponent accpetBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, $"thisorthat_poll_confirm_{unique_id}", "Confirm", false);
             DiscordButtonComponent cancelBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, $"thisorthat_poll_cancel_{unique_id}", "Cancel", false);
 
-            List<PollOptions> pollOptions =
+            List<PollOptionsEntity> pollOptions =
             [
-                new PollOptions
+                new PollOptionsEntity
                 {
                     Answer = thisResponse,
                     EmojiName = ":point_left:",
                     EmojiId = DiscordEmoji.FromName(ctx.Client, ":point_left:").Id,
                 },
-                new PollOptions
+                new PollOptionsEntity
                 {
                     Answer = thatResponse,
                     EmojiName = ":point_right:",
@@ -457,7 +457,7 @@ namespace Fitz.Features.Polls.Polls
             await ctx.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
                 new DiscordInteractionResponseBuilder()
                 .WithContent($"Here is what the poll will look like. If everything looks good, hit 'Confirm' and you will be charged {settings.PollSubmittedPenalty} beer for the poll submission. Clicking cancel will *NOT* submit the poll and you will be forced to start over.")
-                .AddEmbed(GeneratePollEmbed(ctx, question, pollOptions, PollType.ThisOrThat))
+                .AddEmbed(GeneratePollEmbed(ctx, question, pollOptions, PollTypeEnum.ThisOrThat))
                 .AddComponents(cancelBtn, accpetBtn).AsEphemeral(true));
 
             ctx.Client.ComponentInteractionCreated += async (s, e) =>
@@ -466,7 +466,7 @@ namespace Fitz.Features.Polls.Polls
                 if (e.Id == $"thisorthat_poll_confirm_{unique_id}")
                 {
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Posting poll.."));
-                    var sendPoll = await SendPendingPoll(ctx, question, pollOptions, PollType.ThisOrThat);
+                    var sendPoll = await SendPendingPoll(ctx, question, pollOptions, PollTypeEnum.ThisOrThat);
                     if (sendPoll.Success)
                     {
                         await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll Created."));
@@ -510,14 +510,14 @@ namespace Fitz.Features.Polls.Polls
             DiscordButtonComponent accpetBtn = new DiscordButtonComponent(DiscordButtonStyle.Success, $"hottake_poll_confirm_{unique_id}", "Confirm", false);
             DiscordButtonComponent cancelBtn = new DiscordButtonComponent(DiscordButtonStyle.Danger, $"hottake_poll_cancel_{unique_id}", "Cancel", false);
 
-            List<PollOptions> pollOptions = new List<PollOptions>();
-            pollOptions.Add(new PollOptions
+            List<PollOptionsEntity> pollOptions = new List<PollOptionsEntity>();
+            pollOptions.Add(new PollOptionsEntity
             {
                 Answer = "Agree",
                 EmojiName = ":fire:",
                 EmojiId = DiscordEmoji.FromName(ctx.Client, ":fire:").Id,
             });
-            pollOptions.Add(new PollOptions
+            pollOptions.Add(new PollOptionsEntity
             {
                 Answer = "Shit Take",
                 EmojiName = ":poop:",
@@ -527,7 +527,7 @@ namespace Fitz.Features.Polls.Polls
             var tests = ctx.Interaction.CreateResponseAsync(DiscordInteractionResponseType.ChannelMessageWithSource,
                 new DiscordInteractionResponseBuilder()
                 .WithContent($"Here is what the poll will look like. If everything looks good, hit 'Confirm' and you will be charged {settings.PollSubmittedPenalty} beer for the poll submission. Clicking cancel will *NOT* submit the poll and you will be forced to start over.")
-                .AddEmbed(GeneratePollEmbed(ctx, question, pollOptions, PollType.HotTake))
+                .AddEmbed(GeneratePollEmbed(ctx, question, pollOptions, PollTypeEnum.HotTake))
                 .AddComponents(cancelBtn, accpetBtn).AsEphemeral(true));
 
             ctx.Client.ComponentInteractionCreated += async (s, e) =>
@@ -536,7 +536,7 @@ namespace Fitz.Features.Polls.Polls
                 if (e.Id == $"hottake_poll_confirm_{unique_id}")
                 {
                     await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Submitting poll.."));
-                    var sendPoll = await SendPendingPoll(ctx, question, pollOptions, PollType.HotTake);
+                    var sendPoll = await SendPendingPoll(ctx, question, pollOptions, PollTypeEnum.HotTake);
                     if (sendPoll.Success)
                     {
                         await ctx.EditResponseAsync(new DiscordWebhookBuilder().WithContent("Poll Submitted."));
@@ -559,7 +559,7 @@ namespace Fitz.Features.Polls.Polls
 
         #region Send Poll to Pending Polls Channel
 
-        private async Task<Result> SendPendingPoll(ModalContext ctx, string question, List<PollOptions> options, PollType pollType)
+        private async Task<Result> SendPendingPoll(ModalContext ctx, string question, List<PollOptionsEntity> options, PollTypeEnum pollType)
         {
             DiscordChannel pollChannel = ctx.Guild.GetChannel(Variables.Channels.Waterbear.PendingPolls);
             if (pollChannel == null)
@@ -623,14 +623,14 @@ namespace Fitz.Features.Polls.Polls
 
         #region Generate Poll Embed
 
-        private DiscordEmbed GeneratePollEmbed(ModalContext ctx, string question, List<PollOptions> pollOptions, PollType? pollType)
+        private DiscordEmbed GeneratePollEmbed(ModalContext ctx, string question, List<PollOptionsEntity> pollOptions, PollTypeEnum? pollType)
         {
             // Set base embed color to white.
             DiscordColor embedColor = new DiscordColor(PollEmbedColors.PendingPoll);
 
             // Set description to empty string.
             string description = string.Empty;
-            foreach (PollOptions option in pollOptions)
+            foreach (PollOptionsEntity option in pollOptions)
             {
                 // If built in emoji
                 if (option.EmojiId == 0)

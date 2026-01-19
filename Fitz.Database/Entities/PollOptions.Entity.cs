@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Fitz.Database.Entities
 {
     [Table("poll_options")]
-    public class PollOptions
+    public class PollOptionsEntity
     {
         [Key]
         [Column("id")]

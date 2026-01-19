@@ -71,8 +71,8 @@ namespace Fitz.Api.Tests.Integration.Polls
                 AccountId = 111111111,
                 MessageId = 987654321,
                 Question = "Test Question?",
-                Type = PollType.YesOrNo,
-                Status = PollStatus.Approved,
+                Type = PollTypeEnum.YesOrNo,
+                Status = PollStatusEnum.Approved,
                 SubmittedOn = DateTime.UtcNow
             };
 

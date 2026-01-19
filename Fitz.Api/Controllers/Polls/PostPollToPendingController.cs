@@ -67,7 +67,7 @@ namespace Fitz.Api.Controllers.Polls
                     });
                 }
 
-                if (poll.Status != PollStatus.Pending)
+                if (poll.Status != PollStatusEnum.Pending)
                 {
                     _fitzMetrics?.RecordApiError(endpoint, "invalid_status");
                     return BadRequest(new ApiResponse<PollResponse>

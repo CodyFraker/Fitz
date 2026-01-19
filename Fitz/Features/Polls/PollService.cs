@@ -29,7 +29,7 @@ namespace Fitz.Features.Polls
 
         #region Add Poll
 
-        public async Task<Result> AddPoll(Poll poll)
+        public async Task<Result> AddPoll(PollEntity poll)
         {
             try
             {
@@ -55,7 +55,7 @@ namespace Fitz.Features.Polls
 
         #region Evaluate Poll
 
-        public async Task<Result> EvaluatePoll(Poll pendingPoll, PollStatus evaluation)
+        public async Task<Result> EvaluatePoll(PollEntity pendingPoll, PollStatusEnum evaluation)
         {
             try
             {
@@ -67,7 +67,7 @@ namespace Fitz.Features.Polls
                 db.Polls.Update(pendingPoll);
                 await db.SaveChangesAsync();
 
-                if (evaluation == PollStatus.Approved)
+                if (evaluation == PollStatusEnum.Approved)
                 {
                     await this.bankService.AwardPollApproval(pendingPoll.AccountId);
                     fitzMetrics?.RecordPollApproved();
@@ -97,7 +97,7 @@ namespace Fitz.Features.Polls
         /// </summary>
         /// <param name="messageId">Discord Message ID</param>
         /// <returns>Poll</returns>
-        public Poll GetPoll(ulong messageId)
+        public PollEntity GetPoll(ulong messageId)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
@@ -114,7 +114,7 @@ namespace Fitz.Features.Polls
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-            Poll poll = db.Polls.Where((x) => x.MessageId == messageId).FirstOrDefault();
+            PollEntity poll = db.Polls.Where((x) => x.MessageId == messageId).FirstOrDefault();
 
             return db.Votes.Where(v => v.PollId == poll.Id).ToList();
         }
@@ -125,7 +125,7 @@ namespace Fitz.Features.Polls
         /// <param name="messageId">Discord Message ID of the poll</param>
         /// <param name="userId">Discord User ID who added the reaction</param>
         /// <returns>Vote</returns>
-        public Vote GetVoteByUserOnPoll(Poll poll, ulong userId)
+        public Vote GetVoteByUserOnPoll(PollEntity poll, ulong userId)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
@@ -139,12 +139,12 @@ namespace Fitz.Features.Polls
         /// <param name="accountId"></param>
         /// <param name="approved"></param>
         /// <returns></returns>
-        public List<Poll> GetPollsSubmittedByUser(ulong accountId, bool? approved)
+        public List<PollEntity> GetPollsSubmittedByUser(ulong accountId, bool? approved)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-            return [.. db.Polls.Where(p => p.AccountId == accountId && p.Status == PollStatus.Approved)];
+            return [.. db.Polls.Where(p => p.AccountId == accountId && p.Status == PollStatusEnum.Approved)];
         }
 
         public int GetTotalApprovedPolls()
@@ -152,10 +152,10 @@ namespace Fitz.Features.Polls
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-            return db.Polls.Where(p => p.Status == PollStatus.Approved).Count();
+            return db.Polls.Where(p => p.Status == PollStatusEnum.Approved).Count();
         }
 
-        public List<PollOptions> GetPollOptions(Poll poll)
+        public List<PollOptionsEntity> GetPollOptions(PollEntity poll)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
@@ -163,7 +163,7 @@ namespace Fitz.Features.Polls
             return [.. db.PollsOptions.Where(pollOptions => pollOptions.PollId == poll.Id)];
         }
 
-        public List<Poll> GetPolls()
+        public List<PollEntity> GetPolls()
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
@@ -183,7 +183,7 @@ namespace Fitz.Features.Polls
 
         #region Add Vote to Poll
 
-        public async Task AddVote(Poll poll, PollOptions option, AccountEntity account)
+        public async Task AddVote(PollEntity poll, PollOptionsEntity option, AccountEntity account)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
@@ -220,7 +220,7 @@ namespace Fitz.Features.Polls
             }
         }
 
-        public async Task AddVote(Poll poll, PollOptions option, ulong accountId)
+        public async Task AddVote(PollEntity poll, PollOptionsEntity option, ulong accountId)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
@@ -246,7 +246,7 @@ namespace Fitz.Features.Polls
             await db.SaveChangesAsync();
         }
 
-        public async Task<Result> UpdatePollAsync(Poll poll)
+        public async Task<Result> UpdatePollAsync(PollEntity poll)
         {
             try
             {
@@ -269,12 +269,12 @@ namespace Fitz.Features.Polls
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-            Poll poll = db.Polls.Where((x) => x.MessageId == messageId).FirstOrDefault();
+            PollEntity poll = db.Polls.Where((x) => x.MessageId == messageId).FirstOrDefault();
 
             return db.Votes.Any(v => v.PollId == poll.Id && v.UserId == userId);
         }
 
-        public bool IsValidPollEmoji(Poll poll, DiscordEmoji emoji)
+        public bool IsValidPollEmoji(PollEntity poll, DiscordEmoji emoji)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
@@ -287,14 +287,14 @@ namespace Fitz.Features.Polls
             return db.PollsOptions.Any(p => p.PollId == poll.Id && p.EmojiId == emoji.Id);
         }
 
-        public async Task<Result> AddPollOption(Poll poll, List<PollOptions> pollOptions)
+        public async Task<Result> AddPollOption(PollEntity poll, List<PollOptionsEntity> pollOptions)
         {
             try
             {
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                foreach (PollOptions option in pollOptions)
+                foreach (PollOptionsEntity option in pollOptions)
                 {
                     option.PollId = poll.Id;
                     db.PollsOptions.Add(option);
@@ -308,7 +308,7 @@ namespace Fitz.Features.Polls
             }
         }
 
-        public List<Poll> GetPollsSubmittedByUser(ulong accountId)
+        public List<PollEntity> GetPollsSubmittedByUser(ulong accountId)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
@@ -316,14 +316,14 @@ namespace Fitz.Features.Polls
             return [.. db.Polls.Where(p => p.AccountId == accountId)];
         }
 
-        public DiscordEmbed GeneratePollEmbed(DiscordClient dClient, Poll poll, List<PollOptions> pollOptions)
+        public DiscordEmbed GeneratePollEmbed(DiscordClient dClient, PollEntity poll, List<PollOptionsEntity> pollOptions)
         {
             // Set base embed color to white.
             DiscordColor embedColor = new DiscordColor(250, 250, 250);
 
             // Set description to empty string.
             string description = string.Empty;
-            foreach (PollOptions option in pollOptions)
+            foreach (PollOptionsEntity option in pollOptions)
             {
                 // If built in emoji
                 if (option.EmojiId == 0)
@@ -344,23 +344,23 @@ namespace Fitz.Features.Polls
 
             switch (poll.Type)
             {
-                case PollType.Number:
+                case PollTypeEnum.Number:
                     embedColor = new DiscordColor(PollEmbedColors.NumberPoll);
                     break;
 
-                case PollType.Color:
+                case PollTypeEnum.Color:
                     embedColor = new DiscordColor(PollEmbedColors.ColorPoll);
                     break;
 
-                case PollType.YesOrNo:
+                case PollTypeEnum.YesOrNo:
                     embedColor = new DiscordColor(PollEmbedColors.YesNoPoll);
                     break;
 
-                case PollType.ThisOrThat:
+                case PollTypeEnum.ThisOrThat:
                     embedColor = new DiscordColor(PollEmbedColors.ThisOrThatPoll);
                     break;
 
-                case PollType.HotTake:
+                case PollTypeEnum.HotTake:
                     embedColor = new DiscordColor(PollEmbedColors.HottakePoll);
                     break;
             }
@@ -381,23 +381,23 @@ namespace Fitz.Features.Polls
             return pollEmbed;
         }
 
-        public DiscordEmbed UpdatePollEmbed(DiscordClient dClient, Poll poll, List<PollOptions> pollOptions, DiscordMessage? pollMessage)
+        public DiscordEmbed UpdatePollEmbed(DiscordClient dClient, PollEntity poll, List<PollOptionsEntity> pollOptions, DiscordMessage? pollMessage)
         {
             // Set base embed color to white.
             DiscordColor embedColor = new(250, 250, 250);
 
-            if (poll.Status == PollStatus.Approved)
+            if (poll.Status == PollStatusEnum.Approved)
             {
                 embedColor = new DiscordColor(PollEmbedColors.ApprovedPoll);
             }
-            if (poll.Status == PollStatus.Declined)
+            if (poll.Status == PollStatusEnum.Declined)
             {
                 embedColor = new DiscordColor(PollEmbedColors.DeclinedPoll);
             }
 
             // Set description to empty string.
             string description = string.Empty;
-            foreach (PollOptions option in pollOptions)
+            foreach (PollOptionsEntity option in pollOptions)
             {
                 // If built in emoji
                 if (option.EmojiId == 0)
@@ -422,11 +422,11 @@ namespace Fitz.Features.Polls
             }
 
             string embedTitle = string.Empty;
-            if (poll.Status == PollStatus.Approved)
+            if (poll.Status == PollStatusEnum.Approved)
             {
                 embedTitle = $"~~__{poll.Question}__~~ - Approved";
             }
-            if (poll.Status == PollStatus.Declined)
+            if (poll.Status == PollStatusEnum.Declined)
             {
                 embedTitle = $"~~__{poll.Question}__~~ - Denied";
             }

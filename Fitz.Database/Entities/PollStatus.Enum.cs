@@ -1,6 +1,6 @@
 namespace Fitz.Database.Entities
 {
-    public enum PollStatus
+    public enum PollStatusEnum
     {
         Pending = 1,
         Approved = 2,
