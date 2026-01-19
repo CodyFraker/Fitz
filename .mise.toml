@@ -1,11 +1,16 @@
+experimental_monorepo_root = true
+
+[settings]
+experimental = true
+
 [tools]
 node = "20"
 npm = "latest"
 
+[tasks.dev]
+description = "Run all services concurrently (bot, API, and frontend)"
+depends = ["//...:dev"]
+
 [env]
 NODE_ENV = "development"
 ASPNETCORE_ENVIRONMENT = "Development"
-
-[tasks.dev]
-description = "Run all services concurrently (bot, API, and frontend)"
-depends = ["//:dev"]
