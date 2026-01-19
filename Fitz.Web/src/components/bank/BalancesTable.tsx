@@ -111,17 +111,23 @@ export function BalancesTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="flex items-center gap-1">
-                <Trophy className="h-4 w-4" />
-                Rank
+              <TableHead>
+                <div className="flex items-center gap-1">
+                  <Trophy className="h-4 w-4" />
+                  Rank
+                </div>
               </TableHead>
-              <TableHead className="flex items-center gap-1">
-                <User className="h-4 w-4" />
-                Username
+              <TableHead>
+                <div className="flex items-center gap-1">
+                  <User className="h-4 w-4" />
+                  Username
+                </div>
               </TableHead>
-              <TableHead className="text-right flex items-center justify-end gap-1">
-                <Beer className="h-4 w-4" />
-                Beer
+              <TableHead className="text-right">
+                <div className="flex items-center justify-end gap-1">
+                  <Beer className="h-4 w-4" />
+                  Beer
+                </div>
               </TableHead>
             </TableRow>
           </TableHeader>

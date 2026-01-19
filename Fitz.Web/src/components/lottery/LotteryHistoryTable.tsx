@@ -111,30 +111,42 @@ export function LotteryHistoryTable() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="flex items-center gap-1">
-                  <Hash className="h-4 w-4" />
-                  Lottery ID
+                <TableHead>
+                  <div className="flex items-center gap-1">
+                    <Hash className="h-4 w-4" />
+                    Lottery ID
+                  </div>
                 </TableHead>
-                <TableHead className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  Start Date
+                <TableHead>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    Start Date
+                  </div>
                 </TableHead>
-                <TableHead className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  End Date
+                <TableHead>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    End Date
+                  </div>
                 </TableHead>
-                <TableHead className="flex items-center gap-1">
-                  <Beer className="h-4 w-4" />
-                  Prize Pool
+                <TableHead>
+                  <div className="flex items-center gap-1">
+                    <Beer className="h-4 w-4" />
+                    Prize Pool
+                  </div>
                 </TableHead>
-                <TableHead className="flex items-center gap-1">
-                  <Trophy className="h-4 w-4" />
-                  Winning Ticket
+                <TableHead>
+                  <div className="flex items-center gap-1">
+                    <Trophy className="h-4 w-4" />
+                    Winning Ticket
+                  </div>
                 </TableHead>
                 <TableHead>Total Tickets</TableHead>
-                <TableHead className="flex items-center gap-1">
-                  <Users className="h-4 w-4" />
-                  Total Participants
+                <TableHead>
+                  <div className="flex items-center gap-1">
+                    <Users className="h-4 w-4" />
+                    Total Participants
+                  </div>
                 </TableHead>
               </TableRow>
             </TableHeader>

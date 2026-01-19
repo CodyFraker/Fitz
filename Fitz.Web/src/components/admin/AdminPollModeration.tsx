@@ -118,18 +118,24 @@ export function AdminPollModeration() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="flex items-center gap-1">
-                    <Hash className="h-4 w-4" />
-                    ID
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      <Hash className="h-4 w-4" />
+                      ID
+                    </div>
                   </TableHead>
-                  <TableHead className="flex items-center gap-1">
-                    <HelpCircle className="h-4 w-4" />
-                    Question
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      <HelpCircle className="h-4 w-4" />
+                      Question
+                    </div>
                   </TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    Submitted
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      Submitted
+                    </div>
                   </TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>

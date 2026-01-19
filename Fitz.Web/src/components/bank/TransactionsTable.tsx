@@ -171,13 +171,17 @@ export function TransactionsTable({ userId }: TransactionsTableProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    Date
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      Date
+                    </div>
                   </TableHead>
-                  <TableHead className="flex items-center gap-1">
-                    <Tag className="h-4 w-4" />
-                    Type
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      <Tag className="h-4 w-4" />
+                      Type
+                    </div>
                   </TableHead>
                   <TableHead>Direction</TableHead>
                   <TableHead className="text-right">Amount</TableHead>

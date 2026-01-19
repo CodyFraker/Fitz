@@ -152,9 +152,11 @@ export function AdminRenameManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="flex items-center gap-1">
-                    <Hash className="h-4 w-4" />
-                    ID
+                  <TableHead>
+                    <div className="flex items-center gap-1">
+                      <Hash className="h-4 w-4" />
+                      ID
+                    </div>
                   </TableHead>
                   <TableHead>Old Name</TableHead>
                   <TableHead>New Name</TableHead>
