@@ -14,10 +14,7 @@ COPY . .
 WORKDIR "/src/Fitz"
 RUN dotnet publish "Fitz.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
-ENV DOTNET_EnableWriteXorExecute=0
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
-
-COPY --from=build --chown=app:app /app/publish .
-
-ENTRYPOINT ["dotnet", "Fitz.dll"]
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "./Fitz.dll"]
