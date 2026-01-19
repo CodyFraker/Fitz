@@ -13,9 +13,13 @@ COPY . .
 WORKDIR "/src/Fitz"
 RUN dotnet build "Fitz.csproj" -c $BUILD_CONFIGURATION -o /app/build --no-restore
 
-FROM build AS publish
+FROM --platform=$TARGETPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS publish
 ARG BUILD_CONFIGURATION=Release
+WORKDIR /src
+
+COPY --from=build /src .
 WORKDIR "/src/Fitz"
+RUN dotnet restore "Fitz.csproj"
 RUN dotnet publish "Fitz.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM --platform=$TARGETPLATFORM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
