@@ -251,7 +251,7 @@ namespace Fitz.Features.Lottery.Commands
         public async Task MyTickets(InteractionContext ctx)
         {
             AccountEntity account = accountService.FindAccount(ctx.User.Id);
-            Database.Entities.Lottery drawing = lotteryService.GetCurrentLottery();
+            Database.Entities.LotteryEntity drawing = lotteryService.GetCurrentLottery();
 
             if (lotteryService.GetUserTickets(account).Data is not List<Ticket> userTickets || userTickets.Count == 0)
             {

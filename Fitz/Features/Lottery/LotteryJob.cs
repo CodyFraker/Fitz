@@ -52,7 +52,7 @@ namespace Fitz.Features.Lottery
                 fitzMetrics?.SetLotterySubscriptionsActive(subscribers.Count);
 
                 // Get Current Lottery
-                Database.Entities.Lottery currentDrawing = this.lotteryService.GetCurrentLottery();
+                Database.Entities.LotteryEntity currentDrawing = this.lotteryService.GetCurrentLottery();
 
                 // Get current settings
                 Database.Entities.Settings settings = this.settingsService.GetSettings();
@@ -230,7 +230,7 @@ namespace Fitz.Features.Lottery
                 DiscordUser user = await this.dClient.GetUserAsync(account.Id);
 
                 // Get current lottery
-                Database.Entities.Lottery drawing = this.lotteryService.GetCurrentLottery();
+                Database.Entities.LotteryEntity drawing = this.lotteryService.GetCurrentLottery();
 
                 DiscordEmbedBuilder lotteryEmbed = new DiscordEmbedBuilder
                 {
@@ -263,7 +263,7 @@ namespace Fitz.Features.Lottery
             }
         }
 
-        private async Task MessageWinner(ulong userId, Database.Entities.Lottery drawing)
+        private async Task MessageWinner(ulong userId, Database.Entities.LotteryEntity drawing)
         {
             if (userId == 0)
             {

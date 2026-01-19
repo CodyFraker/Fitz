@@ -8,7 +8,6 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Headers;
 using Xunit;
-using LotteryModel = Fitz.Features.Lottery.Models.Lottery;
 
 namespace Fitz.Api.Tests.Integration.Lottery
 {
@@ -48,7 +47,7 @@ namespace Fitz.Api.Tests.Integration.Lottery
             using var scope = _factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<BotContext>();
             
-            var lottery = new LotteryModel
+            var lottery = new Lottery
             {
                 StartDate = DateTime.UtcNow.AddDays(-1),
                 EndDate = DateTime.UtcNow.AddDays(6),

@@ -35,7 +35,7 @@ namespace Fitz.Features.Lottery.Commands
         [Description("Ends a lottery.")]
         public async Task StopCurrentLottery(CommandContext ctx)
         {
-            Database.Entities.Lottery drawing = lotteryService.GetCurrentLottery();
+            Database.Entities.LotteryEntity drawing = lotteryService.GetCurrentLottery();
             if (drawing == null)
             {
                 await ctx.RespondAsync("There is no active lottery.");
@@ -54,7 +54,7 @@ namespace Fitz.Features.Lottery.Commands
             {
                 await ctx.RespondAsync("Prize pool must be greater than 0.");
             }
-            Database.Entities.Lottery drawing = lotteryService.GetCurrentLottery();
+            Database.Entities.LotteryEntity drawing = lotteryService.GetCurrentLottery();
             if (drawing == null)
             {
                 await ctx.RespondAsync("There is no active lottery.");
@@ -86,7 +86,7 @@ namespace Fitz.Features.Lottery.Commands
         [Description("Sends you a DM that looks like you won the current lottery.")]
         public async Task MockWinnerLottery(CommandContext ctx)
         {
-            var lottery = new Database.Entities.Lottery()
+            var lottery = new Database.Entities.LotteryEntity()
             {
                 Id = 138,
                 Pool = 3600,

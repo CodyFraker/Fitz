@@ -37,7 +37,7 @@ namespace Fitz.Features.Lottery
         /// Get the most current lottery.
         /// </summary>
         /// <returns>Lottery</returns>
-        public Database.Entities.Lottery GetCurrentLottery()
+        public Database.Entities.LotteryEntity GetCurrentLottery()
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
@@ -60,7 +60,7 @@ namespace Fitz.Features.Lottery
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                Database.Entities.Lottery lottery = this.GetCurrentLottery();
+                Database.Entities.LotteryEntity lottery = this.GetCurrentLottery();
                 int hours = (int)(lottery.EndDate - DateTime.UtcNow).TotalHours;
                 return new Result(true, $"Got {hours} hour(s) back from current lottery.", hours);
             }
@@ -85,7 +85,7 @@ namespace Fitz.Features.Lottery
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                Database.Entities.Lottery drawing = this.GetCurrentLottery();
+                Database.Entities.LotteryEntity drawing = this.GetCurrentLottery();
                 int totalTickets = db.Ticket.Where((x) => x.Drawing == drawing.Id).Count();
                 return new Result(true, $"Database returned {totalTickets} back", totalTickets);
             }
@@ -95,7 +95,7 @@ namespace Fitz.Features.Lottery
             }
         }
 
-        public Result GetTotalTicketsForLottery(Database.Entities.Lottery lottery)
+        public Result GetTotalTicketsForLottery(Database.Entities.LotteryEntity lottery)
         {
             try
             {
@@ -126,7 +126,7 @@ namespace Fitz.Features.Lottery
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                Database.Entities.Lottery drawing = this.GetCurrentLottery();
+                Database.Entities.LotteryEntity drawing = this.GetCurrentLottery();
                 List<Ticket> tickets = [.. db.Ticket.Where((x) => x.Drawing == drawing.Id)];
                 List<ulong> users = tickets.Select((x) => x.AccountId).Distinct().ToList();
                 return new Result(true, $"Database returned {users.Count} back", users.Count);
@@ -137,7 +137,7 @@ namespace Fitz.Features.Lottery
             }
         }
 
-        public Result GetTotalLotteryParticipantsByLottery(Database.Entities.Lottery lottery)
+        public Result GetTotalLotteryParticipantsByLottery(Database.Entities.LotteryEntity lottery)
         {
             try
             {
@@ -170,7 +170,7 @@ namespace Fitz.Features.Lottery
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                Database.Entities.Lottery drawing = this.GetCurrentLottery();
+                Database.Entities.LotteryEntity drawing = this.GetCurrentLottery();
 
                 List<Ticket> userTickets = [.. db.Ticket.Where((x) => x.AccountId == account.Id && x.Drawing == drawing.Id)];
                 if (userTickets == null || userTickets.Count == 0)
@@ -240,7 +240,7 @@ namespace Fitz.Features.Lottery
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-            Database.Entities.Lottery drawing = db.Drawing.Where((x) => x.CurrentLottery == false).OrderByDescending((x) => x.EndDate).FirstOrDefault();
+            Database.Entities.LotteryEntity drawing = db.Drawing.Where((x) => x.CurrentLottery == false).OrderByDescending((x) => x.EndDate).FirstOrDefault();
 
             if (drawing == null)
             {
@@ -260,7 +260,7 @@ namespace Fitz.Features.Lottery
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
             // Just use the method to get last drawing instead of calling it everywhere else.
-            Database.Entities.Lottery drawing = db.Drawing.Where((x) => x.CurrentLottery == false).OrderByDescending((x) => x.EndDate).FirstOrDefault();
+            Database.Entities.LotteryEntity drawing = db.Drawing.Where((x) => x.CurrentLottery == false).OrderByDescending((x) => x.EndDate).FirstOrDefault();
 
             if (drawing == null)
             {
@@ -289,7 +289,7 @@ namespace Fitz.Features.Lottery
         /// <param name="skip">Number of records to skip</param>
         /// <param name="take">Number of records to take</param>
         /// <returns>Tuple containing list of lotteries and total count</returns>
-        public (List<Database.Entities.Lottery> lotteries, int totalCount) GetLotteryHistory(int skip, int take)
+        public (List<Database.Entities.LotteryEntity> lotteries, int totalCount) GetLotteryHistory(int skip, int take)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
@@ -362,7 +362,7 @@ namespace Fitz.Features.Lottery
                     endDate = DateTime.UtcNow.AddDays(settings.LotteryDuration);
                 }
 
-                Database.Entities.Lottery drawing = new Database.Entities.Lottery()
+                Database.Entities.LotteryEntity drawing = new Database.Entities.LotteryEntity()
                 {
                     StartDate = startDate,
                     EndDate = endDate,
@@ -392,7 +392,7 @@ namespace Fitz.Features.Lottery
         /// </summary>
         /// <param name="rollover">If the prizepool should rollover into the next one.</param>
         /// <returns></returns>
-        public async Task EndLotteryAsync(Database.Entities.Lottery currentLottery)
+        public async Task EndLotteryAsync(Database.Entities.LotteryEntity currentLottery)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
@@ -408,7 +408,7 @@ namespace Fitz.Features.Lottery
         /// </summary>
         /// <param name="currentLottery">The current lottery to end</param>
         /// <returns></returns>
-        public async Task EndLotteryAndDecideWinnersAsync(Database.Entities.Lottery currentLottery)
+        public async Task EndLotteryAndDecideWinnersAsync(Database.Entities.LotteryEntity currentLottery)
         {
             List<Winners> winners = await this.DecideWinners(currentLottery);
             await this.EndLotteryAsync(currentLottery);
@@ -430,7 +430,7 @@ namespace Fitz.Features.Lottery
         /// </summary>
         /// <param name="drawing"></param>
         /// <returns>List of Winners.</returns>
-        public async Task<List<Winners>> DecideWinners(Database.Entities.Lottery drawing)
+        public async Task<List<Winners>> DecideWinners(Database.Entities.LotteryEntity drawing)
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
@@ -498,7 +498,7 @@ namespace Fitz.Features.Lottery
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-            Database.Entities.Lottery drawing = this.GetCurrentLottery();
+            Database.Entities.LotteryEntity drawing = this.GetCurrentLottery();
             drawing.EndDate = endDate;
             db.Update(drawing);
             await db.SaveChangesAsync();
@@ -512,7 +512,7 @@ namespace Fitz.Features.Lottery
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                Database.Entities.Lottery drawing = this.GetCurrentLottery();
+                Database.Entities.LotteryEntity drawing = this.GetCurrentLottery();
                 if (drawing == null)
                 {
                     return new Result(false, "There is no active lottery.", null);
@@ -638,7 +638,7 @@ namespace Fitz.Features.Lottery
                     return accountTicketsResult;
                 }
 
-                Database.Entities.Lottery drawing = this.GetCurrentLottery();
+                Database.Entities.LotteryEntity drawing = this.GetCurrentLottery();
                 for (int i = 0; i < totalTickets; i++)
                 {
                     if (accountTickets.Count >= settings.MaxTickets && account.Id != Users.Fitz)
@@ -685,7 +685,7 @@ namespace Fitz.Features.Lottery
             // Get account tickets for this current lottery.
             List<Ticket> accountTickets = this.GetUserTickets(accountService.FindAccount(Users.Fitz)).Data as List<Ticket>;
 
-            Database.Entities.Lottery drawing = this.GetCurrentLottery();
+            Database.Entities.LotteryEntity drawing = this.GetCurrentLottery();
             int ticketNumber = GenerateTicketNumber();
             if (!accountTickets.Any((x) => x.Number == ticketNumber))
             {
@@ -733,7 +733,7 @@ namespace Fitz.Features.Lottery
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
-                Database.Entities.Lottery drawing = this.GetCurrentLottery();
+                Database.Entities.LotteryEntity drawing = this.GetCurrentLottery();
                 drawing.Pool += amount;
                 db.Update(drawing);
                 await db.SaveChangesAsync();
@@ -750,7 +750,7 @@ namespace Fitz.Features.Lottery
 
         #region Embeds
 
-        public DiscordEmbed WinnerEmbed(DiscordClient dClient, Database.Entities.Lottery lottery, List<AccountEntity> winners, ulong userId)
+        public DiscordEmbed WinnerEmbed(DiscordClient dClient, Database.Entities.LotteryEntity lottery, List<AccountEntity> winners, ulong userId)
         {
             string multiWinners = string.Empty;
             if (winners.Count() > 1)
@@ -784,7 +784,7 @@ namespace Fitz.Features.Lottery
             return lotteryEmbed;
         }
 
-        public DiscordEmbed LotteryInfoEmbed(DiscordClient dClient, Database.Entities.Lottery lottery, int daysLeft, List<Ticket> userTickets = null)
+        public DiscordEmbed LotteryInfoEmbed(DiscordClient dClient, Database.Entities.LotteryEntity lottery, int daysLeft, List<Ticket> userTickets = null)
         {
             DiscordEmbedBuilder lotteryEmbed;
             if (userTickets == null)
@@ -844,7 +844,7 @@ namespace Fitz.Features.Lottery
             return lotteryEmbed;
         }
 
-        public DiscordEmbed LotteryCommandEmbed(DiscordClient dClient, Database.Entities.Lottery lottery, Fitz.Database.Entities.Settings settings, AccountEntity account, List<Ticket> userTickets = null)
+        public DiscordEmbed LotteryCommandEmbed(DiscordClient dClient, Database.Entities.LotteryEntity lottery, Fitz.Database.Entities.Settings settings, AccountEntity account, List<Ticket> userTickets = null)
         {
             DiscordEmbedBuilder lotteryEmbed = new()
             {
@@ -876,7 +876,7 @@ namespace Fitz.Features.Lottery
             return lotteryEmbed;
         }
 
-        public DiscordEmbed LotteryEmbed(DiscordClient dClient, Database.Entities.Lottery lottery, Database.Entities.Settings settings)
+        public DiscordEmbed LotteryEmbed(DiscordClient dClient, Database.Entities.LotteryEntity lottery, Database.Entities.Settings settings)
         {
             DiscordEmbedBuilder lotteryEmbed = new()
             {
@@ -902,7 +902,7 @@ namespace Fitz.Features.Lottery
             return lotteryEmbed;
         }
 
-        public DiscordEmbed LotteryHelpEmbed(DiscordClient dClient, Database.Entities.Lottery lottery, Fitz.Database.Entities.Settings settings)
+        public DiscordEmbed LotteryHelpEmbed(DiscordClient dClient, Database.Entities.LotteryEntity lottery, Fitz.Database.Entities.Settings settings)
         {
             DiscordEmbedBuilder lotteryHelpEmbed = new DiscordEmbedBuilder
             {

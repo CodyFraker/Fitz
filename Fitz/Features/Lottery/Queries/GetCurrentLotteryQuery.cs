@@ -9,7 +9,7 @@ namespace Fitz.Features.Lottery.Queries
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
 
-        public Database.Entities.Lottery Execute()
+        public Database.Entities.LotteryEntity Execute()
         {
             using var scope = scopeFactory.CreateScope();
             using var db = scope.ServiceProvider.GetRequiredService<BotContext>();

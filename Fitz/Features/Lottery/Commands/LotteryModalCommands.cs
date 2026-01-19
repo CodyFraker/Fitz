@@ -40,7 +40,7 @@ namespace Fitz.Features.Lottery.Commands
 
                 Fitz.Database.Entities.Settings settings = settingsService.GetSettings();
 
-                Database.Entities.Lottery lottery = lotteryService.GetCurrentLottery();
+                Database.Entities.LotteryEntity lottery = lotteryService.GetCurrentLottery();
 
                 // Get account
                 AccountEntity account = accountService.FindAccount(ctx.User.Id);
