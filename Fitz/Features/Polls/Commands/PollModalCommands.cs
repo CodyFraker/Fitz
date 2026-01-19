@@ -22,7 +22,7 @@ namespace Fitz.Features.Polls.Polls
     public class PollModalCommands(FitzApiClient apiClient, SettingsService settingsService) : ModalCommandModule
     {
         private readonly FitzApiClient apiClient = apiClient;
-        private readonly Fitz.Database.Entities.Settings settings = settingsService.GetSettings();
+        private readonly Fitz.Database.Entities.SettingsEntity settings = settingsService.GetSettings();
 
         #region Number
 

@@ -65,7 +65,7 @@ namespace Fitz.Features.Settings
             return await command.ExecuteAsync(cost);
         }
 
-        public Fitz.Database.Entities.Settings GetSettings()
+        public Fitz.Database.Entities.SettingsEntity GetSettings()
         {
             var query = new GetSettingsQuery(scopeFactory);
             return query.Execute();

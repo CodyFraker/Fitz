@@ -29,7 +29,7 @@ namespace Fitz.Core.Services.Settings
                 }
                 else
                 {
-                    settings = new Database.Entities.Settings();
+                    settings = new Database.Entities.SettingsEntity();
                     settings.LotteryDuration = 7;
                     settings.BaseLotteryPool = 36;
                     settings.LotteryPoolRollover = true;
@@ -343,7 +343,7 @@ namespace Fitz.Core.Services.Settings
 
         #region Get Settings
 
-        public Fitz.Database.Entities.Settings GetSettings()
+        public Fitz.Database.Entities.SettingsEntity GetSettings()
         {
             using IServiceScope scope = scopeFactory.CreateScope();
             using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();

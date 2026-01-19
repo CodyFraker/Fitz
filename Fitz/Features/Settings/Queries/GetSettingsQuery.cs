@@ -8,7 +8,7 @@ namespace Fitz.Features.Settings.Queries
     {
         private readonly IServiceScopeFactory scopeFactory = scopeFactory;
 
-        public Database.Entities.Settings Execute()
+        public Database.Entities.SettingsEntity Execute()
         {
             using var scope = scopeFactory.CreateScope();
             using var db = scope.ServiceProvider.GetRequiredService<BotContext>();

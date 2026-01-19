@@ -26,7 +26,7 @@ namespace Fitz.Features.Settings.Commands
                     return new Result(false, "Settings already exist.", null);
                 }
 
-                settings = new Database.Entities.Settings
+                settings = new Database.Entities.SettingsEntity
                 {
                     LotteryDuration = 7,
                     BaseLotteryPool = 36,

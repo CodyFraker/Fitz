@@ -18,7 +18,7 @@ namespace Fitz.Features.Polls.Polls
     {
         private readonly AccountService accountService = accountService;
         private readonly FitzApiClient apiClient = apiClient;
-        private readonly Fitz.Database.Entities.Settings settings = settingsService.GetSettings();
+        private readonly Fitz.Database.Entities.SettingsEntity settings = settingsService.GetSettings();
 
         [SlashCommand("poll", "Generate a poll.")]
         public async Task GeneratePoll(InteractionContext ctx,

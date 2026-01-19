@@ -350,7 +350,7 @@ namespace Fitz.Features.Lottery
             {
                 using IServiceScope scope = scopeFactory.CreateScope();
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
-                Database.Entities.Settings settings = this.settingsService.GetSettings();
+                Database.Entities.SettingsEntity settings = this.settingsService.GetSettings();
 
                 if (startDate == null)
                 {
@@ -536,7 +536,7 @@ namespace Fitz.Features.Lottery
             try
             {
                 // Get the settings for the lottery.
-                Database.Entities.Settings settings = settingsService.GetSettings();
+                Database.Entities.SettingsEntity settings = settingsService.GetSettings();
                 if (settings == null || settings.MaxTickets == 0)
                 {
                     return new Result(false, "Failed to get lottery settings.", settings);
@@ -615,7 +615,7 @@ namespace Fitz.Features.Lottery
                 using BotContext db = scope.ServiceProvider.GetRequiredService<BotContext>();
 
                 // Get User Account Settings
-                Fitz.Database.Entities.Settings settings = this.settingsService.GetSettings();
+                Fitz.Database.Entities.SettingsEntity settings = this.settingsService.GetSettings();
 
                 // Get account tickets for this current lottery.
                 var accountTicketsResult = this.GetUserTickets(account);
@@ -844,7 +844,7 @@ namespace Fitz.Features.Lottery
             return lotteryEmbed;
         }
 
-        public DiscordEmbed LotteryCommandEmbed(DiscordClient dClient, Database.Entities.LotteryEntity lottery, Fitz.Database.Entities.Settings settings, AccountEntity account, List<TicketEntity> userTickets = null)
+        public DiscordEmbed LotteryCommandEmbed(DiscordClient dClient, Database.Entities.LotteryEntity lottery, Fitz.Database.Entities.SettingsEntity settings, AccountEntity account, List<TicketEntity> userTickets = null)
         {
             DiscordEmbedBuilder lotteryEmbed = new()
             {
@@ -876,7 +876,7 @@ namespace Fitz.Features.Lottery
             return lotteryEmbed;
         }
 
-        public DiscordEmbed LotteryEmbed(DiscordClient dClient, Database.Entities.LotteryEntity lottery, Database.Entities.Settings settings)
+        public DiscordEmbed LotteryEmbed(DiscordClient dClient, Database.Entities.LotteryEntity lottery, Database.Entities.SettingsEntity settings)
         {
             DiscordEmbedBuilder lotteryEmbed = new()
             {
@@ -902,7 +902,7 @@ namespace Fitz.Features.Lottery
             return lotteryEmbed;
         }
 
-        public DiscordEmbed LotteryHelpEmbed(DiscordClient dClient, Database.Entities.LotteryEntity lottery, Fitz.Database.Entities.Settings settings)
+        public DiscordEmbed LotteryHelpEmbed(DiscordClient dClient, Database.Entities.LotteryEntity lottery, Fitz.Database.Entities.SettingsEntity settings)
         {
             DiscordEmbedBuilder lotteryHelpEmbed = new DiscordEmbedBuilder
             {

@@ -55,7 +55,7 @@ namespace Fitz.Features.Lottery
                 Database.Entities.LotteryEntity currentDrawing = this.lotteryService.GetCurrentLottery();
 
                 // Get current settings
-                Database.Entities.Settings settings = this.settingsService.GetSettings();
+                Database.Entities.SettingsEntity settings = this.settingsService.GetSettings();
 
                 if (currentDrawing == null)
                 {

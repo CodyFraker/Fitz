@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Fitz.Database.Entities
 {
     [Table("settings")]
-    public sealed class Settings
+    public sealed class SettingsEntity
     {
         [Column("id"), Key]
         public int Id { get; set; }

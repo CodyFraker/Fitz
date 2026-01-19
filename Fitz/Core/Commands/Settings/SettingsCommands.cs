@@ -21,7 +21,7 @@ namespace Fitz.Core.Commands.Settings
         public async Task SettingsCommand(InteractionContext ctx,
             [Option("Setting", "Which setting do you wish to modify?")] SettingsAction settingsAction = SettingsAction.AccountCreationBonusAmount)
         {
-            Fitz.Database.Entities.Settings settings = settingsService.GetSettings();
+            Fitz.Database.Entities.SettingsEntity settings = settingsService.GetSettings();
 
             switch (settingsAction)
             {
@@ -41,7 +41,7 @@ namespace Fitz.Core.Commands.Settings
             }
         }
 
-        private DiscordEmbed SettingsEmbed(Fitz.Database.Entities.Settings settings)
+        private DiscordEmbed SettingsEmbed(Fitz.Database.Entities.SettingsEntity settings)
         {
             DiscordEmbedBuilder settingsEmbed = new()
             {

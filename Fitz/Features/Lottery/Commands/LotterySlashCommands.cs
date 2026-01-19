@@ -49,7 +49,7 @@ namespace Fitz.Features.Lottery.Commands
                 }
             }
             // Get settings for lottery
-            Fitz.Database.Entities.Settings settings = settingsService.GetSettings();
+            Fitz.Database.Entities.SettingsEntity settings = settingsService.GetSettings();
 
             var lottery = lotteryService.GetCurrentLottery();
 
@@ -131,7 +131,7 @@ namespace Fitz.Features.Lottery.Commands
         [RequireAccount]
         public async Task LotteryTickets(InteractionContext ctx, [Option("Tickets", "How many tickets do you want?")] long tickets)
         {
-            Fitz.Database.Entities.Settings settings = settingsService.GetSettings();
+            Fitz.Database.Entities.SettingsEntity settings = settingsService.GetSettings();
             AccountEntity account = accountService.FindAccount(ctx.User.Id);
             if (account == null)
             {

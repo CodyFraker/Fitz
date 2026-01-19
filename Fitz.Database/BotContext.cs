@@ -27,7 +27,7 @@ namespace Fitz.Database
         public DbSet<Renames> Renames { get; set; }
         public DbSet<Job> Jobs { get; set; }
         public DbSet<FeatureStatus> FeatureStatuses { get; set; }
-        public DbSet<Settings> Settings { get; set; }
+        public DbSet<SettingsEntity> Settings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

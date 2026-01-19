@@ -38,7 +38,7 @@ namespace Fitz.Features.Lottery.Commands
                     return;
                 }
 
-                Fitz.Database.Entities.Settings settings = settingsService.GetSettings();
+                Fitz.Database.Entities.SettingsEntity settings = settingsService.GetSettings();
 
                 Database.Entities.LotteryEntity lottery = lotteryService.GetCurrentLottery();
 

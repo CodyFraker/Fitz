@@ -42,7 +42,7 @@ namespace Fitz.Features.Settings.Commands
             }
         }
 
-        private DiscordEmbed SettingsEmbed(Fitz.Database.Entities.Settings settings)
+        private DiscordEmbed SettingsEmbed(Fitz.Database.Entities.SettingsEntity settings)
         {
             DiscordEmbedBuilder settingsEmbed = new()
             {
