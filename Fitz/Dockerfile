@@ -22,7 +22,7 @@ WORKDIR "/src/Fitz"
 RUN dotnet restore "Fitz.csproj"
 RUN dotnet publish "Fitz.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-FROM --platform=$TARGETPLATFORM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+FROM --platform=$TARGETPLATFORM mcr.microsoft.com/dotnet/runtime:8.0 AS final
 WORKDIR /app
 
 COPY --from=publish --chown=app:app /app/publish .
