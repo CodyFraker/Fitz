@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 ARG TARGETPLATFORM
 WORKDIR /src
@@ -14,7 +14,7 @@ COPY . .
 WORKDIR "/src/Fitz"
 RUN dotnet publish "Fitz.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 ENV DOTNET_EnableWriteXorExecute=0
 WORKDIR /app
 
