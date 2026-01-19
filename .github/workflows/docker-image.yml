@@ -49,7 +49,7 @@ jobs:
             - name: build and push api image
               run: |
                 docker buildx build \
-                --platform linux/arm64,linux/amd64 \
+                --platform linux/amd64 \
                 -t ${{ env.GITHUB_REGISTRY }}/codyfraker/fitz-api:latest \
                 -f Fitz.Api/Dockerfile \
                 --push .
