@@ -1,27 +1,31 @@
-ARG BUILDPLATFORM=linux/amd64
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER app
-WORKDIR /app
-
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
+
+COPY ["Fitz.sln", "./"]
 COPY ["Fitz.Api/Fitz.Api.csproj", "Fitz.Api/"]
 COPY ["Fitz/Fitz.csproj", "Fitz/"]
 COPY ["Fitz.Database/Fitz.Database.csproj", "Fitz.Database/"]
 COPY ["Fitz.Metrics/Fitz.Metrics.csproj", "Fitz.Metrics/"]
 COPY ["Fitz.Seeds/Fitz.Seeds.csproj", "Fitz.Seeds/"]
+
 RUN dotnet restore "Fitz.Api/Fitz.Api.csproj"
+
 COPY . .
 WORKDIR "/src/Fitz.Api"
-RUN dotnet build "Fitz.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "Fitz.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build --no-restore
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 WORKDIR "/src/Fitz.Api"
-RUN dotnet publish "Fitz.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "Fitz.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false --no-restore
 
-FROM base AS final
+FROM --platform=$TARGETPLATFORM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
+EXPOSE 8080
+EXPOSE 8081
+
+USER app
+
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "Fitz.Api.dll"]

@@ -1,4 +1,3 @@
-ARG BUILDPLATFORM=linux/amd64
 FROM --platform=$BUILDPLATFORM node:20-alpine AS build
 WORKDIR /app
 
@@ -8,7 +7,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine AS runtime
+FROM --platform=$TARGETPLATFORM node:20-alpine AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production
