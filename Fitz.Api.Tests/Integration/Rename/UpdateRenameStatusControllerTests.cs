@@ -57,7 +57,7 @@ namespace Fitz.Api.Tests.Integration.Rename
                 RequestedUserId = 222222222,
                 Days = 5,
                 Cost = 100,
-                Status = RenameStatus.Pending,
+                Status = RenameStatusEnum.Pending,
                 Timestamp = DateTime.UtcNow
             };
             
@@ -66,7 +66,7 @@ namespace Fitz.Api.Tests.Integration.Rename
 
             var request = new
             {
-                Status = RenameStatus.Active
+                Status = RenameStatusEnum.Active
             };
 
             var content = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
@@ -80,7 +80,7 @@ namespace Fitz.Api.Tests.Integration.Rename
         {
             var request = new
             {
-                Status = RenameStatus.Active
+                Status = RenameStatusEnum.Active
             };
 
             var content = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");

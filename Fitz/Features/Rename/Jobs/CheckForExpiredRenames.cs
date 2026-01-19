@@ -37,7 +37,7 @@ namespace Fitz.Features.Rename.Jobs
             try
             {
                 this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, "Checking for expired renames...");
-                List<Renames> renames = renameService.GetExpiredRenames();
+                List<RenamesEntity> renames = renameService.GetExpiredRenames();
 
                 if (renames.Count == 0 || renames == null)
                 {
@@ -47,7 +47,7 @@ namespace Fitz.Features.Rename.Jobs
 
                 DiscordGuild waterbear = await dClient.GetGuildAsync(Guilds.Waterbear);
 
-                foreach (Renames rename in renames.Where(x => x.Notified == false && x.Status == RenameStatus.Active))
+                foreach (RenamesEntity rename in renames.Where(x => x.Notified == false && x.Status == RenameStatusEnum.Active))
                 {
                     AccountEntity affectedUser = accountService.FindAccount(rename.AffectedUserId);
                     DiscordMember discordMember;
@@ -55,12 +55,12 @@ namespace Fitz.Features.Rename.Jobs
                     {
                         discordMember = await waterbear.GetMemberAsync(affectedUser.Id);
                         
-                        List<Renames> activeRenames = renameService.GetRenamesByAccountId(affectedUser.Id)
-                            .Where(x => x.Status == RenameStatus.Active && x.Id != rename.Id)
+                        List<RenamesEntity> activeRenames = renameService.GetRenamesByAccountId(affectedUser.Id)
+                            .Where(x => x.Status == RenameStatusEnum.Active && x.Id != rename.Id)
                             .ToList();
                         
                         await renameService.SetUserNotified(rename);
-                        await renameService.SetRenameStatus(rename.Id, RenameStatus.Expired);
+                        await renameService.SetRenameStatus(rename.Id, RenameStatusEnum.Expired);
 
                         if (activeRenames.Count == 0)
                         {
@@ -82,7 +82,7 @@ namespace Fitz.Features.Rename.Jobs
                     catch (NotFoundException e)
                     {
                         await renameService.SetUserNotified(rename);
-                        await renameService.SetRenameStatus(rename.Id, RenameStatus.Expired);
+                        await renameService.SetRenameStatus(rename.Id, RenameStatusEnum.Expired);
                         expiredCount++;
                         fitzMetrics?.RecordRenameExpired();
                         continue;
@@ -91,14 +91,14 @@ namespace Fitz.Features.Rename.Jobs
                     {
                         this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, $"There was an error getting discord member. CheckForExpiredRenameJob: {e.Message}");
                         await renameService.SetUserNotified(rename);
-                        await renameService.SetRenameStatus(rename.Id, RenameStatus.Expired);
+                        await renameService.SetRenameStatus(rename.Id, RenameStatusEnum.Expired);
                         expiredCount++;
                         fitzMetrics?.RecordRenameExpired();
                         continue;
                     }
                 }
 
-                List<Renames> pendingRenames = this.renameService.GetPendingRenames();
+                List<RenamesEntity> pendingRenames = this.renameService.GetPendingRenames();
                 if (pendingRenames != null && pendingRenames.Count > 0)
                 {
                     var pendingRenamesToActivate = pendingRenames
@@ -106,10 +106,10 @@ namespace Fitz.Features.Rename.Jobs
                         .OrderBy(x => x.StartDate)
                         .ToList();
 
-                    foreach (Renames pendingRename in pendingRenamesToActivate)
+                    foreach (RenamesEntity pendingRename in pendingRenamesToActivate)
                     {
                         AccountEntity affectedUser = accountService.FindAccount(pendingRename.AffectedUserId);
-                        Renames activeRename = renameService.GetActiveRenameByAccountId(affectedUser.Id);
+                        RenamesEntity activeRename = renameService.GetActiveRenameByAccountId(affectedUser.Id);
                         
                         if (activeRename == null)
                         {
@@ -118,13 +118,13 @@ namespace Fitz.Features.Rename.Jobs
                                 DiscordMember discordMember = await waterbear.GetMemberAsync(affectedUser.Id);
                                 
                                 await discordMember.ModifyAsync(x => x.Nickname = pendingRename.NewName);
-                                await renameService.SetRenameStatus(pendingRename.Id, RenameStatus.Active);
+                                await renameService.SetRenameStatus(pendingRename.Id, RenameStatusEnum.Active);
                                 
                                 this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, $"Activated pending rename {pendingRename.Id} for user {affectedUser.Id} with nickname {pendingRename.NewName}");
                             }
                             catch (NotFoundException)
                             {
-                                await renameService.SetRenameStatus(pendingRename.Id, RenameStatus.Expired);
+                                await renameService.SetRenameStatus(pendingRename.Id, RenameStatusEnum.Expired);
                             }
                             catch (Exception ex)
                             {
@@ -134,7 +134,7 @@ namespace Fitz.Features.Rename.Jobs
                     }
                 }
 
-                var totalActiveRenames = renameService.GetAllRenames(RenameStatus.Active).Count;
+                var totalActiveRenames = renameService.GetAllRenames(RenameStatusEnum.Active).Count;
                 fitzMetrics?.SetRenamesActive(totalActiveRenames);
                 
                 this.botLog.Information(LogConsoleSettings.RenameLog, ManageRoleEmojis.Warning, "Finished checking for expired renames.");
@@ -152,7 +152,7 @@ namespace Fitz.Features.Rename.Jobs
             }
         }
 
-        private DiscordEmbed renameEmbed(Renames rename, AccountEntity affectedUser)
+        private DiscordEmbed renameEmbed(RenamesEntity rename, AccountEntity affectedUser)
         {
             DiscordEmbedBuilder embed = new()
             {

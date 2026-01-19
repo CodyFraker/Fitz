@@ -85,14 +85,14 @@ namespace Fitz.Api.Controllers.Rename
                     });
                 }
 
-                var rename = new Renames
+                var rename = new RenamesEntity
                 {
                     NewName = request.NewName,
                     AffectedUserId = request.AffectedUserId,
                     RequestedUserId = request.RequestedUserId,
                     Days = request.Days,
                     Cost = cost,
-                    Status = request.Status ?? RenameStatus.Pending,
+                    Status = request.Status ?? RenameStatusEnum.Pending,
                     StartDate = request.StartDate,
                     Expiration = request.Expiration,
                     Timestamp = DateTime.UtcNow

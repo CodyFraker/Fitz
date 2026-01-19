@@ -23,7 +23,7 @@ namespace Fitz.Api.Controllers.Rename
 
         [HttpGet]
         [RequireDiscordAuth]
-        public IActionResult GetRenames([FromQuery] RenameStatus? status)
+        public IActionResult GetRenames([FromQuery] RenameStatusEnum? status)
         {
             var stopwatch = Stopwatch.StartNew();
             var endpoint = "/api/rename";

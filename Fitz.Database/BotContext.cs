@@ -24,7 +24,7 @@ namespace Fitz.Database
         public DbSet<PollEntity> Polls { get; set; }
         public DbSet<Vote> Votes { get; set; }
         public DbSet<PollOptionsEntity> PollsOptions { get; set; }
-        public DbSet<Renames> Renames { get; set; }
+        public DbSet<RenamesEntity> Renames { get; set; }
         public DbSet<Job> Jobs { get; set; }
         public DbSet<FeatureStatus> FeatureStatuses { get; set; }
         public DbSet<SettingsEntity> Settings { get; set; }
@@ -51,9 +51,9 @@ namespace Fitz.Database
                 .Property(s => s.Status)
                 .HasConversion(new EnumToStringConverter<BlackjackGameStatus>());
 
-            modelBuilder.Entity<Renames>()
+            modelBuilder.Entity<RenamesEntity>()
                 .Property(s => s.Status)
-                .HasConversion(new EnumToStringConverter<RenameStatus>());
+                .HasConversion(new EnumToStringConverter<RenameStatusEnum>());
 
             base.OnModelCreating(modelBuilder);
         }

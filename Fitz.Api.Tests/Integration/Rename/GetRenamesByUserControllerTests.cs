@@ -55,7 +55,7 @@ namespace Fitz.Api.Tests.Integration.Rename
                 RequestedUserId = 222222222,
                 Days = 5,
                 Cost = 100,
-                Status = RenameStatus.Active,
+                Status = RenameStatusEnum.Active,
                 Timestamp = DateTime.UtcNow
             };
 
@@ -66,7 +66,7 @@ namespace Fitz.Api.Tests.Integration.Rename
                 RequestedUserId = 333333333,
                 Days = 3,
                 Cost = 80,
-                Status = RenameStatus.Pending,
+                Status = RenameStatusEnum.Pending,
                 Timestamp = DateTime.UtcNow
             };
             

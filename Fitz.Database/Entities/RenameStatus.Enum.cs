@@ -1,6 +1,6 @@
 namespace Fitz.Database.Entities
 {
-    public enum RenameStatus
+    public enum RenameStatusEnum
     {
         Unknown = 0,
         Pending = 1,

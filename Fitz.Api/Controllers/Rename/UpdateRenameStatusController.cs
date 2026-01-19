@@ -64,7 +64,7 @@ namespace Fitz.Api.Controllers.Rename
                     });
                 }
 
-                var rename = result.Data as Fitz.Database.Entities.Renames;
+                var rename = result.Data as Fitz.Database.Entities.RenamesEntity;
                 if (rename == null)
                 {
                     _fitzMetrics?.RecordApiError(endpoint, "business_error");

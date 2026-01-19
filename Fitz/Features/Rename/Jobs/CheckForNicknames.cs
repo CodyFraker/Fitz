@@ -78,7 +78,7 @@ namespace Fitz.Features.Rename.Jobs
                 {
                     try
                     {
-                        Renames rename = renameService.GetActiveRenameByAccountId(member.Id);
+                        RenamesEntity rename = renameService.GetActiveRenameByAccountId(member.Id);
                         
                         if (rename != null)
                         {

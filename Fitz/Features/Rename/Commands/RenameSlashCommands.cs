@@ -213,7 +213,7 @@ namespace Fitz.Features.Rename.Commands
                         await renameStatus;
                         if (renameStatus.IsCompletedSuccessfully)
                         {
-                            renameRequest.Status = RenameStatus.Active;
+                            renameRequest.Status = RenameStatusEnum.Active;
                             renameRequest.StartDate = DateTime.Now;
                             renameRequest.Expiration = DateTime.Now.AddDays(days);
                             var createResponse = await apiClient.PostAsync<CreateRenameRequest, ApiResponse<RenameResponse>>("/api/rename", renameRequest);
@@ -242,7 +242,7 @@ namespace Fitz.Features.Rename.Commands
                 {
                     renameRequest.StartDate = renames[0].Expiration;
                     renameRequest.Expiration = renames[0].Expiration.Value.AddDays(days);
-                    renameRequest.Status = RenameStatus.Pending;
+                    renameRequest.Status = RenameStatusEnum.Pending;
 
                     var createResponse = await apiClient.PostAsync<CreateRenameRequest, ApiResponse<RenameResponse>>("/api/rename", renameRequest);
                     if (createResponse == null || !createResponse.Success)
@@ -264,7 +264,7 @@ namespace Fitz.Features.Rename.Commands
 
                     renameRequest.StartDate = DateTime.Now;
                     renameRequest.Expiration = DateTime.Now.AddDays(days);
-                    renameRequest.Status = RenameStatus.Active;
+                    renameRequest.Status = RenameStatusEnum.Active;
                     var createResponse = await apiClient.PostAsync<CreateRenameRequest, ApiResponse<RenameResponse>>("/api/rename", renameRequest);
                     if (createResponse == null || !createResponse.Success)
                     {

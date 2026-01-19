@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Fitz.Database.Entities
 {
     [Table("renames")]
-    public class Renames
+    public class RenamesEntity
     {
         [Key]
         [Column("id")]
@@ -33,7 +33,7 @@ namespace Fitz.Database.Entities
         public bool Notified { get; set; }
 
         [Column("status")]
-        public RenameStatus Status { get; set; }
+        public RenameStatusEnum Status { get; set; }
 
         [Column("start_date")]
         public DateTime? StartDate { get; set; }

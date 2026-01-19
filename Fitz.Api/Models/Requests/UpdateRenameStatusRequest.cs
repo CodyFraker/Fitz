@@ -6,6 +6,6 @@ namespace Fitz.Api.Models.Requests
     public class UpdateRenameStatusRequest
     {
         [Required]
-        public RenameStatus Status { get; set; }
+        public RenameStatusEnum Status { get; set; }
     }
 }

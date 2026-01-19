@@ -23,6 +23,6 @@ namespace Fitz.Api.Models.Requests
 
         public DateTime? Expiration { get; set; }
 
-        public RenameStatus? Status { get; set; }
+        public RenameStatusEnum? Status { get; set; }
     }
 }

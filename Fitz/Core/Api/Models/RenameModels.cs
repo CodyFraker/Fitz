@@ -13,7 +13,7 @@ namespace Fitz.Core.Api.Models
         public int? Days { get; set; }
         public int Cost { get; set; }
         public bool Notified { get; set; }
-        public RenameStatus Status { get; set; }
+        public RenameStatusEnum Status { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? Expiration { get; set; }
         public DateTime Timestamp { get; set; }
@@ -32,12 +32,12 @@ namespace Fitz.Core.Api.Models
         public int Days { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? Expiration { get; set; }
-        public RenameStatus? Status { get; set; }
+        public RenameStatusEnum? Status { get; set; }
     }
 
     public class UpdateRenameStatusRequest
     {
-        public RenameStatus Status { get; set; }
+        public RenameStatusEnum Status { get; set; }
     }
 
     public class CalculateRenameCostRequest
