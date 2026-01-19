@@ -9,7 +9,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Net;
 using System.Net.Http.Headers;
 using Xunit;
-using AccountModel = Fitz.Features.Accounts.Models.Account;
 
 namespace Fitz.Api.Tests.Integration.Account
 {
@@ -49,15 +48,20 @@ namespace Fitz.Api.Tests.Integration.Account
             using var scope = _factory.Services.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<BotContext>();
             
-            var account = new AccountModel
+            var account = new AccountEntity
             {
                 Id = 123456789,
                 Username = "TestUser",
                 Beer = 100,
                 LifetimeBeer = 500,
+                SafeBalance = 128,
+                Favorability = 50,
                 CreatedDate = DateTime.UtcNow,
                 LastSeenDate = DateTime.UtcNow,
-                LastActivityDate = DateTime.UtcNow
+                LastActivityDate = DateTime.UtcNow,
+                subscribeToLottery = false,
+                SubscribeTickets = 1,
+                Deactivated = false
             };
             
             db.Accounts.Add(account);

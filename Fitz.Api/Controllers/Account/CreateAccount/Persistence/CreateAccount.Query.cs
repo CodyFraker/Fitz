@@ -5,12 +5,15 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Fitz.Api.Controllers.Account.CreateAccount.Persistence;
 
-public class CreateAccount(IDbContextFactory<BotContext> contextFactory) : ICreateAccount
+public class CreateAccount(IDbContextFactory<BotContext> contextFactory, ILogger<CreateAccount> logger) : ICreateAccount
 {
     private readonly IDbContextFactory<BotContext> _contextFactory = contextFactory;
+    private readonly ILogger<CreateAccount> _logger = logger;
 
     public async Task Save(CreateAccountModel model, CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation("Saving account to database. AccountId: {AccountId}, Username: {Username}", model.Id, model.Username);
+        
         var newAccountEntity = new AccountEntity
         {
             Id = model.Id,
@@ -31,13 +34,28 @@ public class CreateAccount(IDbContextFactory<BotContext> contextFactory) : ICrea
 
         await context.Accounts.AddAsync(newAccountEntity, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
+        
+        _logger.LogInformation("Account saved to database successfully. AccountId: {AccountId}, Username: {Username}", model.Id, model.Username);
     }
 
     public async Task<AccountEntity?> FindByIdAsync(ulong id, CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation("Finding account by ID. AccountId: {AccountId}", id);
+        
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
-        return await context.Accounts
+        var account = await context.Accounts
             .Where(x => x.Id == id)
             .FirstOrDefaultAsync(cancellationToken);
+        
+        if (account != null)
+        {
+            _logger.LogInformation("Account found by ID. AccountId: {AccountId}, Username: {Username}", id, account.Username);
+        }
+        else
+        {
+            _logger.LogInformation("Account not found by ID. AccountId: {AccountId}", id);
+        }
+        
+        return account;
     }
 }
