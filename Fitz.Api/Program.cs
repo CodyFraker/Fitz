@@ -27,7 +27,7 @@ using System.Reflection;
 
 try
 {
-    DotEnv.Load();
+    DotEnv.Load(options: new DotEnvOptions(envFilePaths: new[] { "/config/.env" }));
 }
 catch (Exception ex)
 {

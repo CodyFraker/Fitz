@@ -52,7 +52,7 @@ namespace Fitz
 
         public static int Main()
         {
-            DotEnv.Load();
+            DotEnv.Load(options: new DotEnvOptions(envFilePaths: new[] { "/config/.env" }));
 
             // Configure logging
             // Log everything to console
