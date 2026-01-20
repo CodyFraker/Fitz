@@ -41,7 +41,10 @@ export function AllRenamesTable() {
         const statusParam = statusFilter !== 'all' ? statusFilter : undefined
         const response = await apiClient.getRenames(statusParam)
         if (response.success && response.data) {
-          let filtered = response.data as RenameResponse[]
+          const renamesArray = Array.isArray(response.data) 
+            ? response.data 
+            : ((response.data as any).renames || (response.data as any).Renames || [])
+          let filtered = renamesArray as RenameResponse[]
           if (userFilter) {
             filtered = filtered.filter(
               (r) =>

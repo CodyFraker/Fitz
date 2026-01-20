@@ -19,7 +19,10 @@ export function MyPollsSection() {
       try {
         const response = await apiClient.getUserPolls()
         if (response.success && response.data) {
-          setPolls(response.data)
+          const pollsArray = Array.isArray(response.data) 
+            ? response.data 
+            : ((response.data as any).polls || (response.data as any).Polls || [])
+          setPolls(pollsArray)
         } else {
           setError('Failed to load polls')
         }

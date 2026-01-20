@@ -15,6 +15,11 @@ namespace Fitz.Api.Attributes
                 return;
             }
 
+            if (context.HttpContext.User.IsAdmin())
+            {
+                return;
+            }
+
             var authenticatedUserId = context.HttpContext.User.GetDiscordUserId();
             if (authenticatedUserId == null)
             {

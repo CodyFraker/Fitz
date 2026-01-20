@@ -38,4 +38,10 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers\Account\GetAccount\Discord\" />
+    <Folder Include="Controllers\Account\GetAccount\Domain\" />
+    <Folder Include="Controllers\Account\GetAccount\Persistence\" />
+  </ItemGroup>
+
 </Project>

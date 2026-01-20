@@ -27,7 +27,8 @@ using System.Reflection;
 
 try
 {
-    DotEnv.Load(options: new DotEnvOptions(envFilePaths: new[] { "/config/.env" }));
+    DotEnv.Load();
+    //DotEnv.Load(options: new DotEnvOptions(envFilePaths: new[] { "/config/.env" }));
 }
 catch (Exception ex)
 {
@@ -86,11 +87,17 @@ catch
 if (serverVersion != null)
 {
     builder.Services.AddDbContext<BotContext>(options =>
+        options.UseMySql(connectionString, serverVersion),
+        optionsLifetime: ServiceLifetime.Singleton);
+    builder.Services.AddDbContextFactory<BotContext>(options =>
         options.UseMySql(connectionString, serverVersion));
 }
 else
 {
     builder.Services.AddDbContext<BotContext>(options =>
+        options.UseInMemoryDatabase("TestDb"),
+        optionsLifetime: ServiceLifetime.Singleton);
+    builder.Services.AddDbContextFactory<BotContext>(options =>
         options.UseInMemoryDatabase("TestDb"));
 }
 
@@ -167,6 +174,102 @@ foreach (Type type in Assembly.Load("Fitz")
     IServiceRegistrant? registrant = Activator.CreateInstance(type) as IServiceRegistrant;
     registrant?.ConfigureServices(builder.Services);
 }
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.CreateAccount.Domain.ICreateAccount, Fitz.Api.Controllers.Account.CreateAccount.Persistence.CreateAccount>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.CreateAccount.Domain.CreateAccountService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.CreateAccount.Domain.CreateAccountFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.GetAccount.Domain.IGetAccount, Fitz.Api.Controllers.Account.GetAccount.Persistence.GetAccount>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.GetAccount.Domain.GetAccountService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.GetAccount.Domain.GetAccountFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Lottery.GetCurrentLottery.Domain.IGetCurrentLottery, Fitz.Api.Controllers.Lottery.GetCurrentLottery.Persistence.GetCurrentLottery>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Lottery.GetCurrentLottery.Domain.GetCurrentLotteryService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Lottery.GetCurrentLottery.Domain.GetCurrentLotteryFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Lottery.BuyTickets.Domain.IBuyTickets, Fitz.Api.Controllers.Lottery.BuyTickets.Persistence.BuyTickets>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Lottery.BuyTickets.Domain.BuyTicketsService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Lottery.BuyTickets.Domain.BuyTicketsFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Lottery.GetLotteryHistory.Domain.IGetLotteryHistory, Fitz.Api.Controllers.Lottery.GetLotteryHistory.Persistence.GetLotteryHistory>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Lottery.GetLotteryHistory.Domain.GetLotteryHistoryService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Lottery.GetLotteryHistory.Domain.GetLotteryHistoryFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Lottery.GetLotteryStatistics.Domain.IGetLotteryStatistics, Fitz.Api.Controllers.Lottery.GetLotteryStatistics.Persistence.GetLotteryStatistics>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Lottery.GetLotteryStatistics.Domain.GetLotteryStatisticsService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Lottery.GetLotteryStatistics.Domain.GetLotteryStatisticsFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.CreatePoll.Domain.ICreatePoll, Fitz.Api.Controllers.Polls.CreatePoll.Persistence.CreatePoll>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.CreatePoll.Domain.CreatePollService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.CreatePoll.Domain.CreatePollFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetPolls.Domain.IGetPolls, Fitz.Api.Controllers.Polls.GetPolls.Persistence.GetPolls>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetPolls.Domain.GetPollsService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetPolls.Domain.GetPollsFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetPoll.Domain.IGetPoll, Fitz.Api.Controllers.Polls.GetPoll.Persistence.GetPoll>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetPoll.Domain.GetPollService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetPoll.Domain.GetPollFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetPollOptions.Domain.IGetPollOptions, Fitz.Api.Controllers.Polls.GetPollOptions.Persistence.GetPollOptions>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetPollOptions.Domain.GetPollOptionsService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetPollOptions.Domain.GetPollOptionsFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetPollVotes.Domain.IGetPollVotes, Fitz.Api.Controllers.Polls.GetPollVotes.Persistence.GetPollVotes>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetPollVotes.Domain.GetPollVotesService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetPollVotes.Domain.GetPollVotesFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetUserPolls.Domain.IGetUserPolls, Fitz.Api.Controllers.Polls.GetUserPolls.Persistence.GetUserPolls>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetUserPolls.Domain.GetUserPollsService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetUserPolls.Domain.GetUserPollsFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetPollsWithDetails.Domain.IGetPollsWithDetails, Fitz.Api.Controllers.Polls.GetPollsWithDetails.Persistence.GetPollsWithDetails>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetPollsWithDetails.Domain.GetPollsWithDetailsService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.GetPollsWithDetails.Domain.GetPollsWithDetailsFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.AddVote.Domain.IAddVote, Fitz.Api.Controllers.Polls.AddVote.Persistence.AddVote>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.AddVote.Domain.AddVoteService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.AddVote.Domain.AddVoteFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.UpdateVote.Domain.IUpdateVote, Fitz.Api.Controllers.Polls.UpdateVote.Persistence.UpdateVote>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.UpdateVote.Domain.UpdateVoteService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.UpdateVote.Domain.UpdateVoteFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.EvaluatePoll.Domain.IEvaluatePoll, Fitz.Api.Controllers.Polls.EvaluatePoll.Persistence.EvaluatePoll>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.EvaluatePoll.Domain.EvaluatePollService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.EvaluatePoll.Domain.EvaluatePollFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.PostPollToPending.Domain.IPostPollToPending, Fitz.Api.Controllers.Polls.PostPollToPending.Persistence.PostPollToPending>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.PostPollToPending.Domain.PostPollToPendingService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Polls.PostPollToPending.Domain.PostPollToPendingFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.CreateRename.Domain.ICreateRename, Fitz.Api.Controllers.Rename.CreateRename.Persistence.CreateRename>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.CreateRename.Domain.CreateRenameService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.CreateRename.Domain.CreateRenameFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.GetRename.Domain.IGetRename, Fitz.Api.Controllers.Rename.GetRename.Persistence.GetRename>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.GetRename.Domain.GetRenameService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.GetRename.Domain.GetRenameFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.GetRenames.Domain.IGetRenames, Fitz.Api.Controllers.Rename.GetRenames.Persistence.GetRenames>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.GetRenames.Domain.GetRenamesService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.GetRenames.Domain.GetRenamesFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.GetRenamesByUser.Domain.IGetRenamesByUser, Fitz.Api.Controllers.Rename.GetRenamesByUser.Persistence.GetRenamesByUser>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.GetRenamesByUser.Domain.GetRenamesByUserService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.GetRenamesByUser.Domain.GetRenamesByUserFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.UpdateRenameStatus.Domain.IUpdateRenameStatus, Fitz.Api.Controllers.Rename.UpdateRenameStatus.Persistence.UpdateRenameStatus>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.UpdateRenameStatus.Domain.UpdateRenameStatusService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.UpdateRenameStatus.Domain.UpdateRenameStatusFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.CalculateRenameCost.Domain.ICalculateRenameCost, Fitz.Api.Controllers.Rename.CalculateRenameCost.Persistence.CalculateRenameCost>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.CalculateRenameCost.Domain.CalculateRenameCostService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.CalculateRenameCost.Domain.CalculateRenameCostFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.BuyoutRenames.Domain.IBuyoutRenames, Fitz.Api.Controllers.Rename.BuyoutRenames.Persistence.BuyoutRenames>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.BuyoutRenames.Domain.BuyoutRenamesService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.BuyoutRenames.Domain.BuyoutRenamesFacade>();
 
 builder.Services.AddFitzMetrics();
 

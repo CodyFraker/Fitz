@@ -26,7 +26,10 @@ export function AdminPollModeration() {
     try {
       const response = await apiClient.getPolls()
       if (response.success && response.data) {
-        setPolls(response.data)
+        const pollsArray = Array.isArray(response.data) 
+          ? response.data 
+          : ((response.data as any).polls || (response.data as any).Polls || [])
+        setPolls(pollsArray)
       }
     } catch (error) {
       console.error('Failed to fetch polls:', error)

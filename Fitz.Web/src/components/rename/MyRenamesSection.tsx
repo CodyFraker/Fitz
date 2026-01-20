@@ -26,7 +26,10 @@ export function MyRenamesSection() {
       try {
         const response = await apiClient.getRenamesByUser(user.id)
         if (response.success && response.data) {
-          const sortedRenames = [...response.data].sort((a, b) => {
+          const renamesArray = Array.isArray(response.data) 
+            ? response.data 
+            : ((response.data as any).renames || (response.data as any).Renames || [])
+          const sortedRenames = [...renamesArray].sort((a, b) => {
             if (a.status === RenameStatus.Active && b.status !== RenameStatus.Active) return -1
             if (a.status !== RenameStatus.Active && b.status === RenameStatus.Active) return 1
             if (a.expiration && b.expiration) {
@@ -36,7 +39,7 @@ export function MyRenamesSection() {
           })
           setRenames(sortedRenames)
         } else {
-          setError('Failed to load renames')
+          setError(response.message || 'Failed to load renames')
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load renames')

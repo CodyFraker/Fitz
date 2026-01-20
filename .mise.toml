@@ -11,6 +11,10 @@ npm = "latest"
 description = "Run all services concurrently (bot, API, and frontend)"
 depends = ["//...:dev"]
 
+[tasks.generate-api]
+description = "Generate TypeScript API client from OpenAPI spec using NSwag"
+run = "cd Fitz.Web && npm run generate-api"
+
 [env]
 NODE_ENV = "development"
 ASPNETCORE_ENVIRONMENT = "Development"
