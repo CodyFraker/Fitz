@@ -43,6 +43,17 @@ public class GetRenamesByUserController(GetRenamesByUserFacade getRenamesByUserF
                 Data = dto
             });
         }
+        catch (ArgumentException ex)
+        {
+            _logger.LogError("Get renames by user failed - invalid argument. Error: {Error}", ex.Message);
+            _fitzMetrics?.RecordApiError(endpoint, "bad_request");
+
+            return BadRequest(new ApiResponse<object>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Get renames by user failed - unexpected error. UserId: {UserId}", userId);

@@ -5,8 +5,6 @@ public record BuyoutRenamesModel(
 {
     public static BuyoutRenamesModel From(int renamesUpdated)
     {
-        return new BuyoutRenamesModel(
-            RenamesUpdated: renamesUpdated
-        );
+        return new BuyoutRenamesModel(RenamesUpdated: renamesUpdated);
     }
 }

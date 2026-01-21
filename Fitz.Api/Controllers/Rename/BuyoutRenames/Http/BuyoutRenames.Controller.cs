@@ -34,13 +34,24 @@ public class BuyoutRenamesController(BuyoutRenamesFacade buyoutRenamesFacade, IL
 
             var dto = BuyoutRenamesResponseDto.From(response);
 
-            _logger.LogInformation("Buyout renames completed successfully. UserId: {UserId}, Count: {Count}", userId, dto.RenamesUpdated);
+            _logger.LogInformation("Buyout renames completed successfully. UserId: {UserId}, UpdatedCount: {UpdatedCount}", userId, dto.RenamesUpdated);
 
             return Ok(new ApiResponse<BuyoutRenamesResponseDto>
             {
                 Success = true,
-                Message = $"Successfully bought out {dto.RenamesUpdated} rename request(s)",
+                Message = response.Message,
                 Data = dto
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogError("Buyout renames failed - invalid argument. Error: {Error}", ex.Message);
+            _fitzMetrics?.RecordApiError(endpoint, "bad_request");
+
+            return BadRequest(new ApiResponse<object>
+            {
+                Success = false,
+                Message = ex.Message
             });
         }
         catch (Exception ex)

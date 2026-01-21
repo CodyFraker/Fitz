@@ -9,10 +9,18 @@ public class GetRenamesByUserService(IGetRenamesByUser getRenamesByUser, ILogger
     {
         _logger.LogInformation("GetRenamesByUserService execution started. UserId: {UserId}", command.UserId);
 
+        if (command.UserId == 0)
+        {
+            _logger.LogError("GetRenamesByUser validation failed - User ID cannot be 0.");
+            throw new ArgumentException("User ID cannot be 0.", nameof(command.UserId));
+        }
+
         var renames = await _getRenamesByUser.GetRenamesByAccountIdAsync(command.UserId, cancellationToken);
 
-        _logger.LogInformation("GetRenamesByUserService execution completed. UserId: {UserId}, Count: {Count}", command.UserId, renames.Count);
+        var model = GetRenamesByUserModel.From(renames);
 
-        return GetRenamesByUserModel.From(renames);
+        _logger.LogInformation("GetRenamesByUserModel created successfully. UserId: {UserId}, Count: {Count}", command.UserId, renames.Count);
+
+        return model;
     }
 }

@@ -5,8 +5,6 @@ public record CalculateRenameCostModel(
 {
     public static CalculateRenameCostModel From(int cost)
     {
-        return new CalculateRenameCostModel(
-            Cost: cost
-        );
+        return new CalculateRenameCostModel(Cost: cost);
     }
 }

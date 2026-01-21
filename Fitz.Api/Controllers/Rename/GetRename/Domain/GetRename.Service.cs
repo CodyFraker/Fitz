@@ -9,18 +9,25 @@ public class GetRenameService(IGetRename getRename, ILogger<GetRenameService> lo
 
     public async Task<GetRenameModel> ExecuteAsync(GetRenameCommand command, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("GetRenameService execution started. RenameId: {RenameId}", command.RenameId);
+        _logger.LogInformation("GetRenameService execution started. Id: {Id}", command.Id);
 
-        var rename = await _getRename.FindRenameByIdAsync(command.RenameId, cancellationToken);
-
-        if (rename == null)
+        if (command.Id <= 0)
         {
-            _logger.LogWarning("Rename not found. RenameId: {RenameId}", command.RenameId);
-            throw new RenameNotFound(command.RenameId);
+            _logger.LogError("GetRename validation failed - Id must be greater than 0. Id: {Id}", command.Id);
+            throw new ArgumentException("Id must be greater than 0.", nameof(command.Id));
         }
 
-        _logger.LogInformation("GetRenameService execution completed. RenameId: {RenameId}", command.RenameId);
+        var rename = await _getRename.FindByIdAsync(command.Id, cancellationToken);
+        if (rename == null)
+        {
+            _logger.LogWarning("Rename not found. Id: {Id}", command.Id);
+            throw new RenameNotFound(command.Id);
+        }
 
-        return GetRenameModel.From(rename);
+        var model = GetRenameModel.From(rename);
+
+        _logger.LogInformation("GetRenameModel created successfully. Id: {Id}", command.Id);
+
+        return model;
     }
 }

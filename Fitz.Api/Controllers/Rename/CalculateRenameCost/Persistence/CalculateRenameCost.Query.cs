@@ -21,7 +21,7 @@ public class CalculateRenameCost(IDbContextFactory<BotContext> contextFactory, I
 
         if (account != null)
         {
-            _logger.LogInformation("Account found. UserId: {UserId}", userId);
+            _logger.LogInformation("Account found. UserId: {UserId}, Username: {Username}", userId, account.Username);
         }
         else
         {
@@ -29,5 +29,25 @@ public class CalculateRenameCost(IDbContextFactory<BotContext> contextFactory, I
         }
 
         return account;
+    }
+
+    public async Task<SettingsEntity?> GetSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting settings");
+
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+        var settings = await context.Settings
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (settings != null)
+        {
+            _logger.LogInformation("Settings found. RenameBaseCost: {RenameBaseCost}", settings.RenameBaseCost);
+        }
+        else
+        {
+            _logger.LogWarning("Settings not found");
+        }
+
+        return settings;
     }
 }

@@ -2,11 +2,7 @@ using Fitz.Api.Controllers.Rename.CalculateRenameCost.Http;
 
 namespace Fitz.Api.Controllers.Rename.CalculateRenameCost.Domain;
 
-public record CalculateRenameCostCommand(
-    ulong AffectedUserId,
-    ulong RequestedUserId,
-    double Days,
-    string NewName)
+public record CalculateRenameCostCommand(ulong AffectedUserId, ulong RequestedUserId, double Days, string NewName)
 {
     public static CalculateRenameCostCommand From(CalculateRenameCostRequestDto request)
     {

@@ -37,7 +37,7 @@ public class UpdateRenameStatusController(UpdateRenameStatusFacade updateRenameS
                 });
             }
 
-            _logger.LogInformation("Update rename status request received. RenameId: {RenameId}, Status: {Status}", id, request.Status);
+            _logger.LogInformation("Update rename status request received. Id: {Id}, Status: {Status}", id, request.Status);
 
             var command = UpdateRenameStatusCommand.From(id, request);
 
@@ -45,18 +45,18 @@ public class UpdateRenameStatusController(UpdateRenameStatusFacade updateRenameS
 
             var dto = UpdateRenameStatusResponseDto.From(response);
 
-            _logger.LogInformation("Update rename status completed successfully. RenameId: {RenameId}, Status: {Status}", id, request.Status);
+            _logger.LogInformation("Update rename status completed successfully. Id: {Id}, Status: {Status}", id, request.Status);
 
             return Ok(new ApiResponse<UpdateRenameStatusResponseDto>
             {
                 Success = true,
-                Message = "Rename status updated successfully",
+                Message = response.Message,
                 Data = dto
             });
         }
         catch (RenameNotFound ex)
         {
-            _logger.LogWarning("Update rename status failed - rename not found. RenameId: {RenameId}", id);
+            _logger.LogWarning("Update rename status failed - rename not found. Id: {Id}", ex.RenameId);
             _fitzMetrics?.RecordApiError(endpoint, "not_found");
 
             return NotFound(new ApiResponse<object>
@@ -65,9 +65,20 @@ public class UpdateRenameStatusController(UpdateRenameStatusFacade updateRenameS
                 Message = ex.Message
             });
         }
+        catch (ArgumentException ex)
+        {
+            _logger.LogError("Update rename status failed - invalid argument. Error: {Error}", ex.Message);
+            _fitzMetrics?.RecordApiError(endpoint, "bad_request");
+
+            return BadRequest(new ApiResponse<object>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Update rename status failed - unexpected error. RenameId: {RenameId}", id);
+            _logger.LogError(ex, "Update rename status failed - unexpected error. Id: {Id}", id);
             _fitzMetrics?.RecordApiError(endpoint, "internal_server_error");
 
             return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>

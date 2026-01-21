@@ -7,8 +7,6 @@ public record GetRenameModel(
 {
     public static GetRenameModel From(RenamesEntity rename)
     {
-        return new GetRenameModel(
-            Rename: rename
-        );
+        return new GetRenameModel(Rename: rename);
     }
 }

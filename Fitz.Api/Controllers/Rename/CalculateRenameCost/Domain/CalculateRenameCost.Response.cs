@@ -5,8 +5,6 @@ public record CalculateRenameCostResponse(
 {
     public static CalculateRenameCostResponse From(CalculateRenameCostModel model)
     {
-        return new CalculateRenameCostResponse(
-            Cost: model.Cost
-        );
+        return new CalculateRenameCostResponse(Cost: model.Cost);
     }
 }

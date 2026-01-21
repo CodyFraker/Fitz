@@ -19,19 +19,21 @@ public class BuyoutRenames(IDbContextFactory<BotContext> contextFactory, ILogger
             .Where(r => r.AffectedUserId == accountId && (r.Status == RenameStatusEnum.Pending || r.Status == RenameStatusEnum.Active))
             .ToListAsync(cancellationToken);
 
-        _logger.LogInformation("Found {Count} renames for account. AccountId: {AccountId}", renames.Count, accountId);
+        _logger.LogInformation("Renames retrieved. AccountId: {AccountId}, Count: {Count}", accountId, renames.Count);
 
         return renames;
     }
 
-    public async Task UpdateRenameAsync(RenamesEntity rename, CancellationToken cancellationToken = default)
+    public async Task<RenamesEntity> UpdateRenameAsync(RenamesEntity rename, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Updating rename. RenameId: {RenameId}, Status: {Status}", rename.Id, rename.Status);
+        _logger.LogInformation("Updating rename. Id: {Id}, Status: {Status}", rename.Id, rename.Status);
 
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
         context.Renames.Update(rename);
         await context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Rename updated successfully. RenameId: {RenameId}", rename.Id);
+        _logger.LogInformation("Rename updated successfully. Id: {Id}, Status: {Status}", rename.Id, rename.Status);
+
+        return rename;
     }
 }

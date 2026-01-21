@@ -7,7 +7,7 @@ public class GetRenamesFacade(GetRenamesService getRenamesService, ILogger<GetRe
 
     public async Task<GetRenamesResponse> Execute(GetRenamesCommand command, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("GetRenamesFacade execution started");
+        _logger.LogInformation("GetRenamesFacade execution started. Status: {Status}", command.Status);
 
         var model = await _getRenamesService.ExecuteAsync(command, cancellationToken);
 

@@ -10,22 +10,22 @@ public class UpdateRenameStatus(IDbContextFactory<BotContext> contextFactory, IL
     private readonly IDbContextFactory<BotContext> _contextFactory = contextFactory;
     private readonly ILogger<UpdateRenameStatus> _logger = logger;
 
-    public async Task<RenamesEntity?> FindRenameByIdAsync(int renameId, CancellationToken cancellationToken = default)
+    public async Task<RenamesEntity?> FindByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Finding rename by ID. RenameId: {RenameId}", renameId);
+        _logger.LogInformation("Finding rename by ID. Id: {Id}", id);
 
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
         var rename = await context.Renames
-            .Where(r => r.Id == renameId)
+            .Where(r => r.Id == id)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (rename != null)
         {
-            _logger.LogInformation("Rename found. RenameId: {RenameId}", renameId);
+            _logger.LogInformation("Rename found. Id: {Id}, NewName: {NewName}", id, rename.NewName);
         }
         else
         {
-            _logger.LogInformation("Rename not found. RenameId: {RenameId}", renameId);
+            _logger.LogInformation("Rename not found. Id: {Id}", id);
         }
 
         return rename;
@@ -33,13 +33,13 @@ public class UpdateRenameStatus(IDbContextFactory<BotContext> contextFactory, IL
 
     public async Task<RenamesEntity> UpdateRenameAsync(RenamesEntity rename, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Updating rename. RenameId: {RenameId}, Status: {Status}", rename.Id, rename.Status);
+        _logger.LogInformation("Updating rename. Id: {Id}, Status: {Status}", rename.Id, rename.Status);
 
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
         context.Renames.Update(rename);
         await context.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Rename updated successfully. RenameId: {RenameId}", rename.Id);
+        _logger.LogInformation("Rename updated successfully. Id: {Id}, Status: {Status}", rename.Id, rename.Status);
 
         return rename;
     }

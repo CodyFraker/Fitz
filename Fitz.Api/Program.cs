@@ -28,7 +28,6 @@ using System.Reflection;
 try
 {
     DotEnv.Load();
-    //DotEnv.Load(options: new DotEnvOptions(envFilePaths: new[] { "/config/.env" }));
 }
 catch (Exception ex)
 {
@@ -91,12 +90,16 @@ if (serverVersion != null)
         optionsLifetime: ServiceLifetime.Singleton);
     builder.Services.AddDbContextFactory<BotContext>(options =>
         options.UseMySql(connectionString, serverVersion));
+    builder.Services.AddDbContextFactory<BotContext>(options =>
+        options.UseMySql(connectionString, serverVersion));
 }
 else
 {
     builder.Services.AddDbContext<BotContext>(options =>
         options.UseInMemoryDatabase("TestDb"),
         optionsLifetime: ServiceLifetime.Singleton);
+    builder.Services.AddDbContextFactory<BotContext>(options =>
+        options.UseInMemoryDatabase("TestDb"));
     builder.Services.AddDbContextFactory<BotContext>(options =>
         options.UseInMemoryDatabase("TestDb"));
 }
@@ -183,6 +186,54 @@ builder.Services.AddScoped<Fitz.Api.Controllers.Account.GetAccount.Domain.IGetAc
 builder.Services.AddScoped<Fitz.Api.Controllers.Account.GetAccount.Domain.GetAccountService>();
 builder.Services.AddScoped<Fitz.Api.Controllers.Account.GetAccount.Domain.GetAccountFacade>();
 
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.SetLotterySubscribe.Domain.ISetLotterySubscribe, Fitz.Api.Controllers.Account.SetLotterySubscribe.Persistence.SetLotterySubscribe>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.SetLotterySubscribe.Domain.SetLotterySubscribeService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.SetLotterySubscribe.Domain.SetLotterySubscribeFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.SetSafeBalance.Domain.ISetSafeBalance, Fitz.Api.Controllers.Account.SetSafeBalance.Persistence.SetSafeBalance>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.SetSafeBalance.Domain.SetSafeBalanceService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.SetSafeBalance.Domain.SetSafeBalanceFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.SetTicketAmount.Domain.ISetTicketAmount, Fitz.Api.Controllers.Account.SetTicketAmount.Persistence.SetTicketAmount>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.SetTicketAmount.Domain.SetTicketAmountService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.SetTicketAmount.Domain.SetTicketAmountFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.DeactivateAccount.Domain.IDeactivateAccount, Fitz.Api.Controllers.Account.DeactivateAccount.Persistence.DeactivateAccount>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.DeactivateAccount.Domain.DeactivateAccountService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.DeactivateAccount.Domain.DeactivateAccountFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.GetBalance.Domain.IGetBalance, Fitz.Api.Controllers.Bank.GetBalance.Persistence.GetBalance>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.GetBalance.Domain.GetBalanceService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.GetBalance.Domain.GetBalanceFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.GetBalances.Domain.IGetBalances, Fitz.Api.Controllers.Bank.GetBalances.Persistence.GetBalances>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.GetBalances.Domain.GetBalancesService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.GetBalances.Domain.GetBalancesFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.GetTopBalances.Domain.IGetTopBalances, Fitz.Api.Controllers.Bank.GetTopBalances.Persistence.GetTopBalances>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.GetTopBalances.Domain.GetTopBalancesService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.GetTopBalances.Domain.GetTopBalancesFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.GetTransactions.Domain.IGetTransactions, Fitz.Api.Controllers.Bank.GetTransactions.Persistence.GetTransactions>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.GetTransactions.Domain.GetTransactionsService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.GetTransactions.Domain.GetTransactionsFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.GetUserTransactions.Domain.IGetUserTransactions, Fitz.Api.Controllers.Bank.GetUserTransactions.Persistence.GetUserTransactions>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.GetUserTransactions.Domain.GetUserTransactionsService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.GetUserTransactions.Domain.GetUserTransactionsFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.AwardBonus.Domain.IAwardBonus, Fitz.Api.Controllers.Bank.AwardBonus.Persistence.AwardBonus>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.AwardBonus.Domain.AwardBonusService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.AwardBonus.Domain.AwardBonusFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.DeductBeer.Domain.IDeductBeer, Fitz.Api.Controllers.Bank.DeductBeer.Persistence.DeductBeer>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.DeductBeer.Domain.DeductBeerService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.DeductBeer.Domain.DeductBeerFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.TransferBeer.Domain.ITransferBeer, Fitz.Api.Controllers.Bank.TransferBeer.Persistence.TransferBeer>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.TransferBeer.Domain.TransferBeerService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.TransferBeer.Domain.TransferBeerFacade>();
+
 builder.Services.AddScoped<Fitz.Api.Controllers.Lottery.GetCurrentLottery.Domain.IGetCurrentLottery, Fitz.Api.Controllers.Lottery.GetCurrentLottery.Persistence.GetCurrentLottery>();
 builder.Services.AddScoped<Fitz.Api.Controllers.Lottery.GetCurrentLottery.Domain.GetCurrentLotteryService>();
 builder.Services.AddScoped<Fitz.Api.Controllers.Lottery.GetCurrentLottery.Domain.GetCurrentLotteryFacade>();
@@ -243,6 +294,10 @@ builder.Services.AddScoped<Fitz.Api.Controllers.Polls.PostPollToPending.Domain.I
 builder.Services.AddScoped<Fitz.Api.Controllers.Polls.PostPollToPending.Domain.PostPollToPendingService>();
 builder.Services.AddScoped<Fitz.Api.Controllers.Polls.PostPollToPending.Domain.PostPollToPendingFacade>();
 
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.CalculateRenameCost.Domain.ICalculateRenameCost, Fitz.Api.Controllers.Rename.CalculateRenameCost.Persistence.CalculateRenameCost>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.CalculateRenameCost.Domain.CalculateRenameCostService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Rename.CalculateRenameCost.Domain.CalculateRenameCostFacade>();
+
 builder.Services.AddScoped<Fitz.Api.Controllers.Rename.CreateRename.Domain.ICreateRename, Fitz.Api.Controllers.Rename.CreateRename.Persistence.CreateRename>();
 builder.Services.AddScoped<Fitz.Api.Controllers.Rename.CreateRename.Domain.CreateRenameService>();
 builder.Services.AddScoped<Fitz.Api.Controllers.Rename.CreateRename.Domain.CreateRenameFacade>();
@@ -263,14 +318,73 @@ builder.Services.AddScoped<Fitz.Api.Controllers.Rename.UpdateRenameStatus.Domain
 builder.Services.AddScoped<Fitz.Api.Controllers.Rename.UpdateRenameStatus.Domain.UpdateRenameStatusService>();
 builder.Services.AddScoped<Fitz.Api.Controllers.Rename.UpdateRenameStatus.Domain.UpdateRenameStatusFacade>();
 
-builder.Services.AddScoped<Fitz.Api.Controllers.Rename.CalculateRenameCost.Domain.ICalculateRenameCost, Fitz.Api.Controllers.Rename.CalculateRenameCost.Persistence.CalculateRenameCost>();
-builder.Services.AddScoped<Fitz.Api.Controllers.Rename.CalculateRenameCost.Domain.CalculateRenameCostService>();
-builder.Services.AddScoped<Fitz.Api.Controllers.Rename.CalculateRenameCost.Domain.CalculateRenameCostFacade>();
-
 builder.Services.AddScoped<Fitz.Api.Controllers.Rename.BuyoutRenames.Domain.IBuyoutRenames, Fitz.Api.Controllers.Rename.BuyoutRenames.Persistence.BuyoutRenames>();
 builder.Services.AddScoped<Fitz.Api.Controllers.Rename.BuyoutRenames.Domain.BuyoutRenamesService>();
 builder.Services.AddScoped<Fitz.Api.Controllers.Rename.BuyoutRenames.Domain.BuyoutRenamesFacade>();
 
+builder.Services.AddScoped<Fitz.Api.Controllers.Settings.GetSettings.Domain.IGetSettings, Fitz.Api.Controllers.Settings.GetSettings.Persistence.GetSettings>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Settings.GetSettings.Domain.GetSettingsService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Settings.GetSettings.Domain.GetSettingsFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Users.GetUsers.Domain.IGetUsers, Fitz.Api.Controllers.Users.GetUsers.Persistence.GetUsers>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Users.GetUsers.Domain.GetUsersService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Users.GetUsers.Domain.GetUsersFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Auth.ExchangeToken.Domain.ExchangeTokenService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Auth.ExchangeToken.Domain.ExchangeTokenFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Auth.GetCurrentUser.Domain.GetCurrentUserService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Auth.GetCurrentUser.Domain.GetCurrentUserFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminBuyFitzTickets.Domain.IAdminBuyFitzTickets, Fitz.Api.Controllers.Admin.AdminBuyFitzTickets.Persistence.AdminBuyFitzTickets>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminBuyFitzTickets.Domain.AdminBuyFitzTicketsService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminBuyFitzTickets.Domain.AdminBuyFitzTicketsFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminCancelLottery.Domain.IAdminCancelLottery, Fitz.Api.Controllers.Admin.AdminCancelLottery.Persistence.AdminCancelLottery>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminCancelLottery.Domain.AdminCancelLotteryService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminCancelLottery.Domain.AdminCancelLotteryFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminEndLottery.Domain.IAdminEndLottery, Fitz.Api.Controllers.Admin.AdminEndLottery.Persistence.AdminEndLottery>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminEndLottery.Domain.AdminEndLotteryService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminEndLottery.Domain.AdminEndLotteryFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminCreateLottery.Domain.AdminCreateLotteryService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminCreateLottery.Domain.AdminCreateLotteryFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminExtendLotteryEndDate.Domain.IAdminExtendLotteryEndDate, Fitz.Api.Controllers.Admin.AdminExtendLotteryEndDate.Persistence.AdminExtendLotteryEndDate>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminExtendLotteryEndDate.Domain.AdminExtendLotteryEndDateService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminExtendLotteryEndDate.Domain.AdminExtendLotteryEndDateFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminModifyLotteryPool.Domain.IAdminModifyLotteryPool, Fitz.Api.Controllers.Admin.AdminModifyLotteryPool.Persistence.AdminModifyLotteryPool>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminModifyLotteryPool.Domain.AdminModifyLotteryPoolService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminModifyLotteryPool.Domain.AdminModifyLotteryPoolFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminUpdateFavorability.Domain.IAdminUpdateFavorability, Fitz.Api.Controllers.Admin.AdminUpdateFavorability.Persistence.AdminUpdateFavorability>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminUpdateFavorability.Domain.AdminUpdateFavorabilityService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminUpdateFavorability.Domain.AdminUpdateFavorabilityFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminBulkUpdateFavorability.Domain.IAdminBulkUpdateFavorability, Fitz.Api.Controllers.Admin.AdminBulkUpdateFavorability.Persistence.AdminBulkUpdateFavorability>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminBulkUpdateFavorability.Domain.AdminBulkUpdateFavorabilityService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminBulkUpdateFavorability.Domain.AdminBulkUpdateFavorabilityFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminUpdateFavorabilitySettings.Domain.IAdminUpdateFavorabilitySettings, Fitz.Api.Controllers.Admin.AdminUpdateFavorabilitySettings.Persistence.AdminUpdateFavorabilitySettings>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminUpdateFavorabilitySettings.Domain.AdminUpdateFavorabilitySettingsService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminUpdateFavorabilitySettings.Domain.AdminUpdateFavorabilitySettingsFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminDeletePoll.Domain.IAdminDeletePoll, Fitz.Api.Controllers.Admin.AdminDeletePoll.Persistence.AdminDeletePoll>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminDeletePoll.Domain.AdminDeletePollService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminDeletePoll.Domain.AdminDeletePollFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminModifyAccount.Domain.IAdminModifyAccount, Fitz.Api.Controllers.Admin.AdminModifyAccount.Persistence.AdminModifyAccount>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminModifyAccount.Domain.AdminModifyAccountService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminModifyAccount.Domain.AdminModifyAccountFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminSendMessage.Domain.AdminSendMessageService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.AdminSendMessage.Domain.AdminSendMessageFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.GetUsersWithFavorability.Domain.IGetUsersWithFavorability, Fitz.Api.Controllers.Admin.GetUsersWithFavorability.Persistence.GetUsersWithFavorability>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.GetUsersWithFavorability.Domain.GetUsersWithFavorabilityService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Admin.GetUsersWithFavorability.Domain.GetUsersWithFavorabilityFacade>();
 builder.Services.AddFitzMetrics();
 
 builder.Services.AddOpenTelemetry()

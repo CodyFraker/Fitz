@@ -21,7 +21,7 @@ public record CreateRenameCommand(
             Days: request.Days,
             StartDate: request.StartDate,
             Expiration: request.Expiration,
-            Status: request.Status
+            Status: request.Status ?? RenameStatusEnum.Pending
         );
     }
 }

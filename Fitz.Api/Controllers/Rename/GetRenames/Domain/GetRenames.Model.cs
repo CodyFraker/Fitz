@@ -7,8 +7,6 @@ public record GetRenamesModel(
 {
     public static GetRenamesModel From(List<RenamesEntity> renames)
     {
-        return new GetRenamesModel(
-            Renames: renames
-        );
+        return new GetRenamesModel(Renames: renames);
     }
 }

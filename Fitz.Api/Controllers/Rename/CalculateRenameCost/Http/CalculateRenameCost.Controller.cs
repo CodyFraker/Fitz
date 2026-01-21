@@ -37,8 +37,8 @@ public class CalculateRenameCostController(CalculateRenameCostFacade calculateRe
                 });
             }
 
-            _logger.LogInformation("Calculate rename cost request received. AffectedUserId: {AffectedUserId}, RequestedUserId: {RequestedUserId}", 
-                request.AffectedUserId, request.RequestedUserId);
+            _logger.LogInformation("Calculate rename cost request received. AffectedUserId: {AffectedUserId}, RequestedUserId: {RequestedUserId}, Days: {Days}, NewName: {NewName}", 
+                request.AffectedUserId, request.RequestedUserId, request.Days, request.NewName);
 
             var command = request.ToCommand();
 
@@ -65,10 +65,31 @@ public class CalculateRenameCostController(CalculateRenameCostFacade calculateRe
                 Message = ex.Message
             });
         }
+        catch (ArgumentException ex)
+        {
+            _logger.LogError("Calculate rename cost failed - invalid argument. Error: {Error}", ex.Message);
+            _fitzMetrics?.RecordApiError(endpoint, "bad_request");
+
+            return BadRequest(new ApiResponse<object>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError("Calculate rename cost failed - invalid operation. Error: {Error}", ex.Message);
+            _fitzMetrics?.RecordApiError(endpoint, "internal_server_error");
+
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Calculate rename cost failed - unexpected error. AffectedUserId: {AffectedUserId}, RequestedUserId: {RequestedUserId}", 
-                request.AffectedUserId, request.RequestedUserId);
+            _logger.LogError(ex, "Calculate rename cost failed - unexpected error");
             _fitzMetrics?.RecordApiError(endpoint, "internal_server_error");
 
             return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>

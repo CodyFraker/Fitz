@@ -27,15 +27,15 @@ public class GetRenameController(GetRenameFacade getRenameFacade, ILogger<GetRen
 
         try
         {
-            _logger.LogInformation("Get rename request received. RenameId: {RenameId}", id);
+            _logger.LogInformation("Get rename request received. Id: {Id}", id);
 
-            var command = GetRenameCommand.FromId(id);
+            var command = GetRenameCommand.From(id);
 
             var response = await _getRenameFacade.Execute(command, cancellationToken);
 
             var dto = GetRenameResponseDto.From(response);
 
-            _logger.LogInformation("Get rename completed successfully. RenameId: {RenameId}", dto.Id);
+            _logger.LogInformation("Get rename completed successfully. Id: {Id}", id);
 
             return Ok(new ApiResponse<GetRenameResponseDto>
             {
@@ -45,7 +45,7 @@ public class GetRenameController(GetRenameFacade getRenameFacade, ILogger<GetRen
         }
         catch (RenameNotFound ex)
         {
-            _logger.LogWarning("Get rename failed - rename not found. RenameId: {RenameId}", id);
+            _logger.LogWarning("Get rename failed - rename not found. Id: {Id}", ex.RenameId);
             _fitzMetrics?.RecordApiError(endpoint, "not_found");
 
             return NotFound(new ApiResponse<object>
@@ -54,9 +54,20 @@ public class GetRenameController(GetRenameFacade getRenameFacade, ILogger<GetRen
                 Message = ex.Message
             });
         }
+        catch (ArgumentException ex)
+        {
+            _logger.LogError("Get rename failed - invalid argument. Error: {Error}", ex.Message);
+            _fitzMetrics?.RecordApiError(endpoint, "bad_request");
+
+            return BadRequest(new ApiResponse<object>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Get rename failed - unexpected error. RenameId: {RenameId}", id);
+            _logger.LogError(ex, "Get rename failed - unexpected error. Id: {Id}", id);
             _fitzMetrics?.RecordApiError(endpoint, "internal_server_error");
 
             return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>

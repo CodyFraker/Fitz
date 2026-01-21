@@ -7,15 +7,15 @@ public class UpdateRenameStatusFacade(UpdateRenameStatusService updateRenameStat
 
     public async Task<UpdateRenameStatusResponse> Execute(UpdateRenameStatusCommand command, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("UpdateRenameStatusFacade execution started. RenameId: {RenameId}, Status: {Status}", command.RenameId, command.Status);
+        _logger.LogInformation("UpdateRenameStatusFacade execution started. Id: {Id}, Status: {Status}", command.Id, command.Status);
 
         var model = await _updateRenameStatusService.ExecuteAsync(command, cancellationToken);
 
-        _logger.LogInformation("UpdateRenameStatusService execution completed. RenameId: {RenameId}", model.Rename.Id);
+        _logger.LogInformation("UpdateRenameStatusService execution completed. Id: {Id}, Status: {Status}", command.Id, command.Status);
 
-        var response = UpdateRenameStatusResponse.From(model);
+        var response = UpdateRenameStatusResponse.From(model, "Successfully updated rename status.");
 
-        _logger.LogInformation("UpdateRenameStatusFacade execution completed successfully. RenameId: {RenameId}, Status: {Status}", command.RenameId, command.Status);
+        _logger.LogInformation("UpdateRenameStatusFacade execution completed successfully. Id: {Id}, Status: {Status}", command.Id, command.Status);
 
         return response;
     }

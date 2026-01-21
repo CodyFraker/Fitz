@@ -7,8 +7,8 @@ public class CalculateRenameCostFacade(CalculateRenameCostService calculateRenam
 
     public async Task<CalculateRenameCostResponse> Execute(CalculateRenameCostCommand command, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("CalculateRenameCostFacade execution started. AffectedUserId: {AffectedUserId}, RequestedUserId: {RequestedUserId}", 
-            command.AffectedUserId, command.RequestedUserId);
+        _logger.LogInformation("CalculateRenameCostFacade execution started. AffectedUserId: {AffectedUserId}, RequestedUserId: {RequestedUserId}, Days: {Days}", 
+            command.AffectedUserId, command.RequestedUserId, command.Days);
 
         var model = await _calculateRenameCostService.ExecuteAsync(command, cancellationToken);
 

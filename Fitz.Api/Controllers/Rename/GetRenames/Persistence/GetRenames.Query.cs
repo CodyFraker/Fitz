@@ -15,9 +15,9 @@ public class GetRenames(IDbContextFactory<BotContext> contextFactory, ILogger<Ge
         _logger.LogInformation("Getting all renames. Status: {Status}", status);
 
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
-        
+
         IQueryable<RenamesEntity> query = context.Renames;
-        
+
         if (status.HasValue)
         {
             query = query.Where(r => r.Status == status.Value);
@@ -25,7 +25,7 @@ public class GetRenames(IDbContextFactory<BotContext> contextFactory, ILogger<Ge
 
         var renames = await query.ToListAsync(cancellationToken);
 
-        _logger.LogInformation("Found {Count} renames", renames.Count);
+        _logger.LogInformation("Renames retrieved. Count: {Count}", renames.Count);
 
         return renames;
     }

@@ -13,18 +13,28 @@ public class BuyoutRenamesService(IBuyoutRenames buyoutRenames, FitzMetrics? fit
     {
         _logger.LogInformation("BuyoutRenamesService execution started. UserId: {UserId}", command.UserId);
 
+        if (command.UserId == 0)
+        {
+            _logger.LogError("BuyoutRenames validation failed - User ID cannot be 0.");
+            throw new ArgumentException("User ID cannot be 0.", nameof(command.UserId));
+        }
+
         var renames = await _buyoutRenames.GetRenamesByAccountIdAsync(command.UserId, cancellationToken);
 
+        int updatedCount = 0;
         foreach (var rename in renames)
         {
             rename.Status = RenameStatusEnum.BoughtOut;
             rename.Notified = true;
             await _buyoutRenames.UpdateRenameAsync(rename, cancellationToken);
             _fitzMetrics?.RecordRenameBoughtOut();
+            updatedCount++;
         }
 
-        _logger.LogInformation("BuyoutRenamesService execution completed. UserId: {UserId}, Count: {Count}", command.UserId, renames.Count);
+        var model = BuyoutRenamesModel.From(updatedCount);
 
-        return BuyoutRenamesModel.From(renames.Count);
+        _logger.LogInformation("BuyoutRenamesModel created successfully. UserId: {UserId}, UpdatedCount: {UpdatedCount}", command.UserId, updatedCount);
+
+        return model;
     }
 }

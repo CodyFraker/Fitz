@@ -1,7 +1,7 @@
 using Fitz.Api.Attributes;
 using Fitz.Api.Controllers.Account.Exceptions;
-using Fitz.Api.Controllers.Polls.Exceptions;
 using Fitz.Api.Controllers.Rename.CreateRename.Domain;
+using Fitz.Api.Controllers.Rename.Exceptions;
 using Fitz.Api.Models.Responses;
 using Fitz.Metrics;
 using Microsoft.AspNetCore.Mvc;
@@ -38,8 +38,8 @@ public class CreateRenameController(CreateRenameFacade createRenameFacade, ILogg
                 });
             }
 
-            _logger.LogInformation("Create rename request received. AffectedUserId: {AffectedUserId}, RequestedUserId: {RequestedUserId}, NewName: {NewName}", 
-                request.AffectedUserId, request.RequestedUserId, request.NewName);
+            _logger.LogInformation("Create rename request received. AffectedUserId: {AffectedUserId}, RequestedUserId: {RequestedUserId}, Days: {Days}, NewName: {NewName}", 
+                request.AffectedUserId, request.RequestedUserId, request.Days, request.NewName);
 
             var command = request.ToCommand();
 
@@ -47,12 +47,12 @@ public class CreateRenameController(CreateRenameFacade createRenameFacade, ILogg
 
             var dto = CreateRenameResponseDto.From(response);
 
-            _logger.LogInformation("Create rename completed successfully. RenameId: {RenameId}", dto.Id);
+            _logger.LogInformation("Create rename completed successfully. RenameId: {RenameId}", dto.Rename.Id);
 
             return Ok(new ApiResponse<CreateRenameResponseDto>
             {
                 Success = true,
-                Message = "Rename created successfully",
+                Message = response.Message,
                 Data = dto
             });
         }
@@ -69,9 +69,8 @@ public class CreateRenameController(CreateRenameFacade createRenameFacade, ILogg
         }
         catch (InsufficientBeerException ex)
         {
-            _logger.LogWarning("Create rename failed - insufficient beer. Required: {Required}, Current: {Current}", 
-                ex.RequiredAmount, ex.CurrentBalance);
-            _fitzMetrics?.RecordApiError(endpoint, "insufficient_beer");
+            _logger.LogWarning("Create rename failed - insufficient beer. Required: {Required}, Current: {Current}", ex.RequiredAmount, ex.CurrentBalance);
+            _fitzMetrics?.RecordApiError(endpoint, "insufficient_funds");
 
             return BadRequest(new ApiResponse<object>
             {
@@ -79,10 +78,31 @@ public class CreateRenameController(CreateRenameFacade createRenameFacade, ILogg
                 Message = ex.Message
             });
         }
+        catch (ArgumentException ex)
+        {
+            _logger.LogError("Create rename failed - invalid argument. Error: {Error}", ex.Message);
+            _fitzMetrics?.RecordApiError(endpoint, "bad_request");
+
+            return BadRequest(new ApiResponse<object>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError("Create rename failed - invalid operation. Error: {Error}", ex.Message);
+            _fitzMetrics?.RecordApiError(endpoint, "internal_server_error");
+
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Create rename failed - unexpected error. AffectedUserId: {AffectedUserId}, RequestedUserId: {RequestedUserId}", 
-                request.AffectedUserId, request.RequestedUserId);
+            _logger.LogError(ex, "Create rename failed - unexpected error");
             _fitzMetrics?.RecordApiError(endpoint, "internal_server_error");
 
             return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>

@@ -7,8 +7,6 @@ public record UpdateRenameStatusModel(
 {
     public static UpdateRenameStatusModel From(RenamesEntity rename)
     {
-        return new UpdateRenameStatusModel(
-            Rename: rename
-        );
+        return new UpdateRenameStatusModel(Rename: rename);
     }
 }

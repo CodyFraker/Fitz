@@ -1,5 +1,4 @@
 using Fitz.Api.Controllers.Rename.Exceptions;
-using Fitz.Database.Entities;
 
 namespace Fitz.Api.Controllers.Rename.UpdateRenameStatus.Domain;
 
@@ -10,13 +9,19 @@ public class UpdateRenameStatusService(IUpdateRenameStatus updateRenameStatus, I
 
     public async Task<UpdateRenameStatusModel> ExecuteAsync(UpdateRenameStatusCommand command, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("UpdateRenameStatusService execution started. RenameId: {RenameId}, Status: {Status}", command.RenameId, command.Status);
+        _logger.LogInformation("UpdateRenameStatusService execution started. Id: {Id}, Status: {Status}", command.Id, command.Status);
 
-        var rename = await _updateRenameStatus.FindRenameByIdAsync(command.RenameId, cancellationToken);
+        if (command.Id <= 0)
+        {
+            _logger.LogError("UpdateRenameStatus validation failed - Id must be greater than 0. Id: {Id}", command.Id);
+            throw new ArgumentException("Id must be greater than 0.", nameof(command.Id));
+        }
+
+        var rename = await _updateRenameStatus.FindByIdAsync(command.Id, cancellationToken);
         if (rename == null)
         {
-            _logger.LogWarning("Rename not found. RenameId: {RenameId}", command.RenameId);
-            throw new RenameNotFound(command.RenameId);
+            _logger.LogWarning("Rename not found. Id: {Id}", command.Id);
+            throw new RenameNotFound(command.Id);
         }
 
         rename.Status = command.Status;
@@ -24,8 +29,10 @@ public class UpdateRenameStatusService(IUpdateRenameStatus updateRenameStatus, I
 
         var updatedRename = await _updateRenameStatus.UpdateRenameAsync(rename, cancellationToken);
 
-        _logger.LogInformation("UpdateRenameStatusService execution completed. RenameId: {RenameId}, Status: {Status}", command.RenameId, command.Status);
+        var model = UpdateRenameStatusModel.From(updatedRename);
 
-        return UpdateRenameStatusModel.From(updatedRename);
+        _logger.LogInformation("UpdateRenameStatusModel created successfully. Id: {Id}, Status: {Status}", command.Id, command.Status);
+
+        return model;
     }
 }

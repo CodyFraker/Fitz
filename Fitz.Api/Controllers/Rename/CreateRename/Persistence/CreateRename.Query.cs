@@ -21,7 +21,7 @@ public class CreateRename(IDbContextFactory<BotContext> contextFactory, ILogger<
 
         if (account != null)
         {
-            _logger.LogInformation("Account found. UserId: {UserId}", userId);
+            _logger.LogInformation("Account found. UserId: {UserId}, Username: {Username}", userId, account.Username);
         }
         else
         {
@@ -31,6 +31,25 @@ public class CreateRename(IDbContextFactory<BotContext> contextFactory, ILogger<
         return account;
     }
 
+    public async Task<SettingsEntity?> GetSettingsAsync(CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting settings");
+
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+        var settings = await context.Settings
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (settings != null)
+        {
+            _logger.LogInformation("Settings found. RenameBaseCost: {RenameBaseCost}", settings.RenameBaseCost);
+        }
+        else
+        {
+            _logger.LogWarning("Settings not found");
+        }
+
+        return settings;
+    }
     public async Task<RenamesEntity> CreateRenameAsync(RenamesEntity rename, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Creating rename. AffectedUserId: {AffectedUserId}, RequestedUserId: {RequestedUserId}, NewName: {NewName}", 
@@ -65,9 +84,23 @@ public class CreateRename(IDbContextFactory<BotContext> contextFactory, ILogger<
         }
         else
         {
-            _logger.LogInformation("Rename not found after creation");
+            _logger.LogWarning("Rename not found after creation");
         }
 
         return rename;
+    }
+
+    public async Task<List<RenamesEntity>> GetRenamesByAccountIdAsync(ulong accountId, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting renames by account ID. AccountId: {AccountId}", accountId);
+
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+        var renames = await context.Renames
+            .Where(r => r.AffectedUserId == accountId && (r.Status == RenameStatusEnum.Pending || r.Status == RenameStatusEnum.Active))
+            .ToListAsync(cancellationToken);
+
+        _logger.LogInformation("Renames retrieved. AccountId: {AccountId}, Count: {Count}", accountId, renames.Count);
+
+        return renames;
     }
 }

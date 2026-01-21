@@ -3,39 +3,10 @@ using Fitz.Database.Entities;
 namespace Fitz.Api.Controllers.Rename.GetRenames.Domain;
 
 public record GetRenamesResponse(
-    List<RenameResponseItem> Renames)
+    List<RenamesEntity> Renames)
 {
     public static GetRenamesResponse From(GetRenamesModel model)
     {
-        return new GetRenamesResponse(
-            Renames: model.Renames.Select(r => new RenameResponseItem(
-                Id: r.Id,
-                OldName: r.OldName,
-                NewName: r.NewName,
-                AffectedUserId: r.AffectedUserId,
-                RequestedUserId: r.RequestedUserId,
-                Days: r.Days,
-                Cost: r.Cost,
-                Notified: r.Notified,
-                Status: r.Status,
-                StartDate: r.StartDate,
-                Expiration: r.Expiration,
-                Timestamp: r.Timestamp
-            )).ToList()
-        );
+        return new GetRenamesResponse(Renames: model.Renames);
     }
 }
-
-public record RenameResponseItem(
-    int Id,
-    string? OldName,
-    string NewName,
-    ulong AffectedUserId,
-    ulong RequestedUserId,
-    int? Days,
-    int Cost,
-    bool Notified,
-    RenameStatusEnum Status,
-    DateTime? StartDate,
-    DateTime? Expiration,
-    DateTime Timestamp);

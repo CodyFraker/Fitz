@@ -15,11 +15,12 @@ public class GetRenamesByUser(IDbContextFactory<BotContext> contextFactory, ILog
         _logger.LogInformation("Getting renames by account ID. AccountId: {AccountId}", accountId);
 
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+
         var renames = await context.Renames
             .Where(r => r.AffectedUserId == accountId && (r.Status == RenameStatusEnum.Pending || r.Status == RenameStatusEnum.Active))
             .ToListAsync(cancellationToken);
 
-        _logger.LogInformation("Found {Count} renames for account. AccountId: {AccountId}", renames.Count, accountId);
+        _logger.LogInformation("Renames retrieved. AccountId: {AccountId}, Count: {Count}", accountId, renames.Count);
 
         return renames;
     }

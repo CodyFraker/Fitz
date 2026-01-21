@@ -11,8 +11,10 @@ public class GetRenamesService(IGetRenames getRenames, ILogger<GetRenamesService
 
         var renames = await _getRenames.GetAllRenamesAsync(command.Status, cancellationToken);
 
-        _logger.LogInformation("GetRenamesService execution completed. Count: {Count}", renames.Count);
+        var model = GetRenamesModel.From(renames);
 
-        return GetRenamesModel.From(renames);
+        _logger.LogInformation("GetRenamesModel created successfully. Count: {Count}", renames.Count);
+
+        return model;
     }
 }

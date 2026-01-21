@@ -7,13 +7,14 @@ public class CreateRenameFacade(CreateRenameService createRenameService, ILogger
 
     public async Task<CreateRenameResponse> Execute(CreateRenameCommand command, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("CreateRenameFacade execution started. AffectedUserId: {AffectedUserId}, RequestedUserId: {RequestedUserId}", command.AffectedUserId, command.RequestedUserId);
+        _logger.LogInformation("CreateRenameFacade execution started. AffectedUserId: {AffectedUserId}, RequestedUserId: {RequestedUserId}, Days: {Days}", 
+            command.AffectedUserId, command.RequestedUserId, command.Days);
 
         var model = await _createRenameService.ExecuteAsync(command, cancellationToken);
 
         _logger.LogInformation("CreateRenameService execution completed. RenameId: {RenameId}", model.Rename.Id);
 
-        var response = CreateRenameResponse.From(model);
+        var response = CreateRenameResponse.From(model, "Successfully renamed user.");
 
         _logger.LogInformation("CreateRenameFacade execution completed successfully. RenameId: {RenameId}", model.Rename.Id);
 
