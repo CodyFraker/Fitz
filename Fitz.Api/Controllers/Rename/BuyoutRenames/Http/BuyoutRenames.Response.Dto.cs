@@ -10,11 +10,15 @@ public record BuyoutRenamesResponseDto
     [Required]
     public required int RenamesUpdated { get; set; }
 
+    [Required]
+    public required string Message { get; set; }
+
     public static BuyoutRenamesResponseDto From(BuyoutRenamesResponse response)
     {
         return new BuyoutRenamesResponseDto
         {
-            RenamesUpdated = response.RenamesUpdated
+            RenamesUpdated = response.RenamesUpdated,
+            Message = response.Message
         };
     }
 }
