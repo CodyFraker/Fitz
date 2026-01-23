@@ -1,3 +1,7 @@
+[tasks.build]
+description = "Build Fitz API."
+run = "dotnet build"
+
 [tasks.dev]
 description = "Run Fitz API in development mode"
 run = "dotnet run"

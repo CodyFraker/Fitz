@@ -60,4 +60,26 @@ public class GetCurrentLottery(IDbContextFactory<BotContext> contextFactory, ILo
 
         return totalParticipants;
     }
+
+    public async Task<int> GetLastWinningTicketAsync(CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting last winning ticket");
+
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+        var lastLottery = await context.Drawing
+            .Where(x => x.CurrentLottery == false)
+            .OrderByDescending(x => x.EndDate)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (lastLottery == null)
+        {
+            _logger.LogInformation("No previous lottery found, returning 0");
+            return 0;
+        }
+
+        var winningTicket = lastLottery.WinningTicket ?? 0;
+        _logger.LogInformation("Last winning ticket found. WinningTicket: {WinningTicket}", winningTicket);
+
+        return winningTicket;
+    }
 }

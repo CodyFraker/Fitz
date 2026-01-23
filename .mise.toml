@@ -7,6 +7,10 @@ experimental = true
 node = "20"
 npm = "latest"
 
+[tasks.build]
+description = "Builds all services"
+depends = ["//...:build"]
+
 [tasks.dev]
 description = "Run all services concurrently (bot, API, and frontend)"
 depends = ["//...:dev"]
