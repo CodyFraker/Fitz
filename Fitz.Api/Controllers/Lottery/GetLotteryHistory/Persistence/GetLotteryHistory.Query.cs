@@ -70,4 +70,27 @@ public class GetLotteryHistory(IDbContextFactory<BotContext> contextFactory, ILo
 
         return totalParticipants;
     }
+
+    public async Task<List<(WinnersEntity Winner, AccountEntity Account)>> GetWinnersByDrawingIdAsync(int drawingId, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting winners for lottery. DrawingId: {DrawingId}", drawingId);
+
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+        var winners = await context.Winners
+            .Where(x => x.Drawing == drawingId)
+            .Join(
+                context.Accounts,
+                winner => winner.AccountId,
+                account => account.Id,
+                (winner, account) => new { Winner = winner, Account = account }
+            )
+            .Select(x => new { x.Winner, x.Account })
+            .ToListAsync(cancellationToken);
+
+        var result = winners.Select(x => (x.Winner, x.Account)).ToList();
+
+        _logger.LogInformation("Winners found for lottery. DrawingId: {DrawingId}, Count: {Count}", drawingId, result.Count);
+
+        return result;
+    }
 }

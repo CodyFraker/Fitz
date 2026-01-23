@@ -18,6 +18,13 @@ public class GetLotteryHistoryService(IGetLotteryHistory getLotteryHistory, ILog
         {
             var totalTickets = await _getLotteryHistory.GetTotalTicketsAsync(lottery.Id, cancellationToken);
             var totalParticipants = await _getLotteryHistory.GetTotalParticipantsAsync(lottery.Id, cancellationToken);
+            var winnersData = await _getLotteryHistory.GetWinnersByDrawingIdAsync(lottery.Id, cancellationToken);
+
+            var winners = winnersData.Select(w => new LotteryWinnerModel(
+                AccountId: w.Winner.AccountId,
+                Username: w.Account.Username,
+                Payout: w.Winner.Payout
+            )).ToList();
 
             var item = new LotteryHistoryItemModel(
                 Id: lottery.Id,
@@ -26,7 +33,8 @@ public class GetLotteryHistoryService(IGetLotteryHistory getLotteryHistory, ILog
                 Pool: lottery.Pool,
                 WinningTicket: lottery.WinningTicket,
                 TotalTickets: totalTickets,
-                TotalParticipants: totalParticipants
+                TotalParticipants: totalParticipants,
+                Winners: winners
             );
 
             historyItems.Add(item);
