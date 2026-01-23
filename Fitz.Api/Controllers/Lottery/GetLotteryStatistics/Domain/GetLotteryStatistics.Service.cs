@@ -26,7 +26,27 @@ public class GetLotteryStatisticsService(IGetLotteryStatistics getLotteryStatist
             dataPoints.Add(point);
         }
 
-        var model = GetLotteryStatisticsModel.From(dataPoints);
+        double? averageTicketsPerWinner = null;
+        var allWinners = await _getLotteryStatistics.GetAllWinnersAsync(cancellationToken);
+
+        if (allWinners.Count > 0)
+        {
+            int totalWinnerTickets = 0;
+            foreach (var winner in allWinners)
+            {
+                var ticketCount = await _getLotteryStatistics.GetTicketCountForWinnerAsync(winner.Drawing, winner.AccountId, cancellationToken);
+                totalWinnerTickets += ticketCount;
+            }
+
+            averageTicketsPerWinner = (double)totalWinnerTickets / allWinners.Count;
+            _logger.LogInformation("Average tickets per winner calculated. TotalWinners: {TotalWinners}, TotalTickets: {TotalTickets}, Average: {Average}", allWinners.Count, totalWinnerTickets, averageTicketsPerWinner);
+        }
+        else
+        {
+            _logger.LogInformation("No winners found, average tickets per winner will be null");
+        }
+
+        var model = GetLotteryStatisticsModel.From(dataPoints, averageTicketsPerWinner);
 
         _logger.LogInformation("GetLotteryStatisticsModel created successfully. DataPointsCount: {DataPointsCount}", dataPoints.Count);
 

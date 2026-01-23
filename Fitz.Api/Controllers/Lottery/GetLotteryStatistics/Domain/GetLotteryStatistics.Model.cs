@@ -6,12 +6,14 @@ public record LotteryStatisticsPointModel(
     int TotalTickets);
 
 public record GetLotteryStatisticsModel(
-    List<LotteryStatisticsPointModel> DataPoints)
+    List<LotteryStatisticsPointModel> DataPoints,
+    double? AverageTicketsPerWinner)
 {
-    public static GetLotteryStatisticsModel From(List<LotteryStatisticsPointModel> dataPoints)
+    public static GetLotteryStatisticsModel From(List<LotteryStatisticsPointModel> dataPoints, double? averageTicketsPerWinner)
     {
         return new GetLotteryStatisticsModel(
-            DataPoints: dataPoints
+            DataPoints: dataPoints,
+            AverageTicketsPerWinner: averageTicketsPerWinner
         );
     }
 }
