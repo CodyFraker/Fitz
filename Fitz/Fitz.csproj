@@ -37,6 +37,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Fitz.Database\Fitz.Database.csproj" />
     <ProjectReference Include="..\Fitz.Metrics\Fitz.Metrics.csproj" />
+    <ProjectReference Include="..\Fitz.Api\Fitz.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>

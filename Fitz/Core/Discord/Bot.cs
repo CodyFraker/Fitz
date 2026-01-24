@@ -102,10 +102,29 @@ namespace Fitz.Core.Discord
             this.slash.RegisterCommands<HelpSlashCommands>();
             this.slash.RegisterCommands<PollSlashCommands>();
             this.slash.RegisterCommands<BlackjackSlashCommands>();
+            
+            this.slash.RegisterCommands<Fitz.Api.Controllers.Account.CreateAccount.Discord.CreateAccountSlashCommand>();
+            this.slash.RegisterCommands<Fitz.Api.Controllers.Account.GetAccount.Discord.GetAccountSlashCommand>();
+            this.slash.RegisterCommands<Fitz.Api.Controllers.Account.GetAccountSettings.Discord.GetAccountSettingsSlashCommand>();
+            this.slash.RegisterCommands<Fitz.Api.Controllers.Account.GiveBeer.Discord.GiveBeerSlashCommand>();
+            
+            this.slash.RegisterCommands<Fitz.Api.Controllers.Bank.GetBalanceWithTransactions.Discord.GetBalanceWithTransactionsSlashCommand>();
+            this.slash.RegisterCommands<Fitz.Api.Controllers.Bank.GetTopBalances.Discord.GetTopBalancesSlashCommand>();
+            this.slash.RegisterCommands<Fitz.Api.Controllers.Bank.GetTransactions.Discord.GetTransactionsSlashCommand>();
+            this.slash.RegisterCommands<Fitz.Api.Controllers.Bank.BankAdmin.Discord.BankAdminSlashCommand>();
+            
+            this.slash.RegisterCommands<Fitz.Api.Controllers.Music.PlayMusic.Discord.PlayMusicSlashCommand>();
+            this.slash.RegisterCommands<Fitz.Api.Controllers.Music.StopMusic.Discord.StopMusicSlashCommand>();
+            
+            this.slash.RegisterCommands<Fitz.Api.Controllers.Rename.Rename.Discord.RenameSlashCommand>();
+            
+            this.slash.RegisterCommands<Fitz.Api.Controllers.Settings.BotSettings.Discord.BotSettingsSlashCommand>();
+            
             this.modals.RegisterModals<PollModalCommands>();
             this.modals.RegisterModals<LotteryModalCommands>();
             this.modals.RegisterModals<AccountModalCommands>();
             this.modals.RegisterModals<Fitz.Features.Settings.Commands.SettingsModalCommands>();
+            this.modals.RegisterModals<Fitz.Api.Controllers.Settings.BotSettings.Discord.BotSettingsModalCommands>();
 
             var playerOptions = new LavalinkPlayerOptions
             {

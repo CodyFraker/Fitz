@@ -326,6 +326,22 @@ builder.Services.AddScoped<Fitz.Api.Controllers.Settings.GetSettings.Domain.IGet
 builder.Services.AddScoped<Fitz.Api.Controllers.Settings.GetSettings.Domain.GetSettingsService>();
 builder.Services.AddScoped<Fitz.Api.Controllers.Settings.GetSettings.Domain.GetSettingsFacade>();
 
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.GetAccountSettings.Domain.GetAccountSettingsService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.GetAccountSettings.Domain.GetAccountSettingsFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.GiveBeer.Domain.IGiveBeer, Fitz.Api.Controllers.Account.GiveBeer.Persistence.GiveBeer>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.GiveBeer.Domain.GiveBeerService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Account.GiveBeer.Domain.GiveBeerFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.GetBalanceWithTransactions.Domain.GetBalanceWithTransactionsService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Bank.GetBalanceWithTransactions.Domain.GetBalanceWithTransactionsFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Music.PlayMusic.Domain.PlayMusicService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Music.PlayMusic.Domain.PlayMusicFacade>();
+
+builder.Services.AddScoped<Fitz.Api.Controllers.Music.StopMusic.Domain.StopMusicService>();
+builder.Services.AddScoped<Fitz.Api.Controllers.Music.StopMusic.Domain.StopMusicFacade>();
+
 builder.Services.AddScoped<Fitz.Api.Controllers.Users.GetUsers.Domain.IGetUsers, Fitz.Api.Controllers.Users.GetUsers.Persistence.GetUsers>();
 builder.Services.AddScoped<Fitz.Api.Controllers.Users.GetUsers.Domain.GetUsersService>();
 builder.Services.AddScoped<Fitz.Api.Controllers.Users.GetUsers.Domain.GetUsersFacade>();

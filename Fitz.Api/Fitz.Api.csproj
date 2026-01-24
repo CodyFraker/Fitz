@@ -23,6 +23,10 @@
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.9.0" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.9.0-beta.1" />
     <PackageReference Include="OpenTelemetry.Exporter.Prometheus.AspNetCore" Version="1.7.0-beta.1" />
+    <PackageReference Include="ToMarkdownTable" Version="0.2.1-alpha0003" />
+    <PackageReference Include="DSharpPlus" Version="5.0.0-nightly-02211" />
+    <PackageReference Include="DSharpPlus.SlashCommands" Version="5.0.0-nightly-02211" />
+    <PackageReference Include="XeroxDev.DSharpPlus.ModalCommands" Version="2.0.0" />
   </ItemGroup>
 
   <ItemGroup>
